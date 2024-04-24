@@ -4,6 +4,18 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyName>Octopus.OpenFeature.Provider</AssemblyName>
+        <PackageId>Octopus.OpenFeature</PackageId>
+        <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+        <PackageProjectUrl>https://github.com/OctopusDeploy/openfeature-dotnet</PackageProjectUrl>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <Authors>Octopus Deploy</Authors>
+        <Copyright>Octopus Deploy Pty Ltd</Copyright>
+        <PackageTags>tool</PackageTags>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/OctopusDeploy/openfeature-dotnet/</RepositoryUrl>
+        <Description>The OctopusDeploy dotnet OpenFeature provide</Description>
+        <Product>Octopus.OpenFeature</Product>
     </PropertyGroup>
 
     <ItemGroup>
