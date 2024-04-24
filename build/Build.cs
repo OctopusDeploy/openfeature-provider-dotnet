@@ -64,7 +64,7 @@ class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            Log.Information("Building Octodiff v{Version}", OctoVersionInfo.FullSemVer);
+            Log.Information("Building Octopus.OpenFeature v{Version}", OctoVersionInfo.FullSemVer);
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)

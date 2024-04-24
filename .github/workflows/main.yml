@@ -9,9 +9,15 @@ on:
       - release/*
     tags-ignore:
       - '**'
+    paths-ignore:
+      - "README.md"
+      - ".octopus"
 
   pull_request:
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "README.md"
+      - ".octopus"
 
   schedule:
     # Daily 5am australian/brisbane time
