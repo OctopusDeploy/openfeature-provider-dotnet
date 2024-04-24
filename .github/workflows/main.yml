@@ -84,12 +84,12 @@ jobs:
         if: (! contains(github.ref, '/merge')) && (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
         with:
           packages: |
-            ./artifacts/Octopus.Octodiff.${{ steps.build.outputs.octoversion_fullsemver }}.nupkg
+            ./artifacts/Octopus.OpenFeature.${{ steps.build.outputs.octoversion_fullsemver }}.nupkg
 
       - name: Create Release in Octopus 🐙
         uses: OctopusDeploy/create-release-action@v3
         if: (! contains(github.ref, '/merge')) && (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
         with:
-          project: Octodiff
+          project: openfeature-dotnet-provider
           packages: |
-            Octopus.Octodiff:${{ steps.build.outputs.octoversion_fullsemver }}
+            Octopus.OpenFeature:${{ steps.build.outputs.octoversion_fullsemver }}
