@@ -3,9 +3,9 @@ name: Build, Test, Package and Push
 # Controls when the action will run.
 on:
   push:
-    # Triggers the workflow on pull request events and merges/pushes to master
+    # Triggers the workflow on pull request events and merges/pushes to main
     branches:
-      - master
+      - main
       - release/*
     tags-ignore:
       - '**'
