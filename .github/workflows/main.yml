@@ -90,6 +90,6 @@ jobs:
         uses: OctopusDeploy/create-release-action@v3
         if: (! contains(github.ref, '/merge')) && (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
         with:
-          project: openfeature-dotnet-provider
+          project: 'OpenFeature Dotnet Provider'
           packages: |
             Octopus.OpenFeature:${{ steps.build.outputs.octoversion_fullsemver }}
