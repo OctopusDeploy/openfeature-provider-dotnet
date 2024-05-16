@@ -20,7 +20,6 @@
 
     <ItemGroup>
         <PackageReference Include="OpenFeature" Version="1.5.1" />
-        <PackageReference Include="murmurhash" Version="1.0.3" />
     </ItemGroup>
 
 </Project>
