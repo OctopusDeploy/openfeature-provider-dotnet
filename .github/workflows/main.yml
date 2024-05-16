@@ -50,7 +50,8 @@ jobs:
 
       - name: Append OCTOVERSION_CurrentBranch with -nightly-<timestamp> (for scheduled)
         if: github.event_name == 'schedule'
-        run: echo "OCTOVERSION_CurrentBranch=${{ env.OCTOVERSION_CurrentBranch }}-nightly-$(Get-Date -Format 'yyyyMMddHHmmss')" >> $env:GITHUB_ENV
+        run: |
+          echo "OCTOVERSION_CurrentBranch=${{ env.OCTOVERSION_CurrentBranch }}-nightly-$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
 
       - name: Nuke Build 🏗
         id: build
