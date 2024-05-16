@@ -3,24 +3,14 @@ using System.Net.Http.Json;
 
 namespace Octopus.OpenFeature.Provider
 {
-    public class OctopusFeatureClient
+    public record FeatureToggles(FeatureToggleEvaluation[] Evaluations, byte[] ContentHash);
+    public record FeatureToggleEvaluation(string Name, string Slug, bool IsEnabled, string[] Segments);
+    
+    public class OctopusFeatureClient(OctopusFeatureConfiguration configuration)
     {
         DateTimeOffset? lastRefreshed;
         OctopusFeatureContext? currentContext;
-
         readonly SemaphoreSlim cacheSemaphore = new(1, 1);
-
-        readonly OctopusFeatureConfiguration configuration;
-        readonly string installationId;
-        readonly string projectId;
-
-        public OctopusFeatureClient(OctopusFeatureConfiguration configuration)
-        {
-            this.configuration = configuration;
-            var components = configuration.ClientIdentifier.Split(":");
-            installationId = components[0];
-            projectId = components[1];
-        }
 
         public async Task<OctopusFeatureContext?> GetEvaluationContext(CancellationToken cancellationToken)
         {
@@ -34,8 +24,8 @@ namespace Octopus.OpenFeature.Provider
                         var toggles = await GetFeatureManifest(cancellationToken);
                         currentContext =
                             toggles is not null
-                                ? new OctopusFeatureContext(toggles, configuration)
-                                : new OctopusFeatureContext(OctopusFeatureManifest.Empty(projectId), configuration);
+                                ? new OctopusFeatureContext(toggles)
+                                : new OctopusFeatureContext(new FeatureToggles([], []));
                     }
                 }
                 finally
@@ -66,7 +56,7 @@ namespace Octopus.OpenFeature.Provider
                 BaseAddress = configuration.ServerUri
             };
 
-            var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/installation/{installationId}/project/{projectId}/check", ct), cancellationToken);
+            var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
             if (hash is null)
             {
                 return true;
@@ -94,14 +84,14 @@ namespace Octopus.OpenFeature.Provider
         /// - We don't receive a ContentHash header
         /// - We cannot deserialize the content response into a OctoToggleFeatureManifest
         /// </summary>
-        async Task<OctopusFeatureManifest?> GetFeatureManifest(CancellationToken cancellationToken)
+        async Task<FeatureToggles?> GetFeatureManifest(CancellationToken cancellationToken)
         {
             var client = new HttpClient
             {
                 BaseAddress = configuration.ServerUri
             };
 
-            var response = await ExecuteWithRetry(async ct => await client.GetAsync($"api/installation/{installationId}/project/{projectId}", ct), cancellationToken);
+            var response = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/{configuration.ClientIdentifier}", ct), cancellationToken);
 
             if (response is null or { StatusCode: HttpStatusCode.NotFound })
             {
@@ -116,14 +106,15 @@ namespace Octopus.OpenFeature.Provider
                 return null;
             }
 
-            var toggles = await response.Content.ReadFromJsonAsync<OctopusFeatureManifest>(cancellationToken);
-            if (toggles is null)
+            var evaluations = await response.Content.ReadFromJsonAsync<FeatureToggleEvaluation[]>(cancellationToken);
+            if (evaluations is null)
             {
                 // TODO: Logging
                 return null;
             }
 
-            toggles.ContentHash = Convert.FromBase64String(rawContentHash);
+            var toggles = new FeatureToggles(evaluations, Convert.FromBase64String(rawContentHash));
+
 #pragma warning disable OCT1015
             lastRefreshed = DateTimeOffset.Now;
 #pragma warning restore OCT1015
