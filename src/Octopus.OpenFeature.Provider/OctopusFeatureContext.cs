@@ -12,9 +12,14 @@ public class OctopusFeatureContext(FeatureToggles toggles)
 
         return Evaluate(feature, segment);
     }
+    
+    bool MatchesSegment(string? segment, string[] segments)
+    {
+        return segment != null && segments.Any(s => s.Equals(segment, StringComparison.OrdinalIgnoreCase));
+    }
 
     bool Evaluate(FeatureToggleEvaluation evaluation, string? segment = null)
     {
-        return evaluation.IsEnabled && (segment == null || evaluation.Segments.Any(s => s.Equals(segment, StringComparison.OrdinalIgnoreCase)));
+        return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(segment, evaluation.Segments));
     }
 }
