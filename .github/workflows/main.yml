@@ -80,7 +80,7 @@ jobs:
             })
 
       - name: Login to Octopus Deploy 🐙
-        if: (! contains(github.ref, '/merge')) && (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
+        if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
         uses: OctopusDeploy/login@v1
         with: 
           server: ${{ secrets.OCTOPUS_URL }}
@@ -88,14 +88,14 @@ jobs:
 
       - name: Push to Octopus 🐙
         uses: OctopusDeploy/push-package-action@v3
-        if: (! contains(github.ref, '/merge')) && (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
+        if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
         with:
           packages: |
             ./artifacts/Octopus.OpenFeature.${{ steps.build.outputs.octoversion_fullsemver }}.nupkg
 
       - name: Create Release in Octopus 🐙
         uses: OctopusDeploy/create-release-action@v3
-        if: (! contains(github.ref, '/merge')) && (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
+        if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
         with:
           project: 'OpenFeature Dotnet Provider'
           packages: |
