@@ -9,7 +9,7 @@ public class OctopusFeatureContext(FeatureToggles toggles)
     public bool Evaluate(string slug, EvaluationContext? context)
     {
         var feature =
-            toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.InvariantCultureIgnoreCase));
+            toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
 
         if (feature == null) return false;
 
