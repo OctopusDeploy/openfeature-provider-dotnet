@@ -56,7 +56,7 @@ namespace Octopus.OpenFeature.Provider
                 BaseAddress = configuration.ServerUri
             };
 
-            var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/featuretoggles/v2/{configuration.ClientIdentifier}/check", ct), cancellationToken);
+            var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
             if (hash is null)
             {
                 return true;
