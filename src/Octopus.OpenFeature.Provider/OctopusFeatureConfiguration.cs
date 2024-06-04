@@ -13,10 +13,8 @@ namespace Octopus.OpenFeature.Provider
         
         public Uri ServerUri { get; private set; } 
 
-        // TODO: Validate clientIdentifier in constructor
-
         /// <summary>
-        /// Client identifier is a string in the format {installationId}:{projectId}:{environmentId}:{tenantId?}
+        /// The ClientIdentifier provided by the Octopus variable Octopus.FeatureToggles.ClientIdentifier
         /// </summary>
         public string ClientIdentifier { get; set; } 
         

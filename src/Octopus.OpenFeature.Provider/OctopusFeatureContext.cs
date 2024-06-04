@@ -1,25 +1,35 @@
-﻿namespace Octopus.OpenFeature.Provider;
+﻿using OpenFeature.Model;
+
+namespace Octopus.OpenFeature.Provider;
 
 public class OctopusFeatureContext(FeatureToggles toggles)
 {
     public byte[] ContentHash => toggles.ContentHash;
-    
-    public bool Evaluate(string slug, string? segment)
+
+    public bool Evaluate(string slug, EvaluationContext? context)
     {
-        var feature = toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.InvariantCultureIgnoreCase));
+        var feature =
+            toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.InvariantCultureIgnoreCase));
 
         if (feature == null) return false;
 
-        return Evaluate(feature, segment);
-    }
-    
-    bool MatchesSegment(string? segment, string[] segments)
-    {
-        return segment != null && segments.Any(s => s.Equals(segment, StringComparison.OrdinalIgnoreCase));
+        return Evaluate(feature, context);
     }
 
-    bool Evaluate(FeatureToggleEvaluation evaluation, string? segment = null)
+    bool MatchesSegment(EvaluationContext? context, Dictionary<string, string> segments)
     {
-        return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(segment, evaluation.Segments));
+        if (context == null) return false;
+
+        var contextValues = context.AsDictionary();
+
+        return segments.All(segment =>
+            contextValues.Any(x =>
+                x.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
+                && x.Value.AsString.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
+    {
+        return evaluation.IsEnabled && (evaluation.Segments.Count == 0 || MatchesSegment(context, evaluation.Segments));
     }
 }
