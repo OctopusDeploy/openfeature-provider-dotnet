@@ -400,3 +400,4 @@ src/.idea
 src/.idea
 .idea
 .DS_Store
+*.DotSettings

@@ -1,10 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
 using OpenFeature;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider
 {
-    [SuppressMessage("Octopus", "OCT1003:Methods returning Task must be async.", Justification = "These are not the droids you are looking for")]
     public class OctopusFeatureProvider(OctopusFeatureConfiguration configuration) : FeatureProvider
     {
         readonly OctopusFeatureClient client = new(configuration);
@@ -16,12 +14,8 @@ namespace Octopus.OpenFeature.Provider
 
         public override async Task<ResolutionDetails<bool>> ResolveBooleanValue(string flagKey, bool defaultValue, EvaluationContext? context = null)
         {
-            // TODO: multiple segments
-            string? segment = null;
-            if (context!.ContainsKey("segment")) segment = context.GetValue("segment").AsString;
-
             var evaluator = await client.GetEvaluationContext(configuration.CancellationToken);
-            var isFeatureEnabled = evaluator != null && evaluator.Evaluate(flagKey, segment);
+            var isFeatureEnabled = evaluator != null && evaluator.Evaluate(flagKey, context);
             return new(flagKey, isFeatureEnabled);
         }
 

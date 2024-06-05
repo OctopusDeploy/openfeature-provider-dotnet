@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 namespace Octopus.OpenFeature.Provider
 {
     public record FeatureToggles(FeatureToggleEvaluation[] Evaluations, byte[] ContentHash);
-    public record FeatureToggleEvaluation(string Name, string Slug, bool IsEnabled, string[] Segments);
+    public record FeatureToggleEvaluation(string Name, string Slug, bool IsEnabled, KeyValuePair<string, string>[] Segments);
     
     public class OctopusFeatureClient(OctopusFeatureConfiguration configuration)
     {
@@ -91,7 +91,7 @@ namespace Octopus.OpenFeature.Provider
                 BaseAddress = configuration.ServerUri
             };
 
-            var response = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/{configuration.ClientIdentifier}", ct), cancellationToken);
+            var response = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/v2/{configuration.ClientIdentifier}", ct), cancellationToken);
 
             if (response is null or { StatusCode: HttpStatusCode.NotFound })
             {
