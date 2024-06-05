@@ -59,7 +59,7 @@ public class OctopusFeatureContextTests
     }
     
     [Fact]
-    public void GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForMultipleSpecificSegments_EvaluatesToTrueWhenAllSegmentsAreSpecified()
+    public void GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForMultipleSpecificSegments_EvaluatesCorrectly()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [
