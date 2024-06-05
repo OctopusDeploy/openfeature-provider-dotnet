@@ -22,7 +22,7 @@ public class OctopusFeatureContext(FeatureToggles toggles)
 
         var contextValues = context.AsDictionary();
 
-        return segments.All(segment =>
+        return segments.Any(segment =>
             contextValues.Any(x =>
                 x.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
                 && x.Value.AsString.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));

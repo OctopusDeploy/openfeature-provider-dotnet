@@ -80,6 +80,9 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", context: BuildContext([("license", "trial"), ("region", "us"), ("language", "english")])).Should().BeTrue();
 
         // Subset specified
+        context.Evaluate("testfeature", context: BuildContext([("license", "trial")])).Should().BeTrue();
+        
+        // Invalid specified
         context.Evaluate("testfeature", context: BuildContext([("other", "segment")])).Should().BeFalse();
         
         // None specified
