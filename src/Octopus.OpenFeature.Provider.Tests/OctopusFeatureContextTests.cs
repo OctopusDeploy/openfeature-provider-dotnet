@@ -33,7 +33,7 @@ public class OctopusFeatureContextTests
     public void GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForASpecificSegment_EvaluatesToTrueWhenSegmentIsSpecified()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, new Dictionary<string, string> { { "license", "trial" }})
+            new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles);
@@ -62,11 +62,10 @@ public class OctopusFeatureContextTests
     public void GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForMultipleSpecificSegments_EvaluatesToTrueWhenAllSegmentsAreSpecified()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, new Dictionary<string, string>
-            {
-                { "license", "trial" },
-                { "region", "us" }
-            })
+            new FeatureToggleEvaluation("testfeature", "testfeature", true, [
+                new ("license", "trial"),
+                new ("region", "us" )
+            ])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles);

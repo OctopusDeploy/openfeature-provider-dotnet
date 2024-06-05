@@ -16,7 +16,7 @@ public class OctopusFeatureContext(FeatureToggles toggles)
         return Evaluate(feature, context);
     }
 
-    bool MatchesSegment(EvaluationContext? context, Dictionary<string, string> segments)
+    bool MatchesSegment(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
     {
         if (context == null) return false;
 
@@ -30,6 +30,6 @@ public class OctopusFeatureContext(FeatureToggles toggles)
 
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
     {
-        return evaluation.IsEnabled && (evaluation.Segments.Count == 0 || MatchesSegment(context, evaluation.Segments));
+        return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments));
     }
 }

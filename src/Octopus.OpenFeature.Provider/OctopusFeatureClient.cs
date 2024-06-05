@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 namespace Octopus.OpenFeature.Provider
 {
     public record FeatureToggles(FeatureToggleEvaluation[] Evaluations, byte[] ContentHash);
-    public record FeatureToggleEvaluation(string Name, string Slug, bool IsEnabled, Dictionary<string, string> Segments);
+    public record FeatureToggleEvaluation(string Name, string Slug, bool IsEnabled, KeyValuePair<string, string>[] Segments);
     
     public class OctopusFeatureClient(OctopusFeatureConfiguration configuration)
     {
