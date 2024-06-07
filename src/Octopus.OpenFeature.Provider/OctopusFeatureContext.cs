@@ -25,7 +25,6 @@ public partial class OctopusFeatureContext(FeatureToggles toggles)
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
                 "The slug provided did not match any of your Octopus Feature Toggles. Please double check your slug and try again.");
         }
-            
 
         return new ResolutionDetails<bool>(slug, Evaluate(feature, context));
     }
