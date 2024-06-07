@@ -8,7 +8,7 @@ namespace Octopus.OpenFeature.Provider.Tests;
 public class OctopusFeatureContextTests
 {
     [Fact]
-    public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaulatesToDefaultValue()
+    public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaluatesToDefaultValue()
     {
         var featureToggles = new FeatureToggles([], []);
 
