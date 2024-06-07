@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace Octopus.OpenFeature.Provider
 {
     public class OctopusFeatureConfiguration
@@ -24,5 +27,7 @@ namespace Octopus.OpenFeature.Provider
 
         // TODO: Consumption security
         public string? ApiKey { get; set; }
+        
+        public ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
     }
 }
