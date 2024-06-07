@@ -1,19 +1,33 @@
-﻿using OpenFeature.Model;
+﻿using System.Text.RegularExpressions;
+using OpenFeature.Constant;
+using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider;
 
-public class OctopusFeatureContext(FeatureToggles toggles)
+public partial class OctopusFeatureContext(FeatureToggles toggles)
 {
     public byte[] ContentHash => toggles.ContentHash;
-
-    public bool Evaluate(string slug, EvaluationContext? context)
+    private readonly Regex expression = MyRegex();
+    
+    public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)
     {
+        if (expression.IsMatch(slug) == false)
+        {
+            return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
+                "Flag key provided was not a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.");
+        }
+        
         var feature =
             toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
+        
+        if (feature == null)
+        {
+            return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
+                "The slug provided did not match any of your Octopus Feature Toggles. Please double check your slug and try again.");
+        }
+            
 
-        if (feature == null) return false;
-
-        return Evaluate(feature, context);
+        return new ResolutionDetails<bool>(slug, Evaluate(feature, context));
     }
 
     bool MatchesSegment(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
@@ -32,4 +46,7 @@ public class OctopusFeatureContext(FeatureToggles toggles)
     {
         return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments));
     }
+
+    [GeneratedRegex("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled)]
+    private static partial Regex MyRegex();
 }
