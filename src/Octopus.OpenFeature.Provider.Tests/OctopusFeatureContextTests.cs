@@ -1,5 +1,6 @@
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Logging.Abstractions;
 using OpenFeature.Constant;
 using OpenFeature.Model;
 
@@ -14,7 +15,7 @@ public class OctopusFeatureContextTests
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         var result = context.Evaluate("TestFeature", false, context: null);
 
@@ -28,7 +29,7 @@ public class OctopusFeatureContextTests
             new FeatureToggleEvaluation("testfeature", "testfeature", false, [])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         var result = context.Evaluate("TestFeature", false, context: null);
 
@@ -42,7 +43,7 @@ public class OctopusFeatureContextTests
             new FeatureToggleEvaluation("This is clearly not a slug!", "this-is-clearly-not-a-slug", true, [])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         var result = context.Evaluate("This is clearly not a slug!", defaultValue: true, context: null);
 
@@ -57,7 +58,7 @@ public class OctopusFeatureContextTests
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         var result = context.Evaluate("anotherfeature", defaultValue: true, context: null);
 
@@ -84,7 +85,7 @@ public class OctopusFeatureContextTests
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         using var scope = new AssertionScope();
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should().BeTrue();
@@ -100,7 +101,7 @@ public class OctopusFeatureContextTests
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         using var scope = new AssertionScope();
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should().BeTrue();
@@ -117,7 +118,7 @@ public class OctopusFeatureContextTests
             ])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         using var scope = new AssertionScope();
 

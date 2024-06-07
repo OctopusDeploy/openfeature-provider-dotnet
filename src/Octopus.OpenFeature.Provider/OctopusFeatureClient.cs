@@ -26,8 +26,8 @@ namespace Octopus.OpenFeature.Provider
                         var toggles = await GetFeatureManifest(cancellationToken);
                         currentContext =
                             toggles is not null
-                                ? new OctopusFeatureContext(toggles)
-                                : new OctopusFeatureContext(new FeatureToggles([], []));
+                                ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
+                                : new OctopusFeatureContext(new FeatureToggles([], []), configuration.LoggerFactory);
                     }
                 }
                 finally

@@ -1,18 +1,24 @@
 ﻿using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using OpenFeature.Constant;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider;
 
-public partial class OctopusFeatureContext(FeatureToggles toggles)
+public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => toggles.ContentHash;
     private readonly Regex expression = SlugExpression();
+    private ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
     
     public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)
     {
         if (expression.IsMatch(slug) == false)
         {
+            logger.LogWarning(
+                "Flag key {FlagKey} is not a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.",
+                slug);
+            
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
                 "Flag key provided was not a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.");
         }
@@ -22,6 +28,10 @@ public partial class OctopusFeatureContext(FeatureToggles toggles)
         
         if (feature == null)
         {
+            logger.LogWarning(
+                "The slug {Slug} did not match any of your Octopus Feature Toggles. Please double check your slug and try again.",
+                slug);
+            
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
                 "The slug provided did not match any of your Octopus Feature Toggles. Please double check your slug and try again.");
         }
