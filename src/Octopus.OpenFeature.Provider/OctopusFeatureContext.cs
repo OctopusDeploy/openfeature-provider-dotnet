@@ -7,7 +7,7 @@ namespace Octopus.OpenFeature.Provider;
 public partial class OctopusFeatureContext(FeatureToggles toggles)
 {
     public byte[] ContentHash => toggles.ContentHash;
-    private readonly Regex expression = MyRegex();
+    private readonly Regex expression = SlugExpression();
     
     public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)
     {
@@ -48,5 +48,5 @@ public partial class OctopusFeatureContext(FeatureToggles toggles)
     }
 
     [GeneratedRegex("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
-    private static partial Regex MyRegex();
+    private static partial Regex SlugExpression();
 }
