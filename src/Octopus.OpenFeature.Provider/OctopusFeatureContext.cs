@@ -47,6 +47,6 @@ public partial class OctopusFeatureContext(FeatureToggles toggles)
         return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments));
     }
 
-    [GeneratedRegex("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled)]
+    [GeneratedRegex("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
     private static partial Regex MyRegex();
 }

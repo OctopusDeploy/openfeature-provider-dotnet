@@ -8,13 +8,43 @@ namespace Octopus.OpenFeature.Provider.Tests;
 public class OctopusFeatureContextTests
 {
     [Fact]
-    public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaluatesToDefaultValue()
+    public void GivenASetOfFeatureToggles_EvaluatesToTrue_IfFeatureIsContainedWithinTheSet_AndFeatureIsEnabled()
     {
-        var featureToggles = new FeatureToggles([], []);
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
+        ], []);
 
         var context = new OctopusFeatureContext(featureToggles);
 
-        var result = context.Evaluate("This is clearly not a slug!", true, context: null);
+        var result = context.Evaluate("TestFeature", false, context: null);
+
+        result.Value.Should().BeTrue();
+    }
+    
+    [Fact]
+    public void GivenASetOfFeatureToggles_EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "testfeature", false, [])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles);
+
+        var result = context.Evaluate("TestFeature", false, context: null);
+
+        result.Value.Should().BeFalse();
+    }
+    
+    [Fact]
+    public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaluatesToDefaultValue()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("This is clearly not a slug!", "this-is-clearly-not-a-slug", true, [])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles);
+
+        var result = context.Evaluate("This is clearly not a slug!", defaultValue: true, context: null);
 
         result.ErrorType.Should().Be(ErrorType.FlagNotFound);
         result.Value.Should().BeTrue();
@@ -29,7 +59,7 @@ public class OctopusFeatureContextTests
 
         var context = new OctopusFeatureContext(featureToggles);
 
-        var result = context.Evaluate("anotherfeature", true, context: null);
+        var result = context.Evaluate("anotherfeature", defaultValue: true, context: null);
 
         result.ErrorType.Should().Be(ErrorType.FlagNotFound);
         result.Value.Should().BeTrue();
