@@ -1,4 +1,5 @@
 using OpenFeature;
+using OpenFeature.Constant;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider
@@ -15,8 +16,10 @@ namespace Octopus.OpenFeature.Provider
         public override async Task<ResolutionDetails<bool>> ResolveBooleanValue(string flagKey, bool defaultValue, EvaluationContext? context = null)
         {
             var evaluator = await client.GetEvaluationContext(configuration.CancellationToken);
-            var isFeatureEnabled = evaluator != null && evaluator.Evaluate(flagKey, context);
-            return new(flagKey, isFeatureEnabled);
+            
+            var isFeatureEnabled = evaluator.Evaluate(flagKey, defaultValue, context);
+
+            return isFeatureEnabled;
         }
 
         public override Task<ResolutionDetails<string>> ResolveStringValue(string flagKey, string defaultValue, EvaluationContext? context = null)

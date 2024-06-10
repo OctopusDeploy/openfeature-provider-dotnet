@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Octopus.OpenFeature.Provider
 {
@@ -9,10 +10,11 @@ namespace Octopus.OpenFeature.Provider
     public class OctopusFeatureClient(OctopusFeatureConfiguration configuration)
     {
         DateTimeOffset? lastRefreshed;
-        OctopusFeatureContext? currentContext;
-        readonly SemaphoreSlim cacheSemaphore = new(1, 1);
+        OctopusFeatureContext currentContext = OctopusFeatureContext.Empty(configuration.LoggerFactory);
+        readonly SemaphoreSlim cacheSemaphore = new(1, 1); 
+        ILogger logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureClient>();
 
-        public async Task<OctopusFeatureContext?> GetEvaluationContext(CancellationToken cancellationToken)
+        public async Task<OctopusFeatureContext> GetEvaluationContext(CancellationToken cancellationToken)
         {
             if (await HaveFeaturesChanged(cancellationToken))
             {
@@ -24,8 +26,8 @@ namespace Octopus.OpenFeature.Provider
                         var toggles = await GetFeatureManifest(cancellationToken);
                         currentContext =
                             toggles is not null
-                                ? new OctopusFeatureContext(toggles)
-                                : new OctopusFeatureContext(new FeatureToggles([], []));
+                                ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
+                                : OctopusFeatureContext.Empty(configuration.LoggerFactory);
                     }
                 }
                 finally
@@ -95,21 +97,21 @@ namespace Octopus.OpenFeature.Provider
 
             if (response is null or { StatusCode: HttpStatusCode.NotFound })
             {
-                // TODO: Logging
+                logger.LogWarning("Failed to retrieve feature toggles for client identifier {ClientIdentifier} from {OctoToggleUrl}", configuration.ClientIdentifier, configuration.ServerUri);
                 return null;
             }
             
             var rawContentHash = response.Headers.GetValues("ContentHash").FirstOrDefault();
             if (rawContentHash is null)
             {
-                // TODO: Logging
+                logger.LogWarning("Feature toggle response from {OctoToggleUrl} did not contain expected ContentHash header.", configuration.ServerUri);
                 return null;
             }
 
             var evaluations = await response.Content.ReadFromJsonAsync<FeatureToggleEvaluation[]>(cancellationToken);
             if (evaluations is null)
             {
-                // TODO: Logging
+                logger.LogWarning("Feature toggle response content from {OctoToggleUrl} was empty.", configuration.ServerUri);
                 return null;
             }
 
@@ -121,8 +123,8 @@ namespace Octopus.OpenFeature.Provider
 
             return toggles;
         }
-
-        static async Task<T?> ExecuteWithRetry<T>(Func<CancellationToken, Task<T>> callback, CancellationToken cancellationToken)
+        
+        async Task<T?> ExecuteWithRetry<T>(Func<CancellationToken, Task<T>> callback, CancellationToken cancellationToken)
         {
             var attempts = 0;
             while (attempts < 3)
@@ -131,11 +133,11 @@ namespace Octopus.OpenFeature.Provider
                 {
                     return await callback(cancellationToken);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     attempts++;
                     await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempts)), cancellationToken);
-                    // TODO: Logging
+                    logger.LogError(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}. Retrying (attempt {attempt} out of 3).", configuration.ServerUri, attempts);
                 }
             }
 

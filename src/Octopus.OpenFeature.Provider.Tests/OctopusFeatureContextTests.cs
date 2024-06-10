@@ -1,5 +1,7 @@
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Logging.Abstractions;
+using OpenFeature.Constant;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.Tests;
@@ -7,15 +9,75 @@ namespace Octopus.OpenFeature.Provider.Tests;
 public class OctopusFeatureContextTests
 {
     [Fact]
-    public void GivenASetOfFeatureToggles_EvaluatesToFalseIfFeatureIsNotContainedWithinSet()
+    public void GivenASetOfFeatureToggles_EvaluatesToTrue_IfFeatureIsContainedWithinTheSet_AndFeatureIsEnabled()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var result = context.Evaluate("test-feature", false, context: null);
+
+        result.Value.Should().BeTrue();
+    }
+    
+    [Fact]
+    public void GivenASetOfFeatureToggles_WhenEvaluatedWithCasingDifferences_EvaluationIsInsensitiveToCase()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var result = context.Evaluate("Test-Feature", false, context: null);
+
+        result.Value.Should().BeTrue();
+    }
+    
+    [Fact]
+    public void GivenASetOfFeatureToggles_EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", false, [])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var result = context.Evaluate("test-feature", false, context: null);
+
+        result.Value.Should().BeFalse();
+    }
+    
+    [Fact]
+    public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaluatesToDefaultValue()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("This is clearly not a slug!", "this-is-clearly-not-a-slug", true, [])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var result = context.Evaluate("This is clearly not a slug!", defaultValue: true, context: null);
+
+        result.ErrorType.Should().Be(ErrorType.FlagNotFound);
+        result.Value.Should().BeTrue();
+    }
+    
+    [Fact]
+    public void GivenASetOfFeatureToggles_EvaluatesToDefaultValue_IfFeatureIsNotContainedWithinSet()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
-        
-        context.Evaluate("anotherfeature", context: null).Should().BeFalse();
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var result = context.Evaluate("anotherfeature", defaultValue: true, context: null);
+
+        result.ErrorType.Should().Be(ErrorType.FlagNotFound);
+        result.Value.Should().BeTrue();
     }
 
     EvaluationContext BuildContext(IEnumerable<(string key, string value)> values)
@@ -28,63 +90,70 @@ public class OctopusFeatureContextTests
 
         return builder.Build();
     }
-    
+
     [Fact]
-    public void GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForASpecificSegment_EvaluatesToTrueWhenSegmentIsSpecified()
+    public void
+        GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForASpecificSegment_EvaluatesToTrueWhenSegmentIsSpecified()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         using var scope = new AssertionScope();
-        context.Evaluate("testfeature", context: BuildContext([("license", "trial")])).Should().BeTrue();
-        context.Evaluate("testfeature", context: BuildContext([("other", "segment")])).Should().BeFalse();
-        context.Evaluate("testfeature", context: null).Should().BeFalse();
+        context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should().BeTrue();
+        context.Evaluate("testfeature", false, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
+        context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
     }
-    
+
     [Fact]
-    public void GivenASetOfFeatureToggles_WhenFeatureIsNotToggledOnForSpecificSegments_EvaluatesToTrueRegardlessOfSegmentSpecified()
+    public void
+        GivenASetOfFeatureToggles_WhenFeatureIsNotToggledOnForSpecificSegments_EvaluatesToTrueRegardlessOfSegmentSpecified()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         using var scope = new AssertionScope();
-        context.Evaluate("testfeature", context: BuildContext([("license", "trial")])).Should().BeTrue();
-        context.Evaluate("testfeature", context: null).Should().BeTrue();
+        context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should().BeTrue();
+        context.Evaluate("testfeature", false, context: null).Value.Should().BeTrue();
     }
-    
+
     [Fact]
     public void GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForMultipleSpecificSegments_EvaluatesCorrectly()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [
-                new ("license", "trial"),
-                new ("region", "us" )
+                new("license", "trial"),
+                new("region", "us")
             ])
         ], []);
 
-        var context = new OctopusFeatureContext(featureToggles);
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
         using var scope = new AssertionScope();
-        
+
         // All specified
-        context.Evaluate("testfeature", context: BuildContext([("license", "trial"), ("region", "us")])).Should().BeTrue();
-        
+        context.Evaluate("testfeature", false, context: BuildContext([("license", "trial"), ("region", "us")])).Value
+            .Should().BeTrue();
+
         // Superset specified
-        context.Evaluate("testfeature", context: BuildContext([("license", "trial"), ("region", "us"), ("language", "english")])).Should().BeTrue();
+        context.Evaluate("testfeature", false,
+                context: BuildContext([("license", "trial"), ("region", "us"), ("language", "english")])).Value.Should()
+            .BeTrue();
 
         // Subset specified
-        context.Evaluate("testfeature", context: BuildContext([("license", "trial")])).Should().BeTrue();
-        
+        context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should().BeTrue();
+
         // Invalid specified
-        context.Evaluate("testfeature", context: BuildContext([("other", "segment")])).Should().BeFalse();
-        
+        // Note that the default value is only returned if evaluation fails for an unexpected reason.
+        // In this case, the default value is not returned, as we have a successful, but false, flag evaluation.
+        context.Evaluate("testfeature", true, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
+
         // None specified
-        context.Evaluate("testfeature", context: null).Should().BeFalse();
+        context.Evaluate("testfeature", true, context: null).Value.Should().BeFalse();
     }
 }
