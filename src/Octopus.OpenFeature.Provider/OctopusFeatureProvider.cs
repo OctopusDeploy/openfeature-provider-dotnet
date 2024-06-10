@@ -16,11 +16,6 @@ namespace Octopus.OpenFeature.Provider
         public override async Task<ResolutionDetails<bool>> ResolveBooleanValue(string flagKey, bool defaultValue, EvaluationContext? context = null)
         {
             var evaluator = await client.GetEvaluationContext(configuration.CancellationToken);
-            if (evaluator == null)
-            {
-                return new ResolutionDetails<bool>(flagKey, defaultValue, ErrorType.ProviderNotReady,
-                    "Failed to retrieve feature toggles from Octopus Features.");
-            }
             
             var isFeatureEnabled = evaluator.Evaluate(flagKey, defaultValue, context);
 

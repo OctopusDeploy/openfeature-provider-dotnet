@@ -10,11 +10,11 @@ namespace Octopus.OpenFeature.Provider
     public class OctopusFeatureClient(OctopusFeatureConfiguration configuration)
     {
         DateTimeOffset? lastRefreshed;
-        OctopusFeatureContext? currentContext;
+        OctopusFeatureContext currentContext = OctopusFeatureContext.Empty(configuration.LoggerFactory);
         readonly SemaphoreSlim cacheSemaphore = new(1, 1); 
         ILogger logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureClient>();
 
-        public async Task<OctopusFeatureContext?> GetEvaluationContext(CancellationToken cancellationToken)
+        public async Task<OctopusFeatureContext> GetEvaluationContext(CancellationToken cancellationToken)
         {
             if (await HaveFeaturesChanged(cancellationToken))
             {
@@ -27,7 +27,7 @@ namespace Octopus.OpenFeature.Provider
                         currentContext =
                             toggles is not null
                                 ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
-                                : new OctopusFeatureContext(new FeatureToggles([], []), configuration.LoggerFactory);
+                                : OctopusFeatureContext.Empty(configuration.LoggerFactory);
                     }
                 }
                 finally

@@ -12,12 +12,26 @@ public class OctopusFeatureContextTests
     public void GivenASetOfFeatureToggles_EvaluatesToTrue_IfFeatureIsContainedWithinTheSet_AndFeatureIsEnabled()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
+            new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        var result = context.Evaluate("TestFeature", false, context: null);
+        var result = context.Evaluate("test-feature", false, context: null);
+
+        result.Value.Should().BeTrue();
+    }
+    
+    [Fact]
+    public void GivenASetOfFeatureToggles_WhenEvaluatedWithCasingDifferences_EvaluationIsInsensitiveToCase()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var result = context.Evaluate("Test-Feature", false, context: null);
 
         result.Value.Should().BeTrue();
     }
@@ -26,12 +40,12 @@ public class OctopusFeatureContextTests
     public void GivenASetOfFeatureToggles_EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", false, [])
+            new FeatureToggleEvaluation("testfeature", "test-feature", false, [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        var result = context.Evaluate("TestFeature", false, context: null);
+        var result = context.Evaluate("test-feature", false, context: null);
 
         result.Value.Should().BeFalse();
     }
@@ -135,6 +149,8 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should().BeTrue();
 
         // Invalid specified
+        // Note that the default value is only returned if evaluation fails for an unexpected reason.
+        // In this case, the default value is not returned, as we have a successful, but false, flag evaluation.
         context.Evaluate("testfeature", true, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
 
         // None specified

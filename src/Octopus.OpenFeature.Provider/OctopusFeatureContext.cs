@@ -10,13 +10,18 @@ public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactor
     public byte[] ContentHash => toggles.ContentHash;
     private readonly Regex expression = SlugExpression();
     private ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
+
+    public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
+    {
+        return new OctopusFeatureContext(new FeatureToggles([], []), loggerFactory);
+    }
     
     public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)
     {
         if (expression.IsMatch(slug) == false)
         {
             logger.LogWarning(
-                "Flag key {FlagKey} is not a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.",
+                "Flag key {FlagKey} does not appear to be a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.",
                 slug);
             
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
