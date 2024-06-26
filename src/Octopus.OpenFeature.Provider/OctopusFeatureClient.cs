@@ -47,7 +47,7 @@ namespace Octopus.OpenFeature.Provider
             }
             
 #pragma warning disable OCT1015
-            if (DateTime.Now < lastRefreshed + configuration.CacheDuration)
+            if (DateTime.Now < lastRefreshed + configuration.CacheRefreshInterval)
 #pragma warning restore OCT1015
             {
                 return false;
@@ -59,9 +59,13 @@ namespace Octopus.OpenFeature.Provider
             };
 
             var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
-            if (hash is null)
+            switch (hash)
             {
-                return true;
+                // If we cannot reach OctoToggle to retrieve the hash, retain the current cache until expiry
+                case null when DateTime.Now < lastRefreshed + configuration.CacheExpiry:
+                    return false;
+                case null:
+                    return true;
             }
 
             var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(currentContext.ContentHash);

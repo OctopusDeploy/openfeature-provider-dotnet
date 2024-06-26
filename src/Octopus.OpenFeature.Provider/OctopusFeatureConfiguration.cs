@@ -21,7 +21,18 @@ namespace Octopus.OpenFeature.Provider
         /// </summary>
         public string ClientIdentifier { get; set; } 
         
-        public TimeSpan CacheDuration { get; set; } = TimeSpan.FromMinutes(1);
+        /// <summary>
+        /// The amount of time between checks to see if new feature toggles are available
+        /// The cache will be refreshed if new feature toggles are available
+        /// </summary>
+        public TimeSpan CacheRefreshInterval { get; set; } = TimeSpan.FromMinutes(1);
+        
+        /// <summary>
+        /// The amount of time feature toggle cache will be considered valid
+        /// If feature toggles cannot be retrieved for any reason, the cached set will continue to be used up to this
+        /// amount of time.
+        /// </summary>
+        public TimeSpan CacheExpiry { get; set; } = TimeSpan.FromHours(24);
         
         public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
 
