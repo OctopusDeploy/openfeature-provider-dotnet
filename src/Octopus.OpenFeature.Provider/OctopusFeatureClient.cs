@@ -47,7 +47,7 @@ namespace Octopus.OpenFeature.Provider
             }
             
 #pragma warning disable OCT1015
-            if (DateTime.Now < lastRefreshed + configuration.CacheRefreshInterval)
+            if (DateTime.Now < lastRefreshed + configuration.CacheDuration)
 #pragma warning restore OCT1015
             {
                 return false;
