@@ -27,13 +27,6 @@ namespace Octopus.OpenFeature.Provider
         /// </summary>
         public TimeSpan CacheRefreshInterval { get; set; } = TimeSpan.FromMinutes(1);
         
-        /// <summary>
-        /// The amount of time feature toggle cache will be considered valid
-        /// If feature toggles cannot be retrieved for any reason, the cached set will continue to be used up to this
-        /// amount of time.
-        /// </summary>
-        public TimeSpan CacheExpiry { get; set; } = TimeSpan.FromHours(24);
-        
         public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
 
         // TODO: Consumption security

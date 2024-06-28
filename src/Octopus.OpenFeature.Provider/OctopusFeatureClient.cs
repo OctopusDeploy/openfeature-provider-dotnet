@@ -59,13 +59,10 @@ namespace Octopus.OpenFeature.Provider
             };
 
             var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
-            switch (hash)
+            if (hash is null)
             {
-                // If we cannot reach OctoToggle to retrieve the hash, retain the current cache until expiry
-                case null when DateTime.Now < lastRefreshed + configuration.CacheExpiry:
-                    return false;
-                case null:
-                    return true;
+                logger.LogWarning("Failed to retrieve feature toggles after 3 retries. Previously retrieved feature toggle values will continue to be used.");
+                return false;
             }
 
             var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(currentContext.ContentHash);
@@ -141,7 +138,7 @@ namespace Octopus.OpenFeature.Provider
                 {
                     attempts++;
                     await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempts)), cancellationToken);
-                    logger.LogError(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}. Retrying (attempt {attempt} out of 3).", configuration.ServerUri, attempts);
+                    logger.LogWarning(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}. Retrying (attempt {attempt} out of 3).", configuration.ServerUri, attempts);
                 }
             }
 
