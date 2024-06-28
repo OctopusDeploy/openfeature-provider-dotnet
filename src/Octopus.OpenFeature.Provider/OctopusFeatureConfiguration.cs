@@ -21,6 +21,10 @@ namespace Octopus.OpenFeature.Provider
         /// </summary>
         public string ClientIdentifier { get; set; } 
         
+        /// <summary>
+        /// The amount of time between checks to see if new feature toggles are available
+        /// The cache will be refreshed if new feature toggles are available
+        /// </summary>
         public TimeSpan CacheDuration { get; set; } = TimeSpan.FromMinutes(1);
         
         public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
