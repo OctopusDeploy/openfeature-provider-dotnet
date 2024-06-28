@@ -138,7 +138,7 @@ namespace Octopus.OpenFeature.Provider
                 {
                     attempts++;
                     await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempts)), cancellationToken);
-                    logger.LogWarning(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}. Retrying (attempt {attempt} out of 3).", configuration.ServerUri, attempts);
+                    logger.LogTrace(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}. Retrying (attempt {attempt} out of 3).", configuration.ServerUri, attempts);
                 }
             }
 
