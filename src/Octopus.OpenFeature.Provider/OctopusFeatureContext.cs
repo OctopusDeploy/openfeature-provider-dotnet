@@ -53,7 +53,7 @@ public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactor
         return segments.Any(segment =>
             contextValues.Any(x =>
                 x.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
-                && x.Value.AsString.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
+                && x.Value.AsString is { } value && value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
     }
 
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)

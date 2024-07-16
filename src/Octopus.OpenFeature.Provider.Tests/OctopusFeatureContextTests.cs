@@ -156,4 +156,20 @@ public class OctopusFeatureContextTests
         // None specified
         context.Evaluate("testfeature", true, context: null).Value.Should().BeFalse();
     }
+    
+    [Fact]
+    public void
+        GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForASpecificSegment_ToleratesNullValuesInContext()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        using var scope = new AssertionScope();
+        context.Evaluate("testfeature", false, context: BuildContext([("license", null)!])).Value.Should().BeFalse();
+        context.Evaluate("testfeature", false, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
+        context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
+    }
 }
