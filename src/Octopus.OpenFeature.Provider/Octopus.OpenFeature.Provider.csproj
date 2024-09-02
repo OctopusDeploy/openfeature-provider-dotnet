@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="OpenFeature" Version="1.5.1" />
+        <PackageReference Include="OpenFeature" Version="2.0.0" />
     </ItemGroup>
 
 </Project>
