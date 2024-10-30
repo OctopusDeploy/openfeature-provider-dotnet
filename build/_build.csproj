@@ -13,10 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Nuke.Common" Version="8.1.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageDownload Include="Octopus.OctoVersion.Tool" Version="[1.0.1]" />    
+    <PackageReference Include="Octopus.OctoVersion.Tool" Version="1.0.1" ExcludeAssets="all" />
   </ItemGroup>
 
 </Project>
