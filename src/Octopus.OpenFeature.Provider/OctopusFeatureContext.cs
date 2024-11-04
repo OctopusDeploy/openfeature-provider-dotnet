@@ -1,4 +1,6 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using OpenFeature.Constant;
 using OpenFeature.Model;
@@ -44,6 +46,7 @@ public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactor
         return new ResolutionDetails<bool>(slug, Evaluate(feature, context));
     }
 
+    [Obsolete("Segements will only be published as hashes in the future. At some point we will be able to remove this method.")]
     bool MatchesSegment(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
     {
         if (context == null) return false;
@@ -56,9 +59,30 @@ public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactor
                 && x.Value.AsString is { } value && value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
     }
 
+    string GetHashedValue(string input) => Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(input)));
+    
+    bool MatchesSegmentHashes(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
+    {
+        if (context == null) return false;
+
+        var contextValues = context.AsDictionary();
+
+        var hashedValues = contextValues.Select(x =>
+            new KeyValuePair<string, string>(
+                x.Key, 
+                x.Value.AsString is { } value ? GetHashedValue(value) : string.Empty
+                )
+        );
+
+        return segments.Any(segment =>
+            hashedValues.Any(x =>
+                x.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
+                && x.Value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
+    }
+
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
     {
-        return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments));
+        return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments) || MatchesSegmentHashes(context, evaluation.Segments));
     }
 
     [GeneratedRegex("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase)]

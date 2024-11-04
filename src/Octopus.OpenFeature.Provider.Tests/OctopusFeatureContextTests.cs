@@ -172,4 +172,20 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
         context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
     }
+    
+    [Fact]
+    public void
+        GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForASpecificSegment_AndSegmentsAreProvidedAsHashes_EvaluatesToTrueWhenSegmentIsSpecified()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "eYkemAdH/70h5pApc5Tv52T6Vtfjd1D4AIefuy00Vxo=")])
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        using var scope = new AssertionScope();
+        context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should().BeTrue();
+        context.Evaluate("testfeature", false, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
+        context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
+    }
 }
