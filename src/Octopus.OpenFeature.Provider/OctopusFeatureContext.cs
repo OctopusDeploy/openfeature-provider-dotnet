@@ -17,7 +17,7 @@ public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactor
     {
         return new OctopusFeatureContext(new FeatureToggles([], []), loggerFactory);
     }
-    
+
     public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)
     {
         if (expression.IsMatch(slug) == false)
@@ -25,20 +25,20 @@ public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactor
             logger.LogWarning(
                 "Flag key {FlagKey} does not appear to be a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.",
                 slug);
-            
+
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
                 "Flag key provided was not a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.");
         }
-        
+
         var feature =
             toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
-        
+
         if (feature == null)
         {
             logger.LogWarning(
                 "The slug {Slug} did not match any of your Octopus Feature Toggles. Please double check your slug and try again.",
                 slug);
-            
+
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
                 "The slug provided did not match any of your Octopus Feature Toggles. Please double check your slug and try again.");
         }
@@ -46,43 +46,32 @@ public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactor
         return new ResolutionDetails<bool>(slug, Evaluate(feature, context));
     }
 
-    [Obsolete("Segements will only be published as hashes in the future. At some point we will be able to remove this method.")]
+    string GetHashedValue(string input) => Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(input)));
+
     bool MatchesSegment(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
     {
         if (context == null) return false;
 
-        var contextValues = context.AsDictionary();
-
-        return segments.Any(segment =>
-            contextValues.Any(x =>
-                x.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
-                && x.Value.AsString is { } value && value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
-    }
-
-    string GetHashedValue(string input) => Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(input)));
-    
-    bool MatchesSegmentHashes(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
-    {
-        if (context == null) return false;
-
-        var contextValues = context.AsDictionary();
-
-        var hashedValues = contextValues.Select(x =>
-            new KeyValuePair<string, string>(
-                x.Key, 
-                x.Value.AsString is { } value ? GetHashedValue(value) : string.Empty
-                )
+        var hashedValues = context.AsDictionary().Select(x =>
+            (
+                x.Key,
+                Value: x.Value.AsString ?? string.Empty,
+                HashedValue: x.Value.AsString is { } value ? GetHashedValue(value) : string.Empty
+            )
         );
 
         return segments.Any(segment =>
             hashedValues.Any(x =>
                 x.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
-                && x.Value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
+                && (x.Value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase) ||
+                    x.HashedValue.Equals(segment.Value, StringComparison.OrdinalIgnoreCase))
+            )
+        );
     }
 
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
     {
-        return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments) || MatchesSegmentHashes(context, evaluation.Segments));
+        return evaluation.IsEnabled && (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments));
     }
 
     [GeneratedRegex("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
