@@ -57,8 +57,10 @@ namespace Octopus.OpenFeature.Provider
             {
                 BaseAddress = configuration.ServerUri
             };
-
-            var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
+            
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
+            
+            var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>("api/featuretoggles/check/v3/", ct), cancellationToken);
             if (hash is null)
             {
                 logger.LogWarning("Failed to retrieve feature toggles after 3 retries. Previously retrieved feature toggle values will continue to be used.");
@@ -93,8 +95,10 @@ namespace Octopus.OpenFeature.Provider
             {
                 BaseAddress = configuration.ServerUri
             };
-
-            var response = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/v2/{configuration.ClientIdentifier}", ct), cancellationToken);
+            
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
+            
+            var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
 
             if (response is null or { StatusCode: HttpStatusCode.NotFound })
             {
