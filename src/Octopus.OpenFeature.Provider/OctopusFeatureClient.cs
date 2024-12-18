@@ -57,10 +57,22 @@ namespace Octopus.OpenFeature.Provider
             {
                 BaseAddress = configuration.ServerUri
             };
+
+            // WARNING: v2 and v3 check endpoints have identical response contracts.
+            // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
+            // This code will need to update accordingly
+            FeatureCheck? hash;
+            if (configuration.IsV3ClientIdentifierSupplied())
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
             
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
+                hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>("api/featuretoggles/check/v3/", ct), cancellationToken);
+            }
+            else
+            {
+                hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
+            }
             
-            var hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>("api/featuretoggles/check/v3/", ct), cancellationToken);
             if (hash is null)
             {
                 logger.LogWarning("Failed to retrieve feature toggles after 3 retries. Previously retrieved feature toggle values will continue to be used.");
@@ -83,7 +95,7 @@ namespace Octopus.OpenFeature.Provider
         record FeatureCheck(byte[] ContentHash);
 
         /// <summary>
-        /// Retrieves the feature manifest from OctoToggle for a given installation and project.
+        /// Retrieves the evaluated feature set from OctoToggle for a given installation and project.
         /// This method will return null if:
         /// - Toggles are not found for the installation and id
         /// - We don't receive a ContentHash header
@@ -95,11 +107,19 @@ namespace Octopus.OpenFeature.Provider
             {
                 BaseAddress = configuration.ServerUri
             };
-            
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
-            
-            var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
 
+            HttpResponseMessage? response;
+            if (configuration.IsV3ClientIdentifierSupplied())
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
+            
+                response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
+            }
+            else
+            {
+                response = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/v2/{configuration.ClientIdentifier}", ct), cancellationToken);
+            }
+           
             if (response is null or { StatusCode: HttpStatusCode.NotFound })
             {
                 logger.LogWarning("Failed to retrieve feature toggles for client identifier {ClientIdentifier} from {OctoToggleUrl}", configuration.ClientIdentifier, configuration.ServerUri);
@@ -113,6 +133,9 @@ namespace Octopus.OpenFeature.Provider
                 return null;
             }
 
+            // WARNING: v2 and v3 endpoints have identical response contracts.
+            // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
+            // This code will need to update accordingly
             var evaluations = await response.Content.ReadFromJsonAsync<FeatureToggleEvaluation[]>(cancellationToken);
             if (evaluations is null)
             {

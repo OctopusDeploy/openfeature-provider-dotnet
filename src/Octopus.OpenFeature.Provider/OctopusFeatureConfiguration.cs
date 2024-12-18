@@ -33,5 +33,11 @@ namespace Octopus.OpenFeature.Provider
         public string? ApiKey { get; set; }
         
         public ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
+
+        public bool IsV3ClientIdentifierSupplied()
+        {
+            var tokenSegments = ClientIdentifier.Split(".");
+            return tokenSegments.Length == 3;
+        }
     }
 }
