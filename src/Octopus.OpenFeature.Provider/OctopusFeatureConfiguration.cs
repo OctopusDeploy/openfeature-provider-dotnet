@@ -28,10 +28,14 @@ namespace Octopus.OpenFeature.Provider
         public TimeSpan CacheDuration { get; set; } = TimeSpan.FromMinutes(1);
         
         public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
-
-        // TODO: Consumption security
-        public string? ApiKey { get; set; }
         
         public ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
+
+        public bool IsV3ClientIdentifierSupplied()
+        {
+            // A very basic test to see if we have a JWT-formatted client identifier
+            var tokenSegments = ClientIdentifier.Split(".");
+            return tokenSegments.Length == 3;
+        }
     }
 }
