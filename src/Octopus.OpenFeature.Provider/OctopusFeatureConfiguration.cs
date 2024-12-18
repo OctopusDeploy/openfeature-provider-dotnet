@@ -36,6 +36,7 @@ namespace Octopus.OpenFeature.Provider
 
         public bool IsV3ClientIdentifierSupplied()
         {
+            // A very basic test to see if we have a JWT-formatted client identifier
             var tokenSegments = ClientIdentifier.Split(".");
             return tokenSegments.Length == 3;
         }
