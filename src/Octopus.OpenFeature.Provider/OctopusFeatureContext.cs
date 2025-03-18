@@ -5,7 +5,7 @@ using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider;
 
-public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
+partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => toggles.ContentHash;
     readonly Regex expression = SlugExpression();
