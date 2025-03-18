@@ -1,6 +1,8 @@
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 
 namespace Octopus.OpenFeature.Provider.Tests;
 
@@ -15,7 +17,7 @@ public class OctopusFeatureContextProviderTests
     {
         FeatureToggles? featureToggles = featureToggles;
 
-        public Task<bool> HaveFeaturesChanged(OctopusFeatureContext? currentContext, CancellationToken cancellationToken)
+        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
         }
@@ -63,7 +65,7 @@ public class OctopusFeatureContextProviderTests
     }
 
     [Fact]
-    public async Task WhenInitialized_RefreshesCacheOnceCacheDurationExpires()
+    public async Task WhenInitialized_RefreshesCacheAfterCacheDurationExpires()
     {
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
         
@@ -93,5 +95,35 @@ public class OctopusFeatureContextProviderTests
         context = provider.GetEvaluationContext();
         context.ContentHash.Should().BeEquivalentTo(new byte[] { 0x01, 0x02, 0x03, 0x05 });
         context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
+    }
+    
+    class AlwaysFailsFeatureClient : IOctopusFeatureClient
+    {
+        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
+
+        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+        {
+            throw new Exception("Oops!");
+        }
+    }
+    
+    [Fact]
+    public async Task WhenFeatureEvaluationRetrievalFails_LogsError()
+    {
+        var client = new AlwaysFailsFeatureClient();
+        var logger = new FakeLogger();
+        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
+        
+        await provider.Initialize();
+
+        using var scope = new AssertionScope();
+        provider.GetEvaluationContext().ContentHash.Length.Should().Be(0);
+        logger.LatestRecord.Level.Should().Be(LogLevel.Error);
+        logger.LatestRecord.Message.Should().StartWith("Failed to retrieve feature manifest");
+
+        await provider.Shutdown();
     }
 }

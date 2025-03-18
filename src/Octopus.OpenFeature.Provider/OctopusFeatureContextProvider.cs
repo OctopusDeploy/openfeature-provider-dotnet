@@ -2,6 +2,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Octopus.OpenFeature.Provider
 {
+    /// <summary>
+    /// Establishes and maintains a cache of evaluated feature toggles to be used by the feature provider.
+    /// </summary>
     internal class OctopusFeatureContextProvider(
         OctopusFeatureConfiguration configuration,
         IOctopusFeatureClient client,
@@ -13,7 +16,7 @@ namespace Octopus.OpenFeature.Provider
         Task? evaluationContextRefreshTask;
         bool initialized;
         int retryAttempt;
-        readonly TimeSpan delay = TimeSpan.FromSeconds(5);
+        readonly TimeSpan retryDelay = TimeSpan.FromSeconds(5);
 
         public OctopusFeatureContext GetEvaluationContext()
         {
@@ -26,8 +29,21 @@ namespace Octopus.OpenFeature.Provider
             {
                 return;
             }
+
+            try
+            {
+                var toggles = await client.GetFeatureToggleEvaluationManifest(cancellationTokenSource.Token);
+                currentContext =
+                    toggles is not null
+                        ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
+                        : OctopusFeatureContext.Empty(configuration.LoggerFactory);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Failed to retrieve feature manifest during initialization. Falling back to empty context, defaults will be used during evaluation.");
+                currentContext = OctopusFeatureContext.Empty(configuration.LoggerFactory);
+            }
                 
-            await BuildAndCacheEvaluationContext(cancellationTokenSource.Token);
             evaluationContextRefreshTask = RefreshEvaluationContext(cancellationTokenSource.Token);
             initialized = true;
         }
@@ -40,17 +56,24 @@ namespace Octopus.OpenFeature.Provider
         /// </summary>
         async Task RefreshEvaluationContext(CancellationToken cancellationToken)
         {
+            var delay = configuration.CacheDuration;
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    if (await client.HaveFeaturesChanged(currentContext, cancellationToken))
+                    await Task.Delay(delay, cancellationToken);
+
+                    if (await client.HaveFeaturesChanged(currentContext.ContentHash, cancellationToken))
                     {
-                        await BuildAndCacheEvaluationContext(cancellationToken);
+                        var toggles = await client.GetFeatureToggleEvaluationManifest(cancellationToken);
+                        currentContext =
+                            toggles is not null
+                                ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
+                                : OctopusFeatureContext.Empty(configuration.LoggerFactory);
                     }
 
+                    delay = configuration.CacheDuration;
                     retryAttempt = 0;
-                    await Task.Delay(configuration.CacheDuration, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -59,19 +82,10 @@ namespace Octopus.OpenFeature.Provider
                 catch (Exception e)
                 {
                     logger.LogError(e, "{FailedMessage}, attempt {RetryAttempt}. Trying again after {Delay}...", "Failed to retrieve feature manifest", retryAttempt, delay);
-                    await Task.Delay(delay, cancellationToken);
+                    delay = retryDelay;
                     retryAttempt++;
                 }
             }
-        }
-            
-        async Task BuildAndCacheEvaluationContext(CancellationToken cancellationToken)
-        {
-            var toggles = await client.GetFeatureToggleEvaluationManifest(cancellationToken);
-            currentContext =
-                toggles is not null
-                    ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
-                    : OctopusFeatureContext.Empty(configuration.LoggerFactory);
         }
             
         public async ValueTask Shutdown()

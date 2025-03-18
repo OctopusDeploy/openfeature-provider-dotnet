@@ -9,23 +9,18 @@ namespace Octopus.OpenFeature.Provider
 
     interface IOctopusFeatureClient
     {
-        Task<bool> HaveFeaturesChanged(OctopusFeatureContext? currentContext, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Retrieves the evaluated feature set from OctoToggle for a given installation and project.
-        /// This method will return null if:
-        /// - Toggles are not found for the installation and id
-        /// - We don't receive a ContentHash header
-        /// - We cannot deserialize the content response into a OctoToggleFeatureManifest
-        /// </summary>
+        Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken);
         Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken);
     }
 
+    /// <summary>
+    /// Responsible for retrieving feature toggles from OctoToggle and determining if they have changed.
+    /// </summary>
     class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger logger) : IOctopusFeatureClient
     {
-        public async Task<bool> HaveFeaturesChanged(OctopusFeatureContext? currentContext, CancellationToken cancellationToken)
+        public async Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
         {
-            if (currentContext is null || currentContext.ContentHash.Length == 0)
+            if (contentHash.Length == 0)
             {
                 return true;
             }
@@ -56,7 +51,7 @@ namespace Octopus.OpenFeature.Provider
                 return false;
             }
 
-            var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(currentContext.ContentHash);
+            var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(contentHash);
 
             return haveFeaturesChanged;
         }
