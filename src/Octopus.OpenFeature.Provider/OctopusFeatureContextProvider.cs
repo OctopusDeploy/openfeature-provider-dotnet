@@ -49,10 +49,9 @@ class OctopusFeatureContextProvider(
     }
 
     /// <summary>
-    /// Unlike the check and get feature manifest methods, this method will retry forever on failures,
-    /// until a shutdown event triggers the cancellation token.
-    /// We never want to cease trying to refresh the evaluation context if we think we have to, as if we do,
-    /// the state will be left stale whilst the consumer continues to make use it.
+    /// This method will retry forever on failures, until a shutdown event triggers the cancellation token.
+    /// We never want to cease trying to refresh the evaluation context while the provider is still alive,
+    /// otherwise the state will be left stale whilst the consumer continues to make use it.
     /// </summary>
     async Task RefreshEvaluationContext(CancellationToken cancellationToken)
     {
