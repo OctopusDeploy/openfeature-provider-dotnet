@@ -8,8 +8,8 @@ namespace Octopus.OpenFeature.Provider;
 public partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => toggles.ContentHash;
-    private readonly Regex expression = SlugExpression();
-    private ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
+    readonly Regex expression = SlugExpression();
+    readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
 
     public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
     {

@@ -1,21 +1,43 @@
 using OpenFeature;
 using OpenFeature.Model;
+using Microsoft.Extensions.Logging;
 
 namespace Octopus.OpenFeature.Provider
 {
-    public class OctopusFeatureProvider(OctopusFeatureConfiguration configuration) : FeatureProvider
+    public class OctopusFeatureProvider : FeatureProvider
     {
-        readonly OctopusFeatureClient client = new(configuration);
+        readonly OctopusFeatureContextProvider contextProvider;
+
+        public OctopusFeatureProvider(OctopusFeatureConfiguration configuration)
+        {
+            var logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureProvider>();
+            var client = new OctopusFeatureClient(configuration, logger);
+            contextProvider = new OctopusFeatureContextProvider(configuration, client, logger);
+        }
 
         public override Metadata GetMetadata()
         {
             return new Metadata("octopus-feature");
         }
 
+        public override async Task InitializeAsync(EvaluationContext context, CancellationToken cancellationToken = new())
+        {
+            await base.InitializeAsync(context, cancellationToken);
+            await contextProvider.Initialize();
+        }
+
+        public override async Task ShutdownAsync(CancellationToken cancellationToken = new())
+        {
+            await base.ShutdownAsync(cancellationToken);
+            await contextProvider.Shutdown();
+        }
+        
         public override async Task<ResolutionDetails<bool>> ResolveBooleanValueAsync(string flagKey, bool defaultValue, EvaluationContext? context = null,
             CancellationToken cancellationToken = default)
         {
-            var evaluator = await client.GetEvaluationContext(configuration.CancellationToken);
+            await Task.CompletedTask;
+            
+            var evaluator = contextProvider.GetEvaluationContext();
             
             var isFeatureEnabled = evaluator.Evaluate(flagKey, defaultValue, context);
 

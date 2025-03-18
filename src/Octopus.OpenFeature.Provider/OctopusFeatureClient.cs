@@ -6,51 +6,28 @@ namespace Octopus.OpenFeature.Provider
 {
     public record FeatureToggles(FeatureToggleEvaluation[] Evaluations, byte[] ContentHash);
     public record FeatureToggleEvaluation(string Name, string Slug, bool IsEnabled, KeyValuePair<string, string>[] Segments);
-    
-    public class OctopusFeatureClient(OctopusFeatureConfiguration configuration)
+
+    interface IOctopusFeatureClient
     {
-        DateTimeOffset? lastRefreshed;
-        OctopusFeatureContext currentContext = OctopusFeatureContext.Empty(configuration.LoggerFactory);
-        readonly SemaphoreSlim cacheSemaphore = new(1, 1); 
-        ILogger logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureClient>();
+        Task<bool> HaveFeaturesChanged(OctopusFeatureContext? currentContext, CancellationToken cancellationToken);
 
-        public async Task<OctopusFeatureContext> GetEvaluationContext(CancellationToken cancellationToken)
-        {
-            if (await HaveFeaturesChanged(cancellationToken))
-            {
-                await cacheSemaphore.WaitAsync(cancellationToken);
-                try
-                {
-                    if (await HaveFeaturesChanged(cancellationToken))
-                    {
-                        var toggles = await GetFeatureManifest(cancellationToken);
-                        currentContext =
-                            toggles is not null
-                                ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
-                                : OctopusFeatureContext.Empty(configuration.LoggerFactory);
-                    }
-                }
-                finally
-                {
-                    cacheSemaphore.Release();
-                }
-            }
+        /// <summary>
+        /// Retrieves the evaluated feature set from OctoToggle for a given installation and project.
+        /// This method will return null if:
+        /// - Toggles are not found for the installation and id
+        /// - We don't receive a ContentHash header
+        /// - We cannot deserialize the content response into a OctoToggleFeatureManifest
+        /// </summary>
+        Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken);
+    }
 
-            return currentContext;
-        }
-
-        async Task<bool> HaveFeaturesChanged(CancellationToken cancellationToken)
+    class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger logger) : IOctopusFeatureClient
+    {
+        public async Task<bool> HaveFeaturesChanged(OctopusFeatureContext? currentContext, CancellationToken cancellationToken)
         {
             if (currentContext is null || currentContext.ContentHash.Length == 0)
             {
                 return true;
-            }
-            
-#pragma warning disable OCT1015
-            if (DateTime.Now < lastRefreshed + configuration.CacheDuration)
-#pragma warning restore OCT1015
-            {
-                return false;
             }
 
             var client = new HttpClient
@@ -81,14 +58,6 @@ namespace Octopus.OpenFeature.Provider
 
             var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(currentContext.ContentHash);
 
-            // Extend the cache duration if the features have not changed
-            if (!haveFeaturesChanged)
-            {
-#pragma warning disable OCT1015
-                lastRefreshed = DateTimeOffset.Now;
-#pragma warning restore OCT1015
-            }
-
             return haveFeaturesChanged;
         }
 
@@ -101,7 +70,7 @@ namespace Octopus.OpenFeature.Provider
         /// - We don't receive a ContentHash header
         /// - We cannot deserialize the content response into a OctoToggleFeatureManifest
         /// </summary>
-        async Task<FeatureToggles?> GetFeatureManifest(CancellationToken cancellationToken)
+        public async Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
         {
             var client = new HttpClient
             {
@@ -144,10 +113,6 @@ namespace Octopus.OpenFeature.Provider
             }
 
             var toggles = new FeatureToggles(evaluations, Convert.FromBase64String(rawContentHash));
-
-#pragma warning disable OCT1015
-            lastRefreshed = DateTimeOffset.Now;
-#pragma warning restore OCT1015
 
             return toggles;
         }
