@@ -2,14 +2,22 @@
 using Microsoft.Extensions.Logging;
 using OpenFeature.Constant;
 using OpenFeature.Model;
+using Semver;
 
 namespace Octopus.OpenFeature.Provider;
+
+
 
 partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => toggles.ContentHash;
     readonly Regex expression = SlugExpression();
     readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
+    readonly ISegmentEvaluator[] segmentEvaluators =
+    {
+        new SemanticVersionSegmentEvaluator(),
+        new DefaultSegmentEvaluator()
+    };
 
     public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
     {
@@ -43,6 +51,13 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
 
         return new ResolutionDetails<bool>(slug, Evaluate(feature, context));
     }
+    
+    bool EvaluateSegment(string segmentValue, string contextValue)
+    {
+        var evaluator = segmentEvaluators.First(x => x.CanEvaluate(segmentValue, contextValue));
+        
+        return evaluator.Evaluate(segmentValue, contextValue);
+    }
 
     bool MatchesSegment(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
     {
@@ -54,7 +69,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
             contextValues.Any(x =>
                 x.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
                 && x.Value.AsString is { } value &&
-                value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
+                EvaluateSegment(segment.Value, value)));
     }
 
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
