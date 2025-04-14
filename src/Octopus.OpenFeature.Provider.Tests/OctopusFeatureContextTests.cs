@@ -9,7 +9,7 @@ namespace Octopus.OpenFeature.Provider.Tests;
 public class OctopusFeatureContextTests
 {
     [Fact]
-    public void GivenASetOfFeatureToggles_EvaluatesToTrue_IfFeatureIsContainedWithinTheSet_AndFeatureIsEnabled()
+    public void EvaluatesToTrue_IfFeatureIsContainedWithinTheSet_AndFeatureIsEnabled()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
@@ -23,7 +23,7 @@ public class OctopusFeatureContextTests
     }
     
     [Fact]
-    public void GivenASetOfFeatureToggles_WhenEvaluatedWithCasingDifferences_EvaluationIsInsensitiveToCase()
+    public void WhenEvaluatedWithCasingDifferences_EvaluationIsInsensitiveToCase()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
@@ -37,7 +37,7 @@ public class OctopusFeatureContextTests
     }
     
     [Fact]
-    public void GivenASetOfFeatureToggles_EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
+    public void EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", false, [])
@@ -66,7 +66,7 @@ public class OctopusFeatureContextTests
     }
     
     [Fact]
-    public void GivenASetOfFeatureToggles_EvaluatesToDefaultValue_IfFeatureIsNotContainedWithinSet()
+    public void EvaluatesToDefaultValue_IfFeatureIsNotContainedWithinSet()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
@@ -93,7 +93,7 @@ public class OctopusFeatureContextTests
 
     [Fact]
     public void
-        GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForASpecificSegment_EvaluatesToTrueWhenSegmentIsSpecified()
+        WhenAFeatureIsToggledOnForASpecificSegment_EvaluatesToTrueWhenSegmentIsSpecified()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
@@ -109,7 +109,7 @@ public class OctopusFeatureContextTests
 
     [Fact]
     public void
-        GivenASetOfFeatureToggles_WhenFeatureIsNotToggledOnForSpecificSegments_EvaluatesToTrueRegardlessOfSegmentSpecified()
+        WhenFeatureIsNotToggledOnForSpecificSegments_EvaluatesToTrueRegardlessOfSegmentSpecified()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
@@ -123,12 +123,13 @@ public class OctopusFeatureContextTests
     }
 
     [Fact]
-    public void GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForMultipleSpecificSegments_EvaluatesCorrectly()
+    public void WhenAFeatureIsToggledOnForMultipleSegments_EvaluatesCorrectly()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [
                 new("license", "trial"),
-                new("region", "us")
+                new("region", "au"),
+                new("region", "us"),
             ])
         ], []);
 
@@ -138,20 +139,26 @@ public class OctopusFeatureContextTests
 
         // All specified
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial"), ("region", "us")])).Value
-            .Should().BeTrue();
+            .Should().BeTrue("Context has provided a value for each specified segment key on the toggle");
+        
+        // All specified, but one value does not match
+        context.Evaluate("testfeature", false, context: BuildContext([("license", "trial"), ("region", "eu")])).Value
+            .Should().BeFalse("Context must provide at least one matching value for each specified segment key on the toggle");
 
         // Superset specified
         context.Evaluate("testfeature", false,
                 context: BuildContext([("license", "trial"), ("region", "us"), ("language", "english")])).Value.Should()
-            .BeTrue();
+            .BeTrue("Context has provided a value for each specified segment key on the toggle");
 
         // Subset specified
-        context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should().BeTrue();
+        context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should()
+            .BeFalse("Context must provide at least one matching value for each specified segment key on the toggle");
 
         // Invalid specified
         // Note that the default value is only returned if evaluation fails for an unexpected reason.
         // In this case, the default value is not returned, as we have a successful, but false, flag evaluation.
-        context.Evaluate("testfeature", true, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
+        context.Evaluate("testfeature", true, context: BuildContext([("other", "segment")])).Value.Should()
+            .BeFalse("Context must provide at least one matching value for each specified segment key on the toggle");
 
         // None specified
         context.Evaluate("testfeature", true, context: null).Value.Should().BeFalse();
@@ -159,7 +166,7 @@ public class OctopusFeatureContextTests
     
     [Fact]
     public void
-        GivenASetOfFeatureToggles_WhenAFeatureIsToggledOnForASpecificSegment_ToleratesNullValuesInContext()
+        WhenAFeatureIsToggledOnForASpecificSegment_ToleratesNullValuesInContext()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
