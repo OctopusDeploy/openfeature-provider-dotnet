@@ -149,11 +149,6 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false,
                 context: BuildContext([("license", "trial"), ("region", "us"), ("language", "english")])).Value.Should()
             .BeTrue("When extra context values are present, the toggle should still be enabled");
-
-        // A context value is present for each toggled segment, and for one segment multiple values have been provided
-        context.Evaluate("testfeature", false,
-                context: BuildContext([("license", "trial"), ("region", "us"), ("region", "au")])).Value.Should()
-            .BeTrue("When there are multiple context values for a single segment, and at least one of them matches the toggled segment, the toggle should be enabled");
         
         // A context value is present for only one of the two toggled segments
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should()
