@@ -48,13 +48,14 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
     {
         if (context == null) return false;
 
-        var contextValues = context.AsDictionary();
+        var contextEntries = context.AsDictionary();
 
-        return segments.Any(segment =>
-            contextValues.Any(x =>
-                x.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
-                && x.Value.AsString is { } value &&
-                value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase)));
+        return segments.GroupBy(x => x.Key).All(group => 
+            group.Any(segment =>
+                contextEntries.Any(contextEntry =>
+                    contextEntry.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
+                    && contextEntry.Value.AsString is { } value &&
+                    value.Equals(segment.Value, StringComparison.OrdinalIgnoreCase))));
     }
 
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
