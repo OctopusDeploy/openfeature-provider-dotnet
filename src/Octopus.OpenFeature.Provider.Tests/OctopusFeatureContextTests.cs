@@ -137,31 +137,36 @@ public class OctopusFeatureContextTests
 
         using var scope = new AssertionScope();
 
-        // All specified
+        // A matching context value is present for each toggled segment
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial"), ("region", "us")])).Value
-            .Should().BeTrue("Context has provided a value for each specified segment key on the toggle");
+            .Should().BeTrue("When there is a matching context value for each toggled segment, the toggle should be enabled");
         
-        // All specified, but one value does not match
+        // A context value is present for each toggled segment, but it is not toggled on for one of the supplied values
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial"), ("region", "eu")])).Value
-            .Should().BeFalse("Context must provide at least one matching value for each specified segment key on the toggle");
+            .Should().BeFalse("When there is a matching context value for each toggled segment, but the context value does not match the toggled segment, the toggle should be disabled");
 
-        // Superset specified
+        // A matching context value is present for each toggled segment, and an additional segment is present in the provided context values
         context.Evaluate("testfeature", false,
                 context: BuildContext([("license", "trial"), ("region", "us"), ("language", "english")])).Value.Should()
-            .BeTrue("Context has provided a value for each specified segment key on the toggle");
+            .BeTrue("When extra context values are present, the toggle should still be enabled");
 
-        // Subset specified
+        // A context value is present for each toggled segment, and for one segment multiple values have been provided
+        context.Evaluate("testfeature", false,
+                context: BuildContext([("license", "trial"), ("region", "us"), ("region", "au")])).Value.Should()
+            .BeTrue("When there are multiple context values for a single segment, and at least one of them matches the toggled segment, the toggle should be enabled");
+        
+        // A context value is present for only one of the two toggled segments
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should()
-            .BeFalse("Context must provide at least one matching value for each specified segment key on the toggle");
+            .BeFalse("When the context does not contain a value for all toggled segments, the toggle should be disabled");
 
-        // Invalid specified
+        // No context values are present for the two toggled segment
         // Note that the default value is only returned if evaluation fails for an unexpected reason.
         // In this case, the default value is not returned, as we have a successful, but false, flag evaluation.
         context.Evaluate("testfeature", true, context: BuildContext([("other", "segment")])).Value.Should()
-            .BeFalse("Context must provide at least one matching value for each specified segment key on the toggle");
+            .BeFalse("When the context does not contain a value for all toggled segments, the toggle should be disabled");
 
         // None specified
-        context.Evaluate("testfeature", true, context: null).Value.Should().BeFalse();
+        context.Evaluate("testfeature", true, context: null).Value.Should().BeFalse("When no context values are present, and the feature is toggled on for a segment, the toggle should be disabled");
     }
     
     [Fact]
