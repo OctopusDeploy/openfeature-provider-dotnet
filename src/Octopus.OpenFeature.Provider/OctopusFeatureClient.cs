@@ -59,9 +59,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             {
                 var rawResult = await result.Content.ReadAsStringAsync();
                 
-                logger.LogInformation("Retrieved feature toggles {Result}", rawResult);
-            
-                hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult);
+                hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
             }
         }
         else
@@ -72,7 +70,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             {
                 var rawResult = await result.Content.ReadAsStringAsync();
             
-                hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult);
+                hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
             }
         }
             
@@ -136,7 +134,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         // This code will need to update accordingly
         var result = await response.Content.ReadAsStringAsync();
         
-        var evaluations = JsonSerializer.Deserialize<FeatureToggleEvaluation[]>(result);
+        var evaluations = JsonSerializer.Deserialize<FeatureToggleEvaluation[]>(result, JsonSerializerOptions.Web);
         
         if (evaluations is null)
         {
