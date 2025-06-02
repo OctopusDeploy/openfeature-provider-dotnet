@@ -58,6 +58,8 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             if (result is not null && result.IsSuccessStatusCode)
             {
                 var rawResult = await result.Content.ReadAsStringAsync();
+                
+                logger.LogInformation("Retrieved feature toggles {Result}", rawResult);
             
                 hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult);
             }
