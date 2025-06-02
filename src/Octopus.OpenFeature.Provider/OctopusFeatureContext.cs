@@ -8,7 +8,7 @@ namespace Octopus.OpenFeature.Provider;
 partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => toggles.ContentHash;
-    readonly Regex expression = SlugExpression();
+    readonly Regex expression = new("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
 
     public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
@@ -63,7 +63,4 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
         return evaluation.IsEnabled &&
                (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments));
     }
-
-    [GeneratedRegex("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
-    private static partial Regex SlugExpression();
 }
