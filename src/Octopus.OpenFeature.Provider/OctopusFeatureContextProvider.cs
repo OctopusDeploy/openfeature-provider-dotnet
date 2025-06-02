@@ -89,7 +89,7 @@ class OctopusFeatureContextProvider(
             
     public async ValueTask Shutdown()
     {
-        await cancellationTokenSource.CancelAsync();
+        cancellationTokenSource.Cancel();
 
         if (evaluationContextRefreshTask is not null)
         {

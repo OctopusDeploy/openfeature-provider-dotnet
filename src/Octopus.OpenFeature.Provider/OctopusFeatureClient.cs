@@ -1,11 +1,26 @@
 using System.Net;
-using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Octopus.OpenFeature.Provider;
 
-public record FeatureToggles(FeatureToggleEvaluation[] Evaluations, byte[] ContentHash);
-public record FeatureToggleEvaluation(string Name, string Slug, bool IsEnabled, KeyValuePair<string, string>[] Segments);
+public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
+{
+    public FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
+    
+    public byte[] ContentHash { get; } = contentHash;
+}
+
+public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, KeyValuePair<string, string>[] segments)
+{
+    public string Name { get; } = name;
+    
+    public string Slug { get; } = slug;
+    
+    public bool IsEnabled { get; } = isEnabled;
+    
+    public KeyValuePair<string, string>[] Segments { get; } = segments;
+}
 
 interface IOctopusFeatureClient
 {
@@ -33,16 +48,30 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         // WARNING: v2 and v3 check endpoints have identical response contracts.
         // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
         // This code will need to update accordingly
-        FeatureCheck? hash;
+        FeatureCheck? hash = null;
         if (configuration.IsV3ClientIdentifierSupplied())
         {
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
-            
-            hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>("api/featuretoggles/check/v3/", ct), cancellationToken);
+
+            var result = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/check/v3/", ct), cancellationToken);
+
+            if (result is not null && result.IsSuccessStatusCode)
+            {
+                var rawResult = await result.Content.ReadAsStringAsync();
+                
+                hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
+            }
         }
         else
         {
-            hash = await ExecuteWithRetry(async ct => await client.GetFromJsonAsync<FeatureCheck>($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
+            var result = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
+            
+            if (result is not null && result.IsSuccessStatusCode)
+            {
+                var rawResult = await result.Content.ReadAsStringAsync();
+            
+                hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
+            }
         }
             
         if (hash is null)
@@ -56,7 +85,10 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         return haveFeaturesChanged;
     }
 
-    record FeatureCheck(byte[] ContentHash);
+    class FeatureCheck(byte[] contentHash)
+    {
+        public byte[] ContentHash { get; } = contentHash;
+    }
 
     /// <summary>
     /// Retrieves the evaluated feature set from OctoToggle for a given installation and project.
@@ -100,7 +132,10 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         // WARNING: v2 and v3 endpoints have identical response contracts.
         // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
         // This code will need to update accordingly
-        var evaluations = await response.Content.ReadFromJsonAsync<FeatureToggleEvaluation[]>(cancellationToken);
+        var result = await response.Content.ReadAsStringAsync();
+        
+        var evaluations = JsonSerializer.Deserialize<FeatureToggleEvaluation[]>(result, JsonSerializerOptions.Web);
+        
         if (evaluations is null)
         {
             logger.LogWarning("Feature toggle response content from {OctoToggleUrl} was empty.", configuration.ServerUri);
