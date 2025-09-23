@@ -104,6 +104,11 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             BaseAddress = configuration.ServerUri
         };
 
+        if (configuration.ReleaseVersionOverride is not null)
+        {
+            client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.ReleaseVersion, configuration.ReleaseVersionOverride);       
+        }
+
         HttpResponseMessage? response;
         if (configuration.IsV3ClientIdentifierSupplied())
         {
