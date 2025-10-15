@@ -126,13 +126,19 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             logger.LogWarning("Failed to retrieve feature toggles for client identifier {ClientIdentifier} from {OctoToggleUrl}", configuration.ClientIdentifier, configuration.ServerUri);
             return null;
         }
-            
-        var rawContentHash = response.Headers.GetValues("ContentHash").FirstOrDefault();
-        if (rawContentHash is null)
+
+        if (!response.Headers.TryGetValues("ContentHash", out IEnumerable<string> values))
         {
-            logger.LogWarning("Feature toggle response from {OctoToggleUrl} did not contain expected ContentHash header.", configuration.ServerUri);
+            logger.LogWarning("Feature toggle response from {OctoToggleUrl} did not contain expected ContentHash header", configuration.ServerUri);
             return null;
         }
+        var headerValues = values.ToArray();
+        if (!headerValues.Any())
+        {
+            logger.LogWarning("Feature toggle response from {OctoToggleUrl} returned an empty ContentHash header", configuration.ServerUri);
+            return null;
+        }
+        var rawContentHash = headerValues.First();
 
         // WARNING: v2 and v3 endpoints have identical response contracts.
         // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
@@ -143,7 +149,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         
         if (evaluations is null)
         {
-            logger.LogWarning("Feature toggle response content from {OctoToggleUrl} was empty.", configuration.ServerUri);
+            logger.LogWarning("Feature toggle response content from {OctoToggleUrl} was empty", configuration.ServerUri);
             return null;
         }
 
