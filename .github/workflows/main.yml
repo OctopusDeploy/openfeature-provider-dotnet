@@ -87,7 +87,7 @@ jobs:
           service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
 
       - name: Push to Octopus 🐙
-        uses: OctopusDeploy/push-package-action@v3
+        uses: OctopusDeploy/push-package-action@v4
         if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
         with:
           packages: |
