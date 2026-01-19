@@ -51,8 +51,7 @@ runs:
         [ ${#PACKAGES[@]} -eq 1 ] || { echo "Error: Expected 1 package, found ${#PACKAGES[@]}"; exit 1; }
         PACKAGE_NAME=${PACKAGES[0]##*/}
         FILENAME_NO_EXT=${PACKAGE_NAME%.nupkg}
-        [[ $FILENAME_NO_EXT =~ (.+)\.([0-9]+.*) ]]
-        VERSION="${BASH_REMATCH[2]}"
+        VERSION=${FILENAME_NO_EXT#Octopus.OpenFeature.}
         echo "name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Package: $PACKAGE_NAME (version: $VERSION)"

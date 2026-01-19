@@ -1,4 +1,4 @@
-name: Release - Build, Test, Package, and Deploy
+name: Release build
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
   
-  build-test-pack-push:
+  test-build-and-publish-release:
     needs: release-please
     runs-on: ubuntu-latest
     permissions:

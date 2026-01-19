@@ -1,4 +1,4 @@
-name: CI - Build, Test, Package, and Deploy
+name: CI build
 
 # Controls when the action will run.
 on:
@@ -28,7 +28,7 @@ env:
   OCTOPUS_SPACE: "Core Platform"
 
 jobs:
-  build-test-pack-push:
+  test-build-and-publish:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Required to obtain the ID token from GitHub Actions
