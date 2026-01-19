@@ -4,11 +4,7 @@
         ".": {
             "release-type": "simple",
             "extra-files": [
-                {
-                    "type": "xml",
-                    "path": "src/Octopus.OpenFeature.Provider/Octopus.OpenFeature.Provider.csproj",
-                    "xpath": "//Project/PropertyGroup/ReleasePleaseVersion"
-                }
+                "src/Octopus.OpenFeature.Provider/Octopus.OpenFeature.Provider.csproj"
             ]
         }
     }
