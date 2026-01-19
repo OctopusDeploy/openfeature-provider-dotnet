@@ -9,7 +9,6 @@ inputs:
   octopus-url:
     description: "Octopus Deploy server URL"
     required: true
-  
 
 runs:
   using: "composite"
@@ -54,8 +53,10 @@ runs:
         PACKAGES=(src/*.nupkg)
         [ ${#PACKAGES[@]} -eq 1 ] || { echo "Error: Expected 1 package, found ${#PACKAGES[@]}"; exit 1; }
         PACKAGE_NAME=${PACKAGES[0]##*/}
-        FILENAME_NO_EXT=${PACKAGE_NAME%.nupkg}
-        VERSION=${FILENAME_NO_EXT#Octopus.OpenFeature.}
+
+        # Extract version from .nuspec inside the package (includes build metadata)
+        VERSION=$(unzip -p "src/$PACKAGE_NAME" "*.nuspec" | grep -oP '<version>\K[^<]+' | head -1)
+
         echo "name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Package: $PACKAGE_NAME (version: $VERSION)"
