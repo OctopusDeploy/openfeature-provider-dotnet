@@ -28,12 +28,11 @@ env:
   OCTOPUS_SPACE: "Core Platform"
 
 jobs:
-  test-build-and-publish:
+  build-test-push:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Required to obtain the ID token from GitHub Actions
-      contents: write # Read Required to check out code, Write to create Git Tags
-      checks: write # Required for test-reporter
+      contents: read
 
     steps:
       - uses: actions/checkout@v6
@@ -59,7 +58,8 @@ jobs:
         run: dotnet test --no-build --configuration Release Octopus.OpenFeature.sln --logger:"console;verbosity=detailed"  --logger GitHubActions
 
       - name: 📦 Pack
-        if: startsWith(github.ref, 'refs/heads/')
+        working-directory: ./src
+        if: startsWith(github.ref, 'refs/heads/') || startsWith(github.ref, 'refs/pull/')
         run: dotnet pack  --configuration Release --no-build --output . --version-suffix "ci.$(date -u +%Y%m%dT%H%M%S)+sha.${GITHUB_SHA:0:9}"
 
       - name: Publish NuGet packages
@@ -67,7 +67,7 @@ jobs:
         with:
           name: Octopus.OpenFeature.Provider.nupkg
           path: "*.nupkg"
-
+    
       # - name: Login to Octopus Deploy 🐙
       #   if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
       #   uses: OctopusDeploy/login@v1
