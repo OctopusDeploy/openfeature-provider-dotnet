@@ -17,7 +17,7 @@
         <RepositoryUrl>https://github.com/OctopusDeploy/openfeature-dotnet/</RepositoryUrl>
         <Description>The OctopusDeploy dotnet OpenFeature provide</Description>
         <Product>Octopus.OpenFeature</Product>
-        <ReleasePleaseVersion>1.2.3</ReleasePleaseVersion> <!--x-release-please-version -->
+        <ReleasePleaseVersion>1.2.2</ReleasePleaseVersion> <!--x-release-please-version -->
         <VersionPrefix>$(ReleasePleaseVersion)</VersionPrefix>
         <AssemblyVersion>$(ReleasePleaseVersion)</AssemblyVersion>
         <FileVersion>$(ReleasePleaseVersion)</FileVersion>

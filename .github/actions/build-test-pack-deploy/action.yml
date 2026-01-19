@@ -50,33 +50,31 @@ runs:
         PACKAGES=(src/*.nupkg)
         [ ${#PACKAGES[@]} -eq 1 ] || { echo "Error: Expected 1 package, found ${#PACKAGES[@]}"; exit 1; }
         PACKAGE_NAME=${PACKAGES[0]##*/}
+        FILENAME_NO_EXT=${PACKAGE_NAME%.nupkg}
+        [[ $FILENAME_NO_EXT =~ (.+)\.([0-9]+.*) ]]
+        VERSION="${BASH_REMATCH[2]}"
         echo "name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
-        echo "Package: $PACKAGE_NAME"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Package: $PACKAGE_NAME (version: $VERSION)"
 
-    - name: 📤 Publish NuGet package
-      uses: actions/upload-artifact@v6
+    - name: Login to Octopus Deploy 🐙
+      if: (! contains(github.ref, '/dependabot/'))
+      uses: OctopusDeploy/login@v1
+      with: 
+        server: ${{ secrets.OCTOPUS_URL }}
+        service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
+
+    - name: Push to Octopus 🐙
+      uses: OctopusDeploy/push-package-action@v3
+      if: (! contains(github.ref, '/dependabot/'))
       with:
-        name: ${{ steps.package.outputs.name }}
-        path: src/${{ steps.package.outputs.name }}
+        packages: |
+          src/${{ steps.package.outputs.name }}
 
-    # - name: Login to Octopus Deploy 🐙
-    #   if: (! contains(github.ref, '/dependabot/'))
-    #   uses: OctopusDeploy/login@v1
-    #   with: 
-    #     server: ${{ secrets.OCTOPUS_URL }}
-    #     service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
-
-    # - name: Push to Octopus 🐙
-    #   uses: OctopusDeploy/push-package-action@v3
-    #   if: (! contains(github.ref, '/dependabot/'))
-    #   with:
-    #     packages: |
-    #       ./artifacts/Octopus.OpenFeature.${{ steps.build.outputs.octoversion_fullsemver }}.nupkg
-
-    # - name: Create Release in Octopus 🐙
-    #   uses: OctopusDeploy/create-release-action@v3
-    #   if: (! contains(github.ref, '/dependabot/'))
-    #   with:
-    #     project: 'OpenFeature Dotnet Provider'
-    #     packages: |
-    #       Octopus.OpenFeature:${{ steps.build.outputs.octoversion_fullsemver }}
+    - name: Create Release in Octopus 🐙
+      uses: OctopusDeploy/create-release-action@v3
+      if: (! contains(github.ref, '/dependabot/'))
+      with:
+        project: 'OpenFeature Dotnet Provider'
+        packages: |
+          Octopus.OpenFeature:${{ steps.package.outputs.version }}
