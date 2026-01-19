@@ -1,9 +1,10 @@
 {
+    "bootstrap-sha": "d551e5e18449aac2a6b7e57b03ab64de2772e817",
     "packages": {
-        "release-type": "simple",
         ".": {
             "extra-files": [
                 {
+                    "release-type": "simple",
                     "type": "xml",
                     "path": "src/Octopus.OpenFeature.Provider/Octopus.OpenFeature.Provider.csproj",
                     "xpath": "//Project/PropertyGroup/ReleasePleaseVersion"
