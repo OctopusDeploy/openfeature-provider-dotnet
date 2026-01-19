@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 0 # all
 
       - name: Setup NET 8.0
-        uses: actions/setup-dotnet@v5.1
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -58,7 +58,7 @@ jobs:
         run: dotnet test --no-build --configuration Release Octopus.OpenFeature.sln --logger:"console;verbosity=detailed"  --logger:"trx"
 
       - name: 📊 Test report
-        uses: dorny/test-reporter@2.5
+        uses: dorny/test-reporter@v2
         if: success() || failure()
         with:
           name: Unit test results
