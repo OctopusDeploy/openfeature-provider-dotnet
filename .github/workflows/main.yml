@@ -1,4 +1,4 @@
-name: CI - Build, Test, Package, and Push
+name: CI - Build, Test, Package, and Deploy
 
 # Controls when the action will run.
 on:

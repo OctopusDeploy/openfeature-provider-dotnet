@@ -1,9 +1,9 @@
-name: Release - Build, Test, Package, and Push
+name: Release - Build, Test, Package, and Deploy
 
 on:
   push:
     branches:
-      - main
+      - main-test
 
 permissions:
   contents: write
