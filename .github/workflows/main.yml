@@ -46,15 +46,16 @@ jobs:
           global-json-file: global.json
 
       - name: 🏗️ Restore
-        working-directory: ./source
+        working-directory: ./src
         run: dotnet restore
 
       - name: 🏗️ Build
-        working-directory: ./source
+        working-directory: ./src
         run: |
           dotnet build --no-restore --configuration Release Octopus.OpenFeature.sln 
 
       - name: 🧪 Test
+        working-directory: ./src
         run: dotnet test --no-build --configuration Release Octopus.OpenFeature.sln --logger:"console;verbosity=detailed"  --logger:"trx"
 
       - name: 📊 Test report
