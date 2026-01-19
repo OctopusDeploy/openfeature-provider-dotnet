@@ -56,16 +56,7 @@ jobs:
 
       - name: 🧪 Test
         working-directory: ./src
-        run: dotnet test --no-build --configuration Release Octopus.OpenFeature.sln --logger:"console;verbosity=detailed"  --logger:"trx"
-
-      - name: 📊 Test report
-        uses: dorny/test-reporter@v2
-        if: success() || failure()
-        with:
-          name: Unit test results
-          path: ./results/*.trx
-          reporter: dotnet-trx
-          fail-on-error: true
+        run: dotnet test --no-build --configuration Release Octopus.OpenFeature.sln --logger:"console;verbosity=detailed"  --logger GitHubActions
 
       - name: 📦 Pack
         if: startsWith(github.ref, 'refs/heads/')
