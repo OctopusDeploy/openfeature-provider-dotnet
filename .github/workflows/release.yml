@@ -19,6 +19,8 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
   
   build-test-pack-push:
     needs: release-please
@@ -26,6 +28,7 @@ jobs:
     permissions:
       id-token: write # Required to obtain the ID token from GitHub Actions
       contents: read
+    if: ${{ fromJSON(needs.release-please.outputs.release_created || false) }}
 
     steps:
       - uses: actions/checkout@v6
