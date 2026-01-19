@@ -56,8 +56,15 @@ runs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Package: $PACKAGE_NAME (version: $VERSION)"
 
+    - name: 📤 Publish NuGet package
+      uses: actions/upload-artifact@v6
+      if: github.event.pull_request.head.repo.fork == true
+      with:
+        name: ${{ steps.package.outputs.name }}
+        path: src/${{ steps.package.outputs.name }}
+
     - name: Login to Octopus Deploy 🐙
-      if: (! contains(github.ref, '/dependabot/'))
+      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
       uses: OctopusDeploy/login@v1
       with: 
         server: ${{ secrets.OCTOPUS_URL }}
@@ -65,14 +72,14 @@ runs:
 
     - name: Push to Octopus 🐙
       uses: OctopusDeploy/push-package-action@v3
-      if: (! contains(github.ref, '/dependabot/'))
+      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
       with:
         packages: |
           src/${{ steps.package.outputs.name }}
 
     - name: Create Release in Octopus 🐙
       uses: OctopusDeploy/create-release-action@v3
-      if: (! contains(github.ref, '/dependabot/'))
+      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
       with:
         project: 'OpenFeature Dotnet Provider'
         packages: |
