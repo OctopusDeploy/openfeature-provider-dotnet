@@ -1,14 +1,14 @@
-name: 'Build, Test, Pack, and Deploy'
-description: 'Builds, tests, packages, and deploys the OpenFeature provider'
+name: "Build, Test, Pack, and Deploy"
+description: "Builds, tests, packages, and deploys the OpenFeature provider"
 
 inputs:
   prerelease-tag:
-    description: 'Optional prerelease tag (e.g., ci, pr.123.branch-name). If provided, generates a prerelease version. If empty, builds a release version.'
+    description: "Optional prerelease tag (e.g., ci, pr.123.branch-name). If provided, generates a prerelease version. If empty, builds a release version."
     required: false
-    default: ''
+    default: ""
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Setup NET 8.0
       uses: actions/setup-dotnet@v5
@@ -24,7 +24,7 @@ runs:
       working-directory: ./src
       shell: bash
       run: |
-        dotnet build --no-restore --configuration Release Octopus.OpenFeature.sln 
+        dotnet build --no-restore --configuration Release Octopus.OpenFeature.sln
 
     - name: 🧪 Test
       working-directory: ./src
@@ -56,6 +56,7 @@ runs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Package: $PACKAGE_NAME (version: $VERSION)"
 
+    # We don't push to Octopus from forks, so we upload the package as an artifact instead
     - name: 📤 Publish NuGet package
       uses: actions/upload-artifact@v6
       if: github.event.pull_request.head.repo.fork == true
@@ -66,7 +67,7 @@ runs:
     - name: Login to Octopus Deploy 🐙
       if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
       uses: OctopusDeploy/login@v1
-      with: 
+      with:
         server: ${{ secrets.OCTOPUS_URL }}
         service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
 
@@ -81,6 +82,6 @@ runs:
       uses: OctopusDeploy/create-release-action@v3
       if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
       with:
-        project: 'OpenFeature Dotnet Provider'
+        project: "OpenFeature Dotnet Provider"
         packages: |
           Octopus.OpenFeature:${{ steps.package.outputs.version }}

@@ -3,7 +3,7 @@ name: Release build
 on:
   push:
     branches:
-      - main-test
+      - main
 
 permissions:
   contents: write
@@ -18,13 +18,13 @@ jobs:
         id: release
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          target-branch: main-test
+          target-branch: main
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          
+
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
-  
+
   test-build-and-publish-release:
     needs: release-please
     runs-on: ubuntu-latest
