@@ -7,17 +7,13 @@ on:
     branches:
       - main
       - release/*
-    tags-ignore:
-      - '**'
     paths-ignore:
-      - "README.md"
-      - ".octopus"
+      - "**.md"
 
   pull_request:
     types: [opened, synchronize, reopened]
     paths-ignore:
-      - "README.md"
-      - ".octopus"
+      - "**.md"
 
   schedule:
     # Daily 5am australian/brisbane time
@@ -39,64 +35,64 @@ jobs:
       checks: write # Required for test-reporter
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # all
 
       - name: Setup NET 8.0
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.1
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: global.json
 
-      - name: Append OCTOVERSION_CurrentBranch with -nightly-<timestamp> (for scheduled)
-        if: github.event_name == 'schedule'
+      - name: 🏗️ Restore
+        working-directory: ./source
+        run: dotnet restore
+
+      - name: 🏗️ Build
+        working-directory: ./source
         run: |
-          echo "OCTOVERSION_CurrentBranch=${{ env.OCTOVERSION_CurrentBranch }}-nightly-$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+          dotnet build --no-restore --configuration Release Octopus.OpenFeature.sln 
 
-      - name: Nuke Build 🏗
-        id: build
-        run: ./build.sh --verbosity verbose
+      - name: 🧪 Test
+        run: dotnet test --no-build --configuration Release Octopus.OpenFeature.sln --logger:"console;verbosity=detailed"  --logger:"trx"
 
-      - name: Unit test report
-        uses: dorny/test-reporter@6e6a65b7a0bd2c9197df7d0ae36ac5cee784230c # v2.0.0
+      - name: 📊 Test report
+        uses: dorny/test-reporter@2.5
         if: success() || failure()
         with:
           name: Unit test results
-          path: ./TestResults/*.trx
+          path: ./results/*.trx
           reporter: dotnet-trx
           fail-on-error: true
 
-      - name: Tag release (when not pre-release) 🏷️
-        if: ${{ !contains( steps.build.outputs.octoversion_fullsemver, '-' ) }}
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: "refs/tags/${{ steps.build.outputs.octoversion_fullsemver }}",
-              sha: context.sha
-            })
+      - name: 📦 Pack
+        if: startsWith(github.ref, 'refs/heads/')
+        run: dotnet pack  --configuration Release --no-build --output . --version-suffix "ci.$(date -u +%Y%m%dT%H%M%S)+sha.${GITHUB_SHA:0:9}"
 
-      - name: Login to Octopus Deploy 🐙
-        if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
-        uses: OctopusDeploy/login@v1
-        with: 
-          server: ${{ secrets.OCTOPUS_URL }}
-          service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
-
-      - name: Push to Octopus 🐙
-        uses: OctopusDeploy/push-package-action@v3
-        if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
+      - name: Publish NuGet packages
+        uses: actions/upload-artifact@v6
         with:
-          packages: |
-            ./artifacts/Octopus.OpenFeature.${{ steps.build.outputs.octoversion_fullsemver }}.nupkg
+          name: Octopus.OpenFeature.Provider.nupkg
+          path: "*.nupkg"
 
-      - name: Create Release in Octopus 🐙
-        uses: OctopusDeploy/create-release-action@v3
-        if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
-        with:
-          project: 'OpenFeature Dotnet Provider'
-          packages: |
-            Octopus.OpenFeature:${{ steps.build.outputs.octoversion_fullsemver }}
+      # - name: Login to Octopus Deploy 🐙
+      #   if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
+      #   uses: OctopusDeploy/login@v1
+      #   with: 
+      #     server: ${{ secrets.OCTOPUS_URL }}
+      #     service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
+
+      # - name: Push to Octopus 🐙
+      #   uses: OctopusDeploy/push-package-action@v3
+      #   if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
+      #   with:
+      #     packages: |
+      #       ./artifacts/Octopus.OpenFeature.${{ steps.build.outputs.octoversion_fullsemver }}.nupkg
+
+      # - name: Create Release in Octopus 🐙
+      #   uses: OctopusDeploy/create-release-action@v3
+      #   if: (! contains(github.ref, '/dependabot/')) && (! contains(github.ref, 'prettybot/'))
+      #   with:
+      #     project: 'OpenFeature Dotnet Provider'
+      #     packages: |
+      #       Octopus.OpenFeature:${{ steps.build.outputs.octoversion_fullsemver }}
