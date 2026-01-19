@@ -1,4 +1,4 @@
-name: Build, Test, Package and Push
+name: CI - Build, Test, Package, and Push
 
 # Controls when the action will run.
 on:
@@ -6,13 +6,12 @@ on:
     # Triggers the workflow on pull request events and merges/pushes to main
     branches:
       - main
-      - release/*
-      - dylan/*
     paths-ignore:
       - "**.md"
 
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches:
+      - main
     paths-ignore:
       - "**.md"
 
@@ -24,7 +23,6 @@ on:
   workflow_dispatch:
 
 env:
-  OCTOVERSION_CurrentBranch: ${{ github.head_ref || github.ref }}
   OCTOPUS_SPACE: "Core Platform"
 
 jobs:
@@ -39,53 +37,27 @@ jobs:
         with:
           fetch-depth: 0 # all
 
-      - name: Setup NET 8.0
-        uses: actions/setup-dotnet@v5
+      - name: Build, Test, Pack, and Deploy (CI)
+        uses: ./.github/actions/build-test-pack-deploy
+        if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/heads/')
         with:
-          global-json-file: global.json
+          prerelease-tag: 'ci'
 
-      - name: 🏗️ Restore
-        working-directory: ./src
-        run: dotnet restore
-
-      - name: 🏗️ Build
-        working-directory: ./src
+      - name: Prepare PR version suffix
+        if: github.event_name == 'pull_request'
+        id: pr-version
         run: |
-          dotnet build --no-restore --configuration Release Octopus.OpenFeature.sln 
+          BRANCH_NAME="${{ github.head_ref }}"
+          # Sanitize: replace special chars with hyphens, convert to lowercase
+          SANITIZED=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/^-*//' | sed 's/-*$//')
+          # Truncate to 20 characters
+          TRUNCATED=${SANITIZED:0:20}
+          # Remove trailing hyphens after truncation
+          TRUNCATED=$(echo "$TRUNCATED" | sed 's/-*$//')
+          echo "branch-name=$TRUNCATED" >> $GITHUB_OUTPUT
 
-      - name: 🧪 Test
-        working-directory: ./src
-        run: dotnet test --no-build --configuration Release Octopus.OpenFeature.sln --logger:"console;verbosity=detailed"  --logger GitHubActions
-
-      - name: 📦 Pack
-        working-directory: ./src
-        if: startsWith(github.ref, 'refs/heads/') || startsWith(github.ref, 'refs/pull/')
-        run: dotnet pack  --configuration Release --no-build --output . --version-suffix "ci.$(date -u +%Y%m%dT%H%M%S)+sha.${GITHUB_SHA:0:9}"
-
-      - name: Publish NuGet packages
-        uses: actions/upload-artifact@v6
+      - name: Build, Test, Pack, and Deploy (PR)
+        uses: ./.github/actions/build-test-pack-deploy
+        if: github.event_name == 'pull_request'
         with:
-          name: Octopus.OpenFeature.Provider.nupkg
-          path: "src/*.nupkg"
-    
-      # - name: Login to Octopus Deploy 🐙
-      #   if: (! contains(github.ref, '/dependabot/'))
-      #   uses: OctopusDeploy/login@v1
-      #   with: 
-      #     server: ${{ secrets.OCTOPUS_URL }}
-      #     service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
-
-      # - name: Push to Octopus 🐙
-      #   uses: OctopusDeploy/push-package-action@v3
-      #   if: (! contains(github.ref, '/dependabot/'))
-      #   with:
-      #     packages: |
-      #       ./artifacts/Octopus.OpenFeature.${{ steps.build.outputs.octoversion_fullsemver }}.nupkg
-
-      # - name: Create Release in Octopus 🐙
-      #   uses: OctopusDeploy/create-release-action@v3
-      #   if: (! contains(github.ref, '/dependabot/'))
-      #   with:
-      #     project: 'OpenFeature Dotnet Provider'
-      #     packages: |
-      #       Octopus.OpenFeature:${{ steps.build.outputs.octoversion_fullsemver }}
+          prerelease-tag: pr.${{ github.event.pull_request.number }}.${{ steps.pr-version.outputs.branch-name }}
