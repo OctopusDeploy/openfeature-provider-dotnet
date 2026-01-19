@@ -42,6 +42,7 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           prerelease-tag: "ci"
+          octopus-url: ${{ secrets.OCTOPUS_URL }}
 
       - name: Prepare PR version suffix
         if: github.event_name == 'pull_request'
@@ -61,3 +62,4 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           prerelease-tag: pr.${{ github.event.pull_request.number }}.${{ steps.pr-version.outputs.branch-name }}
+          octopus-url: ${{ secrets.OCTOPUS_URL }}

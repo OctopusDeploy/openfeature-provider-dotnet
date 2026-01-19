@@ -40,3 +40,5 @@ jobs:
 
       - name: Build, Test, Pack, and Deploy (Release)
         uses: ./.github/actions/build-test-pack-deploy
+        with:
+          octopus-url: ${{ secrets.OCTOPUS_URL }}

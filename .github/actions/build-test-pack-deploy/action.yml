@@ -6,6 +6,10 @@ inputs:
     description: "Optional prerelease tag (e.g., ci, pr.123.branch-name). If provided, generates a prerelease version. If empty, builds a release version."
     required: false
     default: ""
+  octopus-url:
+    description: "Octopus Deploy server URL"
+    required: true
+  
 
 runs:
   using: "composite"
@@ -68,7 +72,7 @@ runs:
       if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
       uses: OctopusDeploy/login@v1
       with:
-        server: ${{ secrets.OCTOPUS_URL }}
+        server: ${{ inputs.octopus-url }}
         service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
 
     - name: Push to Octopus 🐙
