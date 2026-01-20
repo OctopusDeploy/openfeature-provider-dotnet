@@ -13,7 +13,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup NET 8.0
+    - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
         global-json-file: global.json
@@ -74,7 +74,7 @@ runs:
       uses: OctopusDeploy/login@v1
       with:
         server: ${{ inputs.octopus-url }}
-        service_account_id: 5ac61d40-7bf6-475c-bd4d-4bab17b5a139
+        service_account_id: 42e00747-07e1-4214-979c-af3381e6d951
 
     - name: Push to Octopus 🐙
       uses: OctopusDeploy/push-package-action@v3
