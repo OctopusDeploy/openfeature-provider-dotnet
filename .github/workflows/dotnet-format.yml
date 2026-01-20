@@ -23,4 +23,4 @@ jobs:
       - name: 🧑‍🏫 Validate Formatting
         working-directory: ./src
         run: |
-          dotnet format --no-restore --verify-no-changes
+          dotnet format --verify-no-changes
