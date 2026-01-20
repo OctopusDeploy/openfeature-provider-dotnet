@@ -1,0 +1,37 @@
+name: Validate formatting
+
+# Controls when the action will run.
+on:
+  push:
+    # Triggers the workflow on pull request events and merges/pushes to main
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+
+jobs:
+  validate-formatting:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # all
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: 🧑‍🏫 Validate Formatting
+        working-directory: ./src
+        run: |
+          dotnet format --no-restore --verify-no-changes

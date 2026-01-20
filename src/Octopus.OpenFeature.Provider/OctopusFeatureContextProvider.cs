@@ -11,7 +11,7 @@ class OctopusFeatureContextProvider(
     ILogger logger)
 {
     readonly CancellationTokenSource cancellationTokenSource = new();
-            
+
     OctopusFeatureContext currentContext = OctopusFeatureContext.Empty(configuration.LoggerFactory);
     Task? evaluationContextRefreshTask;
     bool initialized;
@@ -22,7 +22,7 @@ class OctopusFeatureContextProvider(
     {
         return currentContext;
     }
-            
+
     public async Task Initialize()
     {
         if (initialized)
@@ -43,7 +43,7 @@ class OctopusFeatureContextProvider(
             logger.LogError(e, "Failed to retrieve feature manifest during initialization. Falling back to empty context, defaults will be used during evaluation.");
             currentContext = OctopusFeatureContext.Empty(configuration.LoggerFactory);
         }
-                
+
         evaluationContextRefreshTask = RefreshEvaluationContext(cancellationTokenSource.Token);
         initialized = true;
     }
@@ -86,7 +86,7 @@ class OctopusFeatureContextProvider(
             }
         }
     }
-            
+
     public async ValueTask Shutdown()
     {
         cancellationTokenSource.Cancel();

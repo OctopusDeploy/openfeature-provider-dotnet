@@ -1,24 +1,24 @@
 using System.Net;
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Octopus.OpenFeature.Provider;
 
 public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
 {
     public FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
-    
+
     public byte[] ContentHash { get; } = contentHash;
 }
 
 public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, KeyValuePair<string, string>[] segments)
 {
     public string Name { get; } = name;
-    
+
     public string Slug { get; } = slug;
-    
+
     public bool IsEnabled { get; } = isEnabled;
-    
+
     public KeyValuePair<string, string>[] Segments { get; } = segments;
 }
 
@@ -58,22 +58,22 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             if (result is not null && result.IsSuccessStatusCode)
             {
                 var rawResult = await result.Content.ReadAsStringAsync();
-                
+
                 hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
             }
         }
         else
         {
             var result = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
-            
+
             if (result is not null && result.IsSuccessStatusCode)
             {
                 var rawResult = await result.Content.ReadAsStringAsync();
-            
+
                 hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
             }
         }
-            
+
         if (hash is null)
         {
             logger.LogWarning("Failed to retrieve feature toggles after 3 retries. Previously retrieved feature toggle values will continue to be used.");
@@ -106,21 +106,21 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         if (configuration.ReleaseVersionOverride is not null)
         {
-            client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.ReleaseVersion, configuration.ReleaseVersionOverride);       
+            client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.ReleaseVersion, configuration.ReleaseVersionOverride);
         }
 
         HttpResponseMessage? response;
         if (configuration.IsV3ClientIdentifierSupplied())
         {
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
-            
+
             response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
         }
         else
         {
             response = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/v2/{configuration.ClientIdentifier}", ct), cancellationToken);
         }
-           
+
         if (response is null or { StatusCode: HttpStatusCode.NotFound })
         {
             logger.LogWarning("Failed to retrieve feature toggles for client identifier {ClientIdentifier} from {OctoToggleUrl}", configuration.ClientIdentifier, configuration.ServerUri);
@@ -144,9 +144,9 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
         // This code will need to update accordingly
         var result = await response.Content.ReadAsStringAsync();
-        
+
         var evaluations = JsonSerializer.Deserialize<FeatureToggleEvaluation[]>(result, JsonSerializerOptions.Web);
-        
+
         if (evaluations is null)
         {
             logger.LogWarning("Feature toggle response content from {OctoToggleUrl} was empty", configuration.ServerUri);
@@ -157,7 +157,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         return toggles;
     }
-        
+
     async Task<T?> ExecuteWithRetry<T>(Func<CancellationToken, Task<T>> callback, CancellationToken cancellationToken)
     {
         var attempts = 0;

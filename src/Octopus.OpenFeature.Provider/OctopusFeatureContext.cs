@@ -46,11 +46,14 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
 
     bool MatchesSegment(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
     {
-        if (context == null) return false;
+        if (context == null)
+        {
+            return false;
+        }
 
         var contextEntries = context.AsDictionary();
 
-        return segments.GroupBy(x => x.Key).All(group => 
+        return segments.GroupBy(x => x.Key).All(group =>
             group.Any(segment =>
                 contextEntries.Any(contextEntry =>
                     contextEntry.Key.Equals(segment.Key, StringComparison.OrdinalIgnoreCase)
