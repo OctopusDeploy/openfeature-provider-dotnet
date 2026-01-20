@@ -1,0 +1,92 @@
+name: "Build, Test, Pack, and Deploy"
+description: "Builds, tests, packages, and deploys the OpenFeature provider"
+
+inputs:
+  prerelease-tag:
+    description: "Optional prerelease tag (e.g., ci, pr.123.branch-name). If provided, generates a prerelease version. If empty, builds a release version."
+    required: false
+    default: ""
+  octopus-url:
+    description: "Octopus Deploy server URL"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        global-json-file: global.json
+
+    - name: 🏗️ Restore
+      working-directory: ./src
+      shell: bash
+      run: dotnet restore
+
+    - name: 🏗️ Build
+      working-directory: ./src
+      shell: bash
+      run: |
+        dotnet build --no-restore --configuration Release Octopus.OpenFeature.sln
+
+    - name: 🧪 Test
+      working-directory: ./src
+      shell: bash
+      run: dotnet test --no-build --configuration Release Octopus.OpenFeature.sln --logger:"console;verbosity=detailed"  --logger GitHubActions
+
+    - name: 📦 Pack (pre-release)
+      working-directory: ./src
+      shell: bash
+      if: inputs.prerelease-tag != ''
+      run: dotnet pack --configuration Release --no-build --output . --version-suffix "${{ inputs.prerelease-tag }}.$(date -u +%Y%m%dT%H%M%S)+sha.${GITHUB_SHA:0:9}"
+
+    - name: 📦 Pack (release)
+      working-directory: ./src
+      shell: bash
+      if: inputs.prerelease-tag == ''
+      run: dotnet pack --configuration Release --no-build --output .
+
+    - name: 📋 Get package name
+      id: package
+      shell: bash
+      run: |
+        PACKAGES=(src/*.nupkg)
+        [ ${#PACKAGES[@]} -eq 1 ] || { echo "Error: Expected 1 package, found ${#PACKAGES[@]}"; exit 1; }
+        PACKAGE_NAME=${PACKAGES[0]##*/}
+
+        # Extract version from .nuspec inside the package (includes build metadata)
+        VERSION=$(unzip -p "src/$PACKAGE_NAME" "*.nuspec" | grep -oP '<version>\K[^<]+' | head -1)
+
+        echo "name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Package: $PACKAGE_NAME (version: $VERSION)"
+
+    # We don't push to Octopus from forks, so we upload the package as an artifact instead
+    - name: 📤 Publish NuGet package
+      uses: actions/upload-artifact@v6
+      if: github.event.pull_request.head.repo.fork == true
+      with:
+        name: ${{ steps.package.outputs.name }}
+        path: src/${{ steps.package.outputs.name }}
+
+    - name: Login to Octopus Deploy 🐙
+      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
+      uses: OctopusDeploy/login@v1
+      with:
+        server: ${{ inputs.octopus-url }}
+        service_account_id: 42e00747-07e1-4214-979c-af3381e6d951
+
+    - name: Push to Octopus 🐙
+      uses: OctopusDeploy/push-package-action@v3
+      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
+      with:
+        packages: |
+          src/${{ steps.package.outputs.name }}
+
+    - name: Create Release in Octopus 🐙
+      uses: OctopusDeploy/create-release-action@v3
+      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
+      with:
+        project: "OpenFeature Dotnet Provider"
+        packages: |
+          Octopus.OpenFeature:${{ steps.package.outputs.version }}
