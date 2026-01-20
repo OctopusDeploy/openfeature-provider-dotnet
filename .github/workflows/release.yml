@@ -5,13 +5,15 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+env:
+  OCTOPUS_SPACE: "Developer Experience"
 
 jobs:
   release-please:
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v4

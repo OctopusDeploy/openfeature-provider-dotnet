@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
 
 env:
-  OCTOPUS_SPACE: "Core Platform"
+  OCTOPUS_SPACE: "Developer Experience"
 
 jobs:
   test-build-and-publish:
