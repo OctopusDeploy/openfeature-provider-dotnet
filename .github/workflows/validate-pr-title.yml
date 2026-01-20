@@ -2,6 +2,8 @@ name: Validate PR title
 
 on:
   pull_request:
+    branches:
+      - main
     types:
       - opened
       - edited
