@@ -1,6 +1,6 @@
+using Microsoft.Extensions.Logging;
 using OpenFeature;
 using OpenFeature.Model;
-using Microsoft.Extensions.Logging;
 
 namespace Octopus.OpenFeature.Provider;
 
@@ -31,14 +31,14 @@ public class OctopusFeatureProvider : FeatureProvider
         await base.ShutdownAsync(cancellationToken);
         await contextProvider.Shutdown();
     }
-        
+
     public override async Task<ResolutionDetails<bool>> ResolveBooleanValueAsync(string flagKey, bool defaultValue, EvaluationContext? context = null,
         CancellationToken cancellationToken = default)
     {
         await Task.CompletedTask;
-            
+
         var evaluator = contextProvider.GetEvaluationContext();
-            
+
         var isFeatureEnabled = evaluator.Evaluate(flagKey, defaultValue, context);
 
         return isFeatureEnabled;

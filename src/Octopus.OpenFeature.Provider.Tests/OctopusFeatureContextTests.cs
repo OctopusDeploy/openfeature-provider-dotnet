@@ -21,7 +21,7 @@ public class OctopusFeatureContextTests
 
         result.Value.Should().BeTrue();
     }
-    
+
     [Fact]
     public void WhenEvaluatedWithCasingDifferences_EvaluationIsInsensitiveToCase()
     {
@@ -35,7 +35,7 @@ public class OctopusFeatureContextTests
 
         result.Value.Should().BeTrue();
     }
-    
+
     [Fact]
     public void EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
     {
@@ -49,7 +49,7 @@ public class OctopusFeatureContextTests
 
         result.Value.Should().BeFalse();
     }
-    
+
     [Fact]
     public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaluatesToDefaultValue()
     {
@@ -64,7 +64,7 @@ public class OctopusFeatureContextTests
         result.ErrorType.Should().Be(ErrorType.FlagNotFound);
         result.Value.Should().BeTrue();
     }
-    
+
     [Fact]
     public void EvaluatesToDefaultValue_IfFeatureIsNotContainedWithinSet()
     {
@@ -140,7 +140,7 @@ public class OctopusFeatureContextTests
         // A matching context value is present for each toggled segment
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial"), ("region", "us")])).Value
             .Should().BeTrue("when there is a matching context value for each toggled segment, the toggle should be enabled");
-        
+
         // A context value is present for each toggled segment, but it is not toggled on for one of the supplied values
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial"), ("region", "eu")])).Value
             .Should().BeFalse("when there is a matching context value for each toggled segment, but the context value does not match the toggled segment, the toggle should be disabled");
@@ -149,7 +149,7 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false,
                 context: BuildContext([("license", "trial"), ("region", "us"), ("language", "english")])).Value.Should()
             .BeTrue("when extra context values are present, the toggle should still be enabled");
-        
+
         // A context value is present for only one of the two toggled segments
         context.Evaluate("testfeature", false, context: BuildContext([("license", "trial")])).Value.Should()
             .BeFalse("when the context does not contain a value for all toggled segments, the toggle should be disabled");
@@ -163,7 +163,7 @@ public class OctopusFeatureContextTests
         // None specified
         context.Evaluate("testfeature", true, context: null).Value.Should().BeFalse("when no context values are present, and the feature is toggled on for a segment, the toggle should be disabled");
     }
-    
+
     [Fact]
     public void
         WhenAFeatureIsToggledOnForASpecificSegment_ToleratesNullValuesInContext()
