@@ -45,33 +45,16 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             BaseAddress = configuration.ServerUri
         };
 
-        // WARNING: v2 and v3 check endpoints have identical response contracts.
-        // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
-        // This code will need to update accordingly
         FeatureCheck? hash = null;
-        if (configuration.IsV3ClientIdentifierSupplied())
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
+
+        var result = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/check/v3/", ct), cancellationToken);
+
+        if (result is not null && result.IsSuccessStatusCode)
         {
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
+            var rawResult = await result.Content.ReadAsStringAsync();
 
-            var result = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/check/v3/", ct), cancellationToken);
-
-            if (result is not null && result.IsSuccessStatusCode)
-            {
-                var rawResult = await result.Content.ReadAsStringAsync();
-
-                hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
-            }
-        }
-        else
-        {
-            var result = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/{configuration.ClientIdentifier}/check", ct), cancellationToken);
-
-            if (result is not null && result.IsSuccessStatusCode)
-            {
-                var rawResult = await result.Content.ReadAsStringAsync();
-
-                hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
-            }
+            hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
         }
 
         if (hash is null)
@@ -109,17 +92,9 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.ReleaseVersion, configuration.ReleaseVersionOverride);
         }
 
-        HttpResponseMessage? response;
-        if (configuration.IsV3ClientIdentifierSupplied())
-        {
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-            response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
-        }
-        else
-        {
-            response = await ExecuteWithRetry(async ct => await client.GetAsync($"api/featuretoggles/v2/{configuration.ClientIdentifier}", ct), cancellationToken);
-        }
+        var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
 
         if (response is null or { StatusCode: HttpStatusCode.NotFound })
         {
