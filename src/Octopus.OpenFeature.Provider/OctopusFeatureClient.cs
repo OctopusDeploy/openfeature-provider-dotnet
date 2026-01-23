@@ -44,6 +44,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             BaseAddress = configuration.ServerUri
         };
+        client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.UserAgent, configuration.ProductMetadata.UserAgentString);
 
         FeatureCheck? hash = null;
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
@@ -86,6 +87,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             BaseAddress = configuration.ServerUri
         };
+        client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.UserAgent, configuration.ProductMetadata.UserAgentString);
 
         if (configuration.ReleaseVersionOverride is not null)
         {
