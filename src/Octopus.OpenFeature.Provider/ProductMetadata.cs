@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+
 namespace Octopus.OpenFeature.Provider;
 
 /// <summary>
@@ -10,20 +12,13 @@ public class ProductMetadata
 {
     public ProductMetadata(string productName)
     {
-        ProductName = productName;
-        UserAgentString = productName;
+        ProductHeaderValue = new ProductHeaderValue(productName);
     }
 
     public ProductMetadata(string productName, string productVersion)
     {
-        ProductName = productName;
-        ProductVersion = productVersion;
-        UserAgentString = $"{productName}/{productVersion}";
+        ProductHeaderValue = new ProductHeaderValue(productName, productVersion);
     }
 
-    public string ProductName { get; }
-
-    public string? ProductVersion { get; }
-
-    public string UserAgentString { get; }
+    public ProductHeaderValue ProductHeaderValue { get; }
 }

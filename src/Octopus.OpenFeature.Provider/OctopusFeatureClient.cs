@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -44,7 +45,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             BaseAddress = configuration.ServerUri
         };
-        client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.UserAgent, configuration.ProductMetadata.UserAgentString);
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(configuration.ProductMetadata.ProductHeaderValue));
 
         FeatureCheck? hash = null;
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
@@ -87,7 +88,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             BaseAddress = configuration.ServerUri
         };
-        client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.UserAgent, configuration.ProductMetadata.UserAgentString);
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(configuration.ProductMetadata.ProductHeaderValue));
 
         if (configuration.ReleaseVersionOverride is not null)
         {
