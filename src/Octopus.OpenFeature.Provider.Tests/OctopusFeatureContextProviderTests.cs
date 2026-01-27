@@ -8,7 +8,7 @@ namespace Octopus.OpenFeature.Provider.Tests;
 
 public class OctopusFeatureContextProviderTests
 {
-    readonly OctopusFeatureConfiguration configuration = new("identifier")
+    readonly OctopusFeatureConfiguration configuration = new("identifier", new ProductMetadata("test-agent"))
     {
         CacheDuration = TimeSpan.FromSeconds(1)
     };

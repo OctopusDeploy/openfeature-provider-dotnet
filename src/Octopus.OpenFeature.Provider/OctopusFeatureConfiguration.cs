@@ -7,9 +7,10 @@ public class OctopusFeatureConfiguration
 {
     const string DefaultServerUri = "https://features.octopus.com";
 
-    public OctopusFeatureConfiguration(string clientIdentifier)
+    public OctopusFeatureConfiguration(string clientIdentifier, ProductMetadata productMetadata)
     {
         ClientIdentifier = clientIdentifier;
+        ProductMetadata = productMetadata;
         var serverUri = Environment.GetEnvironmentVariable("OctoToggle__Url");
         ServerUri = serverUri is not null ? new Uri(serverUri) : new Uri(DefaultServerUri);
     }
@@ -25,6 +26,11 @@ public class OctopusFeatureConfiguration
     /// The ClientIdentifier provided by the Octopus variable Octopus.FeatureToggles.ClientIdentifier
     /// </summary>
     public string ClientIdentifier { get; set; }
+
+    /// <summary>
+    /// Metadata about the product using the OpenFeature provider
+    /// </summary>
+    public ProductMetadata ProductMetadata { get; set; }
 
     /// <summary>
     /// The amount of time between checks to see if new feature toggles are available
