@@ -8,9 +8,7 @@ The OctopusDeploy .NET [OpenFeature provider
 [Octopus Deploy](https://octopus.com) is a sophisticated, best-of-breed continuous delivery (CD) platform for modern software teams. Octopus offers powerful release orchestration, deployment automation, and runbook automation, while handling the scale, complexity and governance expectations of even the largest organizations with the most complex deployment challenges.
 
 ## Supported .NET Versions
-This SDK is currently built for .NET 8.0, meaning it will run on .NET 8.0 and above. 
-
-If you require support for additional versions, please raise an issue.
+This SDK targets netstandard 2.0 for broad compatibility. You can review compatibility [on Microsoft's website](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0).
 
 ## Getting Started
 
