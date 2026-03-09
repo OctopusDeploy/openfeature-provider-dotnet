@@ -1,7 +1,6 @@
 # Octopus Deploy OpenFeature provider for .NET  
 
-The OctopusDeploy .NET [OpenFeature provider
-](https://openfeature.dev/docs/reference/concepts/provider/)
+The OctopusDeploy .NET [OpenFeature provider](https://openfeature.dev/docs/reference/concepts/provider/)
 
 ## About Octopus Deploy 
 
