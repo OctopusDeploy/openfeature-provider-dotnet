@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using OpenFeature.Constant;
 using OpenFeature.Model;
@@ -7,13 +8,13 @@ namespace Octopus.OpenFeature.Provider;
 
 partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
-    public byte[] ContentHash => toggles.ContentHash;
+    public EntityTagHeaderValue? ETag => toggles.ETag;
     readonly Regex expression = new("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
 
     public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
     {
-        return new OctopusFeatureContext(new FeatureToggles([], []), loggerFactory);
+        return new OctopusFeatureContext(new FeatureToggles([], null), loggerFactory);
     }
 
     public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)

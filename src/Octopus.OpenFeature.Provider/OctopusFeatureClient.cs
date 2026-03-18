@@ -5,11 +5,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Octopus.OpenFeature.Provider;
 
-public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
+class FeatureToggles(FeatureToggleEvaluation[] evaluations, EntityTagHeaderValue? eTag)
 {
-    public FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
+    internal FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
 
-    public byte[] ContentHash { get; } = contentHash;
+    internal EntityTagHeaderValue? ETag { get; } = eTag;
 }
 
 public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, KeyValuePair<string, string>[] segments)
@@ -25,8 +25,7 @@ public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, K
 
 interface IOctopusFeatureClient
 {
-    Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken);
-    Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken);
+    Task<FeatureToggles?> GetLatestManifest(EntityTagHeaderValue? eTag, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -34,55 +33,14 @@ interface IOctopusFeatureClient
 /// </summary>
 class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger logger) : IOctopusFeatureClient
 {
-    public async Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
-    {
-        if (contentHash.Length == 0)
-        {
-            return true;
-        }
-
-        var client = new HttpClient
-        {
-            BaseAddress = configuration.ServerUri
-        };
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(configuration.ProductMetadata.ProductHeaderValue));
-
-        FeatureCheck? hash = null;
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
-
-        var result = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/check/v3/", ct), cancellationToken);
-
-        if (result is not null && result.IsSuccessStatusCode)
-        {
-            var rawResult = await result.Content.ReadAsStringAsync();
-
-            hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
-        }
-
-        if (hash is null)
-        {
-            logger.LogWarning("Failed to retrieve feature toggles after 3 retries. Previously retrieved feature toggle values will continue to be used.");
-            return false;
-        }
-
-        var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(contentHash);
-
-        return haveFeaturesChanged;
-    }
-
-    class FeatureCheck(byte[] contentHash)
-    {
-        public byte[] ContentHash { get; } = contentHash;
-    }
-
     /// <summary>
     /// Retrieves the evaluated feature set from OctoToggle for a given installation and project.
     /// This method will return null if:
-    /// - Toggles are not found for the installation and id
-    /// - We don't receive a ContentHash header
-    /// - We cannot deserialize the content response into a OctoToggleFeatureManifest
+    /// - The toggles have not changed since the last request.
+    /// - Toggles are not found for the installation and id.
+    /// - We cannot deserialize the content response into a OctoToggleFeatureManifest.
     /// </summary>
-    public async Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+    public async Task<FeatureToggles?> GetLatestManifest(EntityTagHeaderValue? eTag, CancellationToken cancellationToken)
     {
         var client = new HttpClient
         {
@@ -97,7 +55,12 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
+        if (eTag is not null)
+        {
+            client.DefaultRequestHeaders.IfNoneMatch.Add(eTag);
+        }
+
+        var response = await client.GetAsync("api/featuretoggles/v3/", cancellationToken);
 
         if (response is null or { StatusCode: HttpStatusCode.NotFound })
         {
@@ -105,23 +68,12 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             return null;
         }
 
-        if (!response.Headers.TryGetValues("ContentHash", out IEnumerable<string> values))
+        if (response.StatusCode == HttpStatusCode.NotModified)
         {
-            logger.LogWarning("Feature toggle response from {OctoToggleUrl} did not contain expected ContentHash header", configuration.ServerUri);
             return null;
         }
-        var headerValues = values.ToArray();
-        if (!headerValues.Any())
-        {
-            logger.LogWarning("Feature toggle response from {OctoToggleUrl} returned an empty ContentHash header", configuration.ServerUri);
-            return null;
-        }
-        var rawContentHash = headerValues.First();
 
-        // WARNING: v2 and v3 endpoints have identical response contracts.
-        // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
-        // This code will need to update accordingly
-        var result = await response.Content.ReadAsStringAsync();
+        var result = await response.Content.ReadAsStreamAsync();
 
         var evaluations = JsonSerializer.Deserialize<FeatureToggleEvaluation[]>(result, JsonSerializerOptions.Web);
 
@@ -131,28 +83,6 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             return null;
         }
 
-        var toggles = new FeatureToggles(evaluations, Convert.FromBase64String(rawContentHash));
-
-        return toggles;
-    }
-
-    async Task<T?> ExecuteWithRetry<T>(Func<CancellationToken, Task<T>> callback, CancellationToken cancellationToken)
-    {
-        var attempts = 0;
-        while (attempts < 3)
-        {
-            try
-            {
-                return await callback(cancellationToken);
-            }
-            catch (Exception e)
-            {
-                attempts++;
-                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempts)), cancellationToken);
-                logger.LogTrace(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}. Retrying (attempt {attempt} out of 3).", configuration.ServerUri, attempts);
-            }
-        }
-
-        return default;
+        return new FeatureToggles(evaluations, response.Headers.ETag);
     }
 }

@@ -13,7 +13,7 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
@@ -27,7 +27,7 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
@@ -41,7 +41,7 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", false, [])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
@@ -55,7 +55,7 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("This is clearly not a slug!", "this-is-clearly-not-a-slug", true, [])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
@@ -70,7 +70,7 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
@@ -97,7 +97,7 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
@@ -113,7 +113,7 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
@@ -131,7 +131,7 @@ public class OctopusFeatureContextTests
                 new("region", "au"),
                 new("region", "us"),
             ])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
@@ -170,7 +170,7 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
-        ], []);
+        ], null);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
