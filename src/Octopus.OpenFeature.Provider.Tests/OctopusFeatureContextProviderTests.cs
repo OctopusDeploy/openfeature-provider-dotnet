@@ -46,7 +46,7 @@ public class OctopusFeatureContextProviderTests
     {
         var client = new MockOctopusFeatureClient(new FeatureToggles(
             [new FeatureToggleEvaluation("Test Feature", "test-feature", true, [])],
-            new("01-02-03-04")));
+            new("\"01-02-03-04\"")));
 
         var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
         await provider.Initialize();
@@ -55,7 +55,7 @@ public class OctopusFeatureContextProviderTests
         using var scope = new AssertionScope();
         context.Should().NotBeNull();
         context.ETag.Should().NotBeNull();
-        context.ETag!.Tag.Should().Be("01-02-03-04");
+        context.ETag!.Tag.Should().Be("\"01-02-03-04\"");
         context.Evaluate("test-feature", false, context: null).Value.Should().BeTrue();
     }
 
@@ -64,7 +64,7 @@ public class OctopusFeatureContextProviderTests
     {
         var client = new MockOctopusFeatureClient(new FeatureToggles(
             [new FeatureToggleEvaluation("Test Feature", "test-feature", true, [])],
-            new("01-02-03-04")));
+            new("\"01-02-03-04\"")));
 
         // Initialize the provider
         var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
@@ -74,13 +74,13 @@ public class OctopusFeatureContextProviderTests
         using var scope = new AssertionScope();
         var context = provider.GetEvaluationContext();
         context.ETag.Should().NotBeNull();
-        context.ETag!.Tag.Should().Be("01-02-03-04");
+        context.ETag!.Tag.Should().Be("\"01-02-03-04\"");
         context.Evaluate("test-feature", false, context: null).Value.Should().BeTrue();
 
         // Simulate a change in the available feature toggles
         client.ChangeToggles(new FeatureToggles(
             [new FeatureToggleEvaluation("Test Feature", "test-feature", false, [])],
-            new("01-02-03-05")));
+            new("\"01-02-03-05\"")));
 
         // Wait for the cache to expire
         await Task.Delay(TimeSpan.FromSeconds(5));
@@ -88,7 +88,7 @@ public class OctopusFeatureContextProviderTests
         // Validate the updated toggles are available
         context = provider.GetEvaluationContext();
         context.ETag.Should().NotBeNull();
-        context.ETag!.Tag.Should().Be("01-02-03-05");
+        context.ETag!.Tag.Should().Be("\"01-02-03-05\"");
         context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
     }
 
