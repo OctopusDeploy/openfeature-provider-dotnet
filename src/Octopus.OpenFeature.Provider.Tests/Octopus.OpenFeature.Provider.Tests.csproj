@@ -27,4 +27,10 @@
       <ProjectReference Include="..\Octopus.OpenFeature.Provider\Octopus.OpenFeature.Provider.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Include="..\..\fixtures\*.json" Link="Fixtures\%(Filename)%(Extension)">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>
