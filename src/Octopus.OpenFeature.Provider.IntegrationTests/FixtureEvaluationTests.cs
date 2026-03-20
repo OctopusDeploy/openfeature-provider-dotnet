@@ -9,7 +9,37 @@ using WireMock.Server;
 
 namespace Octopus.OpenFeature.Provider.IntegrationTests;
 
-public class FixtureEvaluationTests
+public class WireMockFixture : IDisposable
+{
+    readonly Dictionary<string, WireMockServer> _servers = [];
+
+    public WireMockServer GetServer(string togglesJson)
+    {
+        if (!_servers.TryGetValue(togglesJson, out var server))
+        {
+            server = WireMockServer.Start();
+            server
+                .Given(Request.Create().WithPath("/api/featuretoggles/v3/").UsingGet())
+                .RespondWith(Response.Create()
+                    .WithStatusCode(200)
+                    .WithHeader("ContentHash", Convert.ToBase64String([0x01]))
+                    .WithBody(togglesJson));
+            _servers[togglesJson] = server;
+        }
+
+        return server;
+    }
+
+    public void Dispose()
+    {
+        foreach (var server in _servers.Values)
+        {
+            server.Dispose();
+        }
+    }
+}
+
+public class FixtureEvaluationTests(WireMockFixture wireMockFixture) : IClassFixture<WireMockFixture>
 {
     public static TheoryData<FixtureTestData> GetTestCases()
     {
@@ -36,14 +66,7 @@ public class FixtureEvaluationTests
     [MemberData(nameof(GetTestCases))]
     public async Task Evaluate(FixtureTestData testData)
     {
-        using var server = WireMockServer.Start();
-
-        server
-            .Given(Request.Create().WithPath("/api/featuretoggles/v3/").UsingGet())
-            .RespondWith(Response.Create()
-                .WithStatusCode(200)
-                .WithHeader("ContentHash", Convert.ToBase64String([0x01]))
-                .WithBody(testData.TogglesJson));
+        var server = wireMockFixture.GetServer(testData.TogglesJson);
 
         var configuration = new OctopusFeatureConfiguration("test-identifier", new ProductMetadata("test-agent"))
         {
