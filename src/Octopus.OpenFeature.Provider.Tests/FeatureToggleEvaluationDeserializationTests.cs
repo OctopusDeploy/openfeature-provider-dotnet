@@ -9,7 +9,12 @@ public class FeatureToggleEvaluationDeserializationTests
     public void ShouldDeserializeEnabledToggle()
     {
         var json = """
-                   {"name":"My Feature","slug":"my-feature","isEnabled":true,"segments":[]}
+                   {
+                       "name": "My Feature",
+                       "slug": "my-feature",
+                       "isEnabled": true,
+                       "segments": []
+                   }
                    """;
 
         var result = JsonSerializer.Deserialize<FeatureToggleEvaluation>(json, JsonSerializerOptions.Web);
@@ -76,5 +81,30 @@ public class FeatureToggleEvaluationDeserializationTests
         result[0].IsEnabled.Should().BeTrue();
         result[1].Slug.Should().Be("feature-b");
         result[1].IsEnabled.Should().BeFalse();
+    }
+    
+    [Fact]
+    public void ShouldIgnoreExtraneousProperties()
+    {
+        var json = """
+                   {
+                       "name": "My Feature",
+                       "slug": "my-feature",
+                       "isEnabled": true,
+                       "segments": [],
+                       "foo": "bar",
+                       "qux": 123,
+                       "wux": {
+                           "nested": "value"
+                       }
+                   }
+                   """;
+
+        var result = JsonSerializer.Deserialize<FeatureToggleEvaluation>(json, JsonSerializerOptions.Web);
+
+        result!.Name.Should().Be("My Feature");
+        result.Slug.Should().Be("my-feature");
+        result.IsEnabled.Should().BeTrue();
+        result.Segments.Should().BeEmpty();
     }
 }
