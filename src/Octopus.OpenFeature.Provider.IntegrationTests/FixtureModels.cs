@@ -1,8 +1,4 @@
-namespace Octopus.OpenFeature.Provider.Tests;
-
-public record FixtureFile(
-    FeatureToggleEvaluation[] Toggles,
-    FixtureCase[] Cases);
+namespace Octopus.OpenFeature.Provider.IntegrationTests;
 
 public record FixtureCase(
     string Description,

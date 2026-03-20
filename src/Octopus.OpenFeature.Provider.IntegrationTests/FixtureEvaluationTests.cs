@@ -1,11 +1,13 @@
 using System.Text.Json;
 using FluentAssertions;
 using FluentAssertions.Execution;
-using Microsoft.Extensions.Logging.Abstractions;
 using OpenFeature.Constant;
 using OpenFeature.Model;
+using WireMock.RequestBuilders;
+using WireMock.ResponseBuilders;
+using WireMock.Server;
 
-namespace Octopus.OpenFeature.Provider.Tests;
+namespace Octopus.OpenFeature.Provider.IntegrationTests;
 
 public class FixtureEvaluationTests
 {
@@ -14,17 +16,17 @@ public class FixtureEvaluationTests
         var data = new TheoryData<FixtureTestData>();
 
         var fixtureDir = Path.Combine(AppContext.BaseDirectory, "Fixtures");
-        foreach (var file in Directory.GetFiles(fixtureDir, "*.json"))
+        foreach (var dir in Directory.GetDirectories(fixtureDir))
         {
-            var json = File.ReadAllText(file);
-            var fixture = JsonSerializer.Deserialize<FixtureFile>(json, JsonSerializerOptions.Web)
-                ?? throw new InvalidOperationException($"Failed to deserialize fixture file: {file}");
+            var togglesJson = File.ReadAllText(Path.Combine(dir, "toggles.json"));
+            var casesJson = File.ReadAllText(Path.Combine(dir, "cases.json"));
+            var cases = JsonSerializer.Deserialize<FixtureCase[]>(casesJson, JsonSerializerOptions.Web)
+                ?? throw new InvalidOperationException($"Failed to deserialize cases in {dir}");
 
-            foreach (var testCase in fixture.Cases)
+            foreach (var testCase in cases)
             {
-                data.Add(new FixtureTestData(fixture.Toggles, testCase));
+                data.Add(new FixtureTestData(togglesJson, testCase));
             }
-
         }
 
         return data;
@@ -32,17 +34,33 @@ public class FixtureEvaluationTests
 
     [Theory]
     [MemberData(nameof(GetTestCases))]
-    public void Evaluate(FixtureTestData testData)
+    public async Task Evaluate(FixtureTestData testData)
     {
-        var toggles = new FeatureToggles(testData.Toggles, []);
-        var featureContext = new OctopusFeatureContext(toggles, NullLoggerFactory.Instance);
+        using var server = WireMockServer.Start();
+
+        server
+            .Given(Request.Create().WithPath("/api/featuretoggles/v3/").UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithHeader("ContentHash", Convert.ToBase64String([0x01]))
+                .WithBody(testData.TogglesJson));
+
+        var configuration = new OctopusFeatureConfiguration("test-identifier", new ProductMetadata("test-agent"))
+        {
+            ServerUri = new Uri(server.Url!)
+        };
+
+        var provider = new OctopusFeatureProvider(configuration);
+        await provider.InitializeAsync(EvaluationContext.Empty);
 
         var evaluationContext = BuildContext(testData.Case.Configuration.Context);
 
-        var result = featureContext.Evaluate(
+        var result = await provider.ResolveBooleanValueAsync(
             testData.Case.Configuration.Slug,
             testData.Case.Configuration.DefaultValue,
             evaluationContext);
+
+        await provider.ShutdownAsync();
 
         using var scope = new AssertionScope(testData.Case.Description);
         result.Value.Should().Be(testData.Case.Expected.Value);
@@ -51,18 +69,17 @@ public class FixtureEvaluationTests
         {
             result.ErrorType.Should().Be(MapErrorCode(errorCode));
         }
-
         else
         {
             result.ErrorType.Should().Be(ErrorType.None);
         }
-
     }
 
     static EvaluationContext? BuildContext(Dictionary<string, string>? context)
     {
         if (context is null)
         {
+
             return null;
         }
 
@@ -85,11 +102,10 @@ public class FixtureEvaluationTests
     };
 }
 
-public class FixtureTestData(FeatureToggleEvaluation[] toggles, FixtureCase @case)
+public class FixtureTestData(string togglesJson, FixtureCase @case)
 {
-    public FeatureToggleEvaluation[] Toggles { get; } = toggles;
+    public string TogglesJson { get; } = togglesJson;
     public FixtureCase Case { get; } = @case;
 
-    // Controls the name shown in Test Explorer for each theory row
     public override string ToString() => Case.Description;
 }
