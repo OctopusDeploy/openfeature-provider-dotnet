@@ -12,15 +12,19 @@ public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] conten
     public byte[] ContentHash { get; } = contentHash;
 }
 
-public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, KeyValuePair<string, string>[] segments)
+public class FeatureToggleEvaluation(string name, string slug, string evaluationKey, bool isEnabled, KeyValuePair<string, string>[] segments, int? rolloutPercentage = null)
 {
     public string Name { get; } = name;
 
     public string Slug { get; } = slug;
 
+    public string EvaluationKey { get; } = evaluationKey;
+
     public bool IsEnabled { get; } = isEnabled;
 
     public KeyValuePair<string, string>[] Segments { get; } = segments;
+    
+    public int? RolloutPercentage { get; } = rolloutPercentage; // cc should this be nullable? Or default to 100??
 }
 
 interface IOctopusFeatureClient

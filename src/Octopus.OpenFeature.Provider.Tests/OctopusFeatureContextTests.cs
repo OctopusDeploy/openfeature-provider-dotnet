@@ -12,7 +12,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToTrue_IfFeatureIsContainedWithinTheSet_AndFeatureIsEnabled()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -26,7 +26,7 @@ public class OctopusFeatureContextTests
     public void WhenEvaluatedWithCasingDifferences_EvaluationIsInsensitiveToCase()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -40,7 +40,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "test-feature", false, [])
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", false, [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -54,7 +54,7 @@ public class OctopusFeatureContextTests
     public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaluatesToDefaultValue()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("This is clearly not a slug!", "this-is-clearly-not-a-slug", true, [])
+            new FeatureToggleEvaluation("This is clearly not a slug!", "this-is-clearly-not-a-slug", "evaluation-key", true, [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -69,7 +69,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToDefaultValue_IfFeatureIsNotContainedWithinSet()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
+            new FeatureToggleEvaluation("testfeature", "testfeature", "evaluation-key", true, [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -96,7 +96,7 @@ public class OctopusFeatureContextTests
         WhenAFeatureIsToggledOnForASpecificSegment_EvaluatesToTrueWhenSegmentIsSpecified()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
+            new FeatureToggleEvaluation("testfeature", "testfeature", "evaluation-key", true, [new("license", "trial")])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -112,7 +112,7 @@ public class OctopusFeatureContextTests
         WhenFeatureIsNotToggledOnForSpecificSegments_EvaluatesToTrueRegardlessOfSegmentSpecified()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
+            new FeatureToggleEvaluation("testfeature", "testfeature", "evaluation-key", true, [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -126,11 +126,11 @@ public class OctopusFeatureContextTests
     public void WhenAFeatureIsToggledOnForMultipleSegments_EvaluatesCorrectly()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [
+            new FeatureToggleEvaluation("testfeature", "testfeature", "evaluation-key", true, [
                 new("license", "trial"),
                 new("region", "au"),
                 new("region", "us"),
-            ])
+            ], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -169,7 +169,7 @@ public class OctopusFeatureContextTests
         WhenAFeatureIsToggledOnForASpecificSegment_ToleratesNullValuesInContext()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
+            new FeatureToggleEvaluation("testfeature", "testfeature", "evaluation-key", true, [new("license", "trial")])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
