@@ -84,11 +84,12 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
             {
                 if (GetNormalizedNumber(evaluation.EvaluationKey, targetingKey) > evaluation.RolloutPercentage)
                 {
-                    return false;
+                    return false; // return false if hash number is larger than rollout percentage
                 }
             }
         }
 
+        // should we move this up so we do it before the rollout percentage check? I think yes.
         return evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments);
     }
 

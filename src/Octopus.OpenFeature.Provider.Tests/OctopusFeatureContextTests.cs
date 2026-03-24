@@ -1,6 +1,8 @@
+using System.Text;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Extensions.Logging.Abstractions;
+using Murmur;
 using OpenFeature.Constant;
 using OpenFeature.Model;
 
@@ -80,14 +82,17 @@ public class OctopusFeatureContextTests
         result.Value.Should().BeTrue();
     }
 
-    EvaluationContext BuildContext(IEnumerable<(string key, string value)> values)
+    EvaluationContext BuildContext(IEnumerable<(string key, string value)> values, string? targetingKey = null)
     {
         var builder = EvaluationContext.Builder();
         foreach (var (key, value) in values)
         {
             builder.Set(key, value);
         }
-
+        if (targetingKey != null)
+        {
+            builder.SetTargetingKey(targetingKey);
+        }
         return builder.Build();
     }
 
@@ -179,4 +184,86 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
         context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
     }
+
+    [Fact]
+    public void WhenTargetingKeyHashFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [], rolloutPercentage: 20)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // GetNormalizedNumber("evaluation-key", "targeting-key") resolves to 13
+        // 13 < 20 => feature should be enabled
+        var evaluationContext = BuildContext([], targetingKey: "targeting-key");
+        var result = context.Evaluate("test-feature", false, evaluationContext);
+
+        result.Value.Should().BeTrue();
+    }
+
+    [Fact]
+    public void WhenTargetingKeyHashFallsOutsideRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToFalse()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [], rolloutPercentage: 10)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // GetNormalizedNumber("evaluation-key", "targeting-key") resolves to 13
+        // 13 > 10 => feature should be disabled
+        var evaluationContext = BuildContext([], targetingKey: "targeting-key");
+        var result = context.Evaluate("test-feature", false, evaluationContext);
+
+        result.Value.Should().BeFalse();
+    }
+
+    [Fact]
+    public void WhenTargetingKeyIsWithinRollout_AndSegmentMatchesRequiredSegments_EvaluatesToTrue()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [new("license", "trial")], rolloutPercentage: 20)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // GetNormalizedNumber("evaluation-key", "targeting-key") resolves to 13
+        // 13 < 20 => feature should be included in rollout if matching a required segment
+        var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
+
+        using var scope = new AssertionScope();
+        context.Evaluate("test-feature", false, evaluationContext).Value.Should()
+            .BeTrue("targeting key is within rollout and segment matches required segment");
+    }
+
+    [Fact]
+    public void WhenTargetingKeyIsWithinRollout_AndSegmentDoesNotMatchRequiredSegments_EvaluatesToFalse()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [new("license", "enterprise")], rolloutPercentage: 20)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // GetNormalizedNumber("evaluation-key", "targeting-key") resolves to 13
+        // 13 < 20 => feature should be included in rollout if matching a required segment
+        var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
+
+        using var scope = new AssertionScope();
+        context.Evaluate("test-feature", false, evaluationContext).Value.Should()
+            .BeFalse("targeting key is within rollout but segment does not match required segment");
+    }
+
+// cc TEMP!! 
+    // private int GetNormalizedNumber(string evaluationKey, string targetingKey)
+    // {
+    //     var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, ":", targetingKey));
+
+    //     using var algorithm = MurmurHash.Create32();
+    //     var hash = algorithm.ComputeHash(bytes);
+    //     var value = BitConverter.ToUInt32(hash, 0);
+    //     return (int)(value % 100 + 1);
+    // }
+
 }
