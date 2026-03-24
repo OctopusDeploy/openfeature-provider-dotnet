@@ -1,11 +1,8 @@
-using System.Text.Json;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using OpenFeature;
 using OpenFeature.Constant;
 using OpenFeature.Model;
-using WireMock.RequestBuilders;
-using WireMock.ResponseBuilders;
-using WireMock.Server;
 
 namespace Octopus.OpenFeature.Provider.IntegrationTests;
 
@@ -21,15 +18,13 @@ public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
             ServerUri = new Uri(server.Url)
         };
 
-        var provider = new OctopusFeatureProvider(configuration);
-        await provider.InitializeAsync(BuildContext(testCase.Configuration.Context));
+        await Api.Instance.SetProviderAsync(new OctopusFeatureProvider(configuration));
+        Api.Instance.SetContext(BuildContext(testCase.Configuration.Context));
+        var client = Api.Instance.GetClient();
 
         // Act
-        var result = await provider.ResolveBooleanValueAsync(
-            testCase.Configuration.Slug,
-            testCase.Configuration.DefaultValue
-        );
-        await provider.ShutdownAsync();
+        var result = await client.GetBooleanDetailsAsync(testCase.Configuration.Slug, testCase.Configuration.DefaultValue);
+        await Api.Instance.ShutdownAsync();
 
         // Assert
         using var scope = new AssertionScope(testCase.Description);

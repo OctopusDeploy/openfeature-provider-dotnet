@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Octopus.OpenFeature.Provider.IntegrationTests;
 
-public class Cases : TheoryData<Case>
+public class Cases : IEnumerable<object[]>
 {
     public IEnumerator<object[]> GetEnumerator()
     {
@@ -22,6 +22,11 @@ public class Cases : TheoryData<Case>
                 yield return new object[] { responseJson, c };
             }
         }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }
 
@@ -44,9 +49,4 @@ public record FixtureConfiguration(string Slug,
 public record FixtureExpected(
     bool Value,
     string? ErrorCode = null
-);
-
-public record Case(
-    JsonElement Response,
-    FixtureCase Cases
 );
