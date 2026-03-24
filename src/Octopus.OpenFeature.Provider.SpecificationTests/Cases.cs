@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Text.Json;
 
-namespace Octopus.OpenFeature.Provider.IntegrationTests;
+namespace Octopus.OpenFeature.Provider.SpecificationTests;
 
 public class Cases : IEnumerable<object[]>
 {
@@ -43,7 +43,7 @@ public record FixtureCase(
 
 public record FixtureConfiguration(string Slug,
     bool DefaultValue,
-    Dictionary<string, string> Context
+    Dictionary<string, string>? Context
 );
 
 public record FixtureExpected(

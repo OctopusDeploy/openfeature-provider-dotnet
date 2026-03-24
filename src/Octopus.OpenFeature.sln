@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.OpenFeature.Provide
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.OpenFeature.Provider.Tests", "Octopus.OpenFeature.Provider.Tests\Octopus.OpenFeature.Provider.Tests.csproj", "{15569FBD-A9B8-478C-880B-FAC8CAF1A2BD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.OpenFeature.Provider.IntegrationTests", "Octopus.OpenFeature.Provider.IntegrationTests\Octopus.OpenFeature.Provider.IntegrationTests.csproj", "{E3F2C4A1-9B7D-4E6F-A2B5-8C3D1F0E5A9B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.OpenFeature.Provider.SpecificationTests", "Octopus.OpenFeature.Provider.SpecificationTests\Octopus.OpenFeature.Provider.SpecificationTests.csproj", "{E3F2C4A1-9B7D-4E6F-A2B5-8C3D1F0E5A9B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

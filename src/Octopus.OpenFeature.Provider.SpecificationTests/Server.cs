@@ -5,7 +5,7 @@ using WireMock.Server;
 using WireMock.Types;
 using WireMock.Util;
 
-namespace Octopus.OpenFeature.Provider.IntegrationTests;
+namespace Octopus.OpenFeature.Provider.SpecificationTests;
 
 public class Server : IDisposable
 {

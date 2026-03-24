@@ -4,7 +4,7 @@ using OpenFeature;
 using OpenFeature.Constant;
 using OpenFeature.Model;
 
-namespace Octopus.OpenFeature.Provider.IntegrationTests;
+namespace Octopus.OpenFeature.Provider.SpecificationTests;
 
 public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
 {
@@ -32,9 +32,11 @@ public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
         result.ErrorType.Should().Be(MapErrorCode(testCase.Expected.ErrorCode));
     }
 
-    static EvaluationContext BuildContext(Dictionary<string, string> context)
+    static EvaluationContext BuildContext(Dictionary<string, string>? context)
     {
         var builder = EvaluationContext.Builder();
+
+        context ??= [];
         foreach (var (key, value) in context)
         {
             builder.Set(key, value);

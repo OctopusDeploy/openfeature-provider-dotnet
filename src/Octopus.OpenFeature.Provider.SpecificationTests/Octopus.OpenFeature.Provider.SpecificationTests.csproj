@@ -27,7 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\..\fixtures\**\*.json" Link="Fixtures\%(RecursiveDir)%(Filename)%(Extension)">
+        <None Include="..\..\specification\Fixtures\*.json" Link="Fixtures\%(RecursiveDir)%(Filename)%(Extension)">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
