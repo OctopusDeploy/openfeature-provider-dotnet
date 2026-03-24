@@ -56,6 +56,6 @@ public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
         "PROVIDER_FATAL" => ErrorType.ProviderFatal,
         "GENERAL" => ErrorType.General,
         null => ErrorType.None,
-        _ => ErrorType.General
+        _ => throw new ArgumentException($"Unknown error code: {errorCode}")
     };
 }
