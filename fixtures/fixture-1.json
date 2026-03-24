@@ -1,4 +1,36 @@
-[
+{
+  "response": [
+    {
+      "name": "My Feature A",
+      "slug": "feature-a",
+      "isEnabled": true,
+      "segments": [
+        { "key": "license", "value": "trial" }
+      ]
+    },
+    {
+      "name": "My Feature B",
+      "slug": "feature-b",
+      "isEnabled": true,
+      "segments": [
+        { "key": "region", "value": "us" },
+        { "key": "region", "value": "au" }
+      ]
+    },
+    {
+      "name": "My Feature C",
+      "slug": "feature-c",
+      "isEnabled": true,
+      "segments": []
+    },
+    {
+      "name": "My Feature D",
+      "slug": "feature-d",
+      "isEnabled": false,
+      "segments": []
+    }
+  ],
+  "cases": [
   {
     "description": "enabled when the evaluation context matches its required segment",
     "configuration": {
@@ -25,6 +57,7 @@
     "description": "disabled when no evaluation context is provided and toggle has required segments",
     "configuration": {
       "slug": "feature-a",
+      "context": {},
       "defaultValue": false
     },
     "expected": {
@@ -46,6 +79,7 @@
     "description": "enabled regardless of context when toggle has no required segments",
     "configuration": {
       "slug": "feature-c",
+      "context": {},
       "defaultValue": false
     },
     "expected": {
@@ -67,6 +101,7 @@
     "description": "returns FLAG_NOT_FOUND and default value when flag key is not a slug",
     "configuration": {
       "slug": "not a slug",
+      "context": {},
       "defaultValue": true
     },
     "expected": {
@@ -78,6 +113,7 @@
     "description": "returns FLAG_NOT_FOUND and default value when slug does not match any toggle",
     "configuration": {
       "slug": "unknown-feature",
+      "context": {},
       "defaultValue": true
     },
     "expected": {
@@ -86,3 +122,5 @@
     }
   }
 ]
+
+}

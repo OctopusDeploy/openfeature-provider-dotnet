@@ -9,126 +9,49 @@ using WireMock.Server;
 
 namespace Octopus.OpenFeature.Provider.IntegrationTests;
 
-public class WireMockFixture : IDisposable
+public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
 {
-    readonly Dictionary<string, WireMockServer> _servers = [];
-
-    public WireMockServer GetServer(string togglesJson)
-    {
-        if (!_servers.TryGetValue(togglesJson, out var server))
-        {
-            server = WireMockServer.Start();
-            server
-                .Given(Request.Create().WithPath("/api/featuretoggles/v3/").UsingGet())
-                .RespondWith(Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("ContentHash", Convert.ToBase64String([0x01]))
-                    .WithBody(togglesJson));
-            _servers[togglesJson] = server;
-        }
-
-        return server;
-    }
-
-    public void Dispose()
-    {
-        foreach (var server in _servers.Values)
-        {
-            server.Dispose();
-        }
-    }
-}
-
-public class FixtureEvaluationTests(WireMockFixture wireMockFixture) : IClassFixture<WireMockFixture>
-{
-    public static TheoryData<FixtureTestData> GetTestCases()
-    {
-        var data = new TheoryData<FixtureTestData>();
-
-        var fixtureDir = Path.Combine(AppContext.BaseDirectory, "Fixtures");
-        foreach (var dir in Directory.GetDirectories(fixtureDir))
-        {
-            var togglesJson = File.ReadAllText(Path.Combine(dir, "toggles.json"));
-            var casesJson = File.ReadAllText(Path.Combine(dir, "cases.json"));
-            var cases = JsonSerializer.Deserialize<FixtureCase[]>(casesJson, JsonSerializerOptions.Web)
-                ?? throw new InvalidOperationException($"Failed to deserialize cases in {dir}");
-
-            foreach (var testCase in cases)
-            {
-                data.Add(new FixtureTestData(togglesJson, testCase));
-            }
-        }
-
-        return data;
-    }
-
     [Theory]
-    [MemberData(nameof(GetTestCases))]
-    public async Task Evaluate(FixtureTestData testData)
+    [ClassData(typeof(Cases))]
+    public async Task Evaluate(string testResponse, FixtureCase testCase)
     {
-        var server = wireMockFixture.GetServer(testData.TogglesJson);
-
-        var configuration = new OctopusFeatureConfiguration("test-identifier", new ProductMetadata("test-agent"))
+        var clientIdentifier = server.Configure(testResponse);
+        var configuration = new OctopusFeatureConfiguration(clientIdentifier, new ProductMetadata("test-agent"))
         {
-            ServerUri = new Uri(server.Url!)
+            ServerUri = new Uri(server.Url)
         };
 
         var provider = new OctopusFeatureProvider(configuration);
-        await provider.InitializeAsync(EvaluationContext.Empty);
+        await provider.InitializeAsync(BuildContext(testCase.Configuration.Context));
 
-        var evaluationContext = BuildContext(testData.Case.Configuration.Context);
-
+        // Act
         var result = await provider.ResolveBooleanValueAsync(
-            testData.Case.Configuration.Slug,
-            testData.Case.Configuration.DefaultValue,
-            evaluationContext);
-
+            testCase.Configuration.Slug,
+            testCase.Configuration.DefaultValue
+        );
         await provider.ShutdownAsync();
 
-        using var scope = new AssertionScope(testData.Case.Description);
-        result.Value.Should().Be(testData.Case.Expected.Value);
-
-        if (testData.Case.Expected.ErrorCode is { } errorCode)
-        {
-            result.ErrorType.Should().Be(MapErrorCode(errorCode));
-        }
-        else
-        {
-            result.ErrorType.Should().Be(ErrorType.None);
-        }
+        // Assert
+        using var scope = new AssertionScope(testCase.Description);
+        result.Value.Should().Be(testCase.Expected.Value);
+        result.ErrorType.Should().Be(MapErrorCode(testCase.Expected.ErrorCode));
     }
 
-    static EvaluationContext? BuildContext(Dictionary<string, string>? context)
+    static EvaluationContext BuildContext(Dictionary<string, string> context)
     {
-        if (context is null)
-        {
-
-            return null;
-        }
-
-
         var builder = EvaluationContext.Builder();
         foreach (var (key, value) in context)
         {
-
             builder.Set(key, value);
         }
-
 
         return builder.Build();
     }
 
-    static ErrorType MapErrorCode(string errorCode) => errorCode switch
+    static ErrorType MapErrorCode(string? errorCode) => errorCode switch
     {
         "FLAG_NOT_FOUND" => ErrorType.FlagNotFound,
+        null => ErrorType.None,
         _ => ErrorType.General
     };
-}
-
-public class FixtureTestData(string togglesJson, FixtureCase @case)
-{
-    public string TogglesJson { get; } = togglesJson;
-    public FixtureCase Case { get; } = @case;
-
-    public override string ToString() => Case.Description;
 }
