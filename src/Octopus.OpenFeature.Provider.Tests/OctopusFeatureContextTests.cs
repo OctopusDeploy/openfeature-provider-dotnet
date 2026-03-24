@@ -185,6 +185,8 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
     }
 
+    // TODO: Bin these and replace them with the shared tests?
+
     [Fact]
     public void WhenTargetingKeyHashFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
     {
@@ -194,8 +196,7 @@ public class OctopusFeatureContextTests
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // GetNormalizedNumber("evaluation-key", "targeting-key") resolves to 13
-        // 13 < 20 => feature should be enabled
+        // 13 < 20 => segment is within rollout percentage
         var evaluationContext = BuildContext([], targetingKey: "targeting-key");
         var result = context.Evaluate("test-feature", false, evaluationContext);
 
@@ -211,8 +212,7 @@ public class OctopusFeatureContextTests
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // GetNormalizedNumber("evaluation-key", "targeting-key") resolves to 13
-        // 13 > 10 => feature should be disabled
+        // 13 > 10 => segment is outside of rollout percentage
         var evaluationContext = BuildContext([], targetingKey: "targeting-key");
         var result = context.Evaluate("test-feature", false, evaluationContext);
 
@@ -228,8 +228,7 @@ public class OctopusFeatureContextTests
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // GetNormalizedNumber("evaluation-key", "targeting-key") resolves to 13
-        // 13 < 20 => feature should be included in rollout if matching a required segment
+        // 13 < 20 => segment is within rollout percentage
         var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
 
         using var scope = new AssertionScope();
@@ -246,8 +245,7 @@ public class OctopusFeatureContextTests
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // GetNormalizedNumber("evaluation-key", "targeting-key") resolves to 13
-        // 13 < 20 => feature should be included in rollout if matching a required segment
+        // 13 < 20 => segment is within rollout percentage
         var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
 
         using var scope = new AssertionScope();
@@ -255,15 +253,33 @@ public class OctopusFeatureContextTests
             .BeFalse("targeting key is within rollout but segment does not match required segment");
     }
 
-// cc TEMP!! 
-    // private int GetNormalizedNumber(string evaluationKey, string targetingKey)
-    // {
-    //     var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, ":", targetingKey));
+    [Fact]
+    public void WhenNoTargetingKey_RolloutIsLessThanOneHundredPercent_ResolvesToFalse()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [], rolloutPercentage: 95)
+        ], []);
 
-    //     using var algorithm = MurmurHash.Create32();
-    //     var hash = algorithm.ComputeHash(bytes);
-    //     var value = BitConverter.ToUInt32(hash, 0);
-    //     return (int)(value % 100 + 1);
-    // }
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
+        var evaluationContext = BuildContext([], targetingKey: null);
+        var result = context.Evaluate("test-feature", false, evaluationContext);
+
+        result.Value.Should().BeFalse();
+    }
+
+    [Fact]
+    public void WhenNoTargetingKey_RolloutIsEqualToOneHundredPercent_ResolvesToTrue()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [], rolloutPercentage: 100)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var evaluationContext = BuildContext([], targetingKey: null);
+        var result = context.Evaluate("test-feature", false, evaluationContext);
+
+        result.Value.Should().BeTrue();
+    }
 }
