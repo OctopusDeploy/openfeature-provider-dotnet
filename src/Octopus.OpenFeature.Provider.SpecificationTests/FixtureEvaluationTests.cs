@@ -47,7 +47,14 @@ public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
 
     static ErrorType MapErrorCode(string? errorCode) => errorCode switch
     {
+        "PROVIDER_NOT_READY" => ErrorType.ProviderNotReady,
         "FLAG_NOT_FOUND" => ErrorType.FlagNotFound,
+        "PARSE_ERROR" => ErrorType.ParseError,
+        "TYPE_MISMATCH" => ErrorType.TypeMismatch,
+        "TARGETING_KEY_MISSING" => ErrorType.TargetingKeyMissing,
+        "INVALID_CONTEXT" => ErrorType.InvalidContext,
+        "PROVIDER_FATAL" => ErrorType.ProviderFatal,
+        "GENERAL" => ErrorType.General,
         null => ErrorType.None,
         _ => ErrorType.General
     };
