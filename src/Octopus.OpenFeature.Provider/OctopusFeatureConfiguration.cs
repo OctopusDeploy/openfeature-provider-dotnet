@@ -15,7 +15,7 @@ public class OctopusFeatureConfiguration
         ServerUri = serverUri is not null ? new Uri(serverUri) : new Uri(DefaultServerUri);
     }
 
-    public Uri ServerUri { get; private set; }
+    public Uri ServerUri { get; internal set; }
 
     /// <summary>
     /// Overrides the application release version embedded in the ClientIdentifier
