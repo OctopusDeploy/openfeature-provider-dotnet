@@ -49,4 +49,5 @@ public record FixtureConfiguration(string Slug,
 public record FixtureExpected(
     bool Value,
     string? ErrorCode = null
-);
+)
+;
