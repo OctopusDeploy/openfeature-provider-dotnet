@@ -91,7 +91,6 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
             }
         }
 
-        // should we move this up so we do it before the rollout percentage check? I think yes.
         return evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments);
     }
 
