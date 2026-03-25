@@ -70,19 +70,19 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
             return false;
         }
 
-        if (evaluation.rolloutPercentage is not null)
+        if (evaluation.ClientRolloutPercentage is not null)
         {
             var targetingKey = context?.TargetingKey;
             if (string.IsNullOrEmpty(targetingKey))
             {
-                if (evaluation.rolloutPercentage < 100)
+                if (evaluation.ClientRolloutPercentage < 100)
                 {
                     return false;
                 }
             }
             else
             {
-                if (GetNormalizedNumber(evaluation.EvaluationKey, targetingKey) > evaluation.rolloutPercentage)
+                if (GetNormalizedNumber(evaluation.EvaluationKey, targetingKey) > evaluation.ClientRolloutPercentage)
                 {
                     return false; // return false if hash number is larger than rollout percentage
                 }

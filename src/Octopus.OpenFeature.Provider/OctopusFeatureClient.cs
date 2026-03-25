@@ -17,7 +17,8 @@ internal record FeatureToggleEvaluation(
     bool IsEnabled,
     string? EvaluationKey,
     KeyValuePair<string, string>[]? Segments,
-    int? rolloutPercentage = null);
+    int? ClientRolloutPercentage
+);
 
 interface IOctopusFeatureClient
 {
