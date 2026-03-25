@@ -185,10 +185,8 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
     }
 
-    // TODO: Bin these and replace them with the shared tests?
-
     [Fact]
-    public void WhenTargetingKeyHashFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
+    public void WhenSegmentFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [], rolloutPercentage: 20)
@@ -200,11 +198,11 @@ public class OctopusFeatureContextTests
         var evaluationContext = BuildContext([], targetingKey: "targeting-key");
         var result = context.Evaluate("test-feature", false, evaluationContext);
 
-        result.Value.Should().BeTrue();
+        result.Value.Should().BeTrue("segment is within rollout percentage");
     }
 
     [Fact]
-    public void WhenTargetingKeyHashFallsOutsideRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToFalse()
+    public void WhenSegmentFallsOutsideRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToFalse()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [], rolloutPercentage: 10)
@@ -216,11 +214,11 @@ public class OctopusFeatureContextTests
         var evaluationContext = BuildContext([], targetingKey: "targeting-key");
         var result = context.Evaluate("test-feature", false, evaluationContext);
 
-        result.Value.Should().BeFalse();
+        result.Value.Should().BeFalse("segment is outside of rollout percentage");
     }
 
     [Fact]
-    public void WhenTargetingKeyIsWithinRollout_AndSegmentMatchesRequiredSegments_EvaluatesToTrue()
+    public void WhenSegmentIsWithinRolloutPercentage_AndSegmentMatchesRequiredSegments_EvaluatesToTrue()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [new("license", "trial")], rolloutPercentage: 20)
@@ -233,11 +231,11 @@ public class OctopusFeatureContextTests
 
         using var scope = new AssertionScope();
         context.Evaluate("test-feature", false, evaluationContext).Value.Should()
-            .BeTrue("targeting key is within rollout and segment matches required segment");
+            .BeTrue("segment matches required segment and falls within rollout percentage");
     }
 
     [Fact]
-    public void WhenTargetingKeyIsWithinRollout_AndSegmentDoesNotMatchRequiredSegments_EvaluatesToFalse()
+    public void WhenSegmentIsWithinRolloutPercentage_AndSegmentDoesNotMatchRequiredSegments_EvaluatesToFalse()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [new("license", "enterprise")], rolloutPercentage: 20)
@@ -250,7 +248,24 @@ public class OctopusFeatureContextTests
 
         using var scope = new AssertionScope();
         context.Evaluate("test-feature", false, evaluationContext).Value.Should()
-            .BeFalse("targeting key is within rollout but segment does not match required segment");
+            .BeFalse("segment does not match required segment");
+    }
+
+    [Fact]
+    public void WhenSegmentIsOutsideRolloutPercentage_AndSegmentDoesNotMatchRequiredSegments_EvaluatesToFalse()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("testfeature", "test-feature", "evaluation-key", true, [new("license", "enterprise")], rolloutPercentage: 10)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // 13 > 10 => segment is outside of rollout percentage
+        var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
+
+        using var scope = new AssertionScope();
+        context.Evaluate("test-feature", false, evaluationContext).Value.Should()
+            .BeFalse("segment is outside of rollout percentage");
     }
 
     [Fact]
@@ -265,7 +280,7 @@ public class OctopusFeatureContextTests
         var evaluationContext = BuildContext([], targetingKey: null);
         var result = context.Evaluate("test-feature", false, evaluationContext);
 
-        result.Value.Should().BeFalse();
+        result.Value.Should().BeFalse("no targeting key and rollout is less than 100%");
     }
 
     [Fact]
@@ -280,6 +295,6 @@ public class OctopusFeatureContextTests
         var evaluationContext = BuildContext([], targetingKey: null);
         var result = context.Evaluate("test-feature", false, evaluationContext);
 
-        result.Value.Should().BeTrue();
+        result.Value.Should().BeTrue("no targeting key and rollout is 100%");
     }
 }
