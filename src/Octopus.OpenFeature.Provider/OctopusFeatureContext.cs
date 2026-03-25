@@ -74,7 +74,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
         {
             throw new ArgumentException($"Feature toggle {evaluation.Slug} is missing necessary information for client-side evaluation.");
         }
-        
+
         var targetingKey = context?.TargetingKey;
         if (string.IsNullOrEmpty(targetingKey))
         {
