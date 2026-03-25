@@ -101,7 +101,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
+        var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/toggles/evaluations/v3/", ct), cancellationToken);
 
         if (response is null or { StatusCode: HttpStatusCode.NotFound })
         {
