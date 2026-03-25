@@ -13,13 +13,11 @@ internal class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] cont
 }
 
 internal record FeatureToggleEvaluation(
-    string Name,
     string Slug,
     string? EvaluationKey,
     bool IsEnabled,
     KeyValuePair<string, string>[]? Segments,
-    int? rolloutPercentage = null
-);
+    int? rolloutPercentage = null);
 
 interface IOctopusFeatureClient
 {
