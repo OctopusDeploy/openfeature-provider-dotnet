@@ -14,8 +14,8 @@ internal class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] cont
 
 internal record FeatureToggleEvaluation(
     string Slug,
-    string? EvaluationKey,
     bool IsEnabled,
+    string? EvaluationKey,
     KeyValuePair<string, string>[]? Segments,
     int? rolloutPercentage = null);
 

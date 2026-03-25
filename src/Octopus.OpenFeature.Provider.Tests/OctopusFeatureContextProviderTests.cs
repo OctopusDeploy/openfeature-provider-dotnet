@@ -51,7 +51,7 @@ public class OctopusFeatureContextProviderTests
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
         var client = new MockOctopusFeatureClient(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [])],
+            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [])],
             contentHash));
 
         var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
@@ -70,7 +70,7 @@ public class OctopusFeatureContextProviderTests
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
         var client = new MockOctopusFeatureClient(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [])],
+            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [])],
             contentHash));
 
         // Initialize the provider
@@ -85,7 +85,7 @@ public class OctopusFeatureContextProviderTests
 
         // Simulate a change in the available feature toggles
         client.ChangeToggles(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", "evaluation-key", false, [])],
+            [new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [])],
             [0x01, 0x02, 0x03, 0x05]));
 
         // Wait for the cache to expire

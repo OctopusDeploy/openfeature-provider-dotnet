@@ -14,7 +14,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToTrue_IfFeatureIsContainedWithinTheSet_AndFeatureIsEnabled()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [])
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -28,7 +28,7 @@ public class OctopusFeatureContextTests
     public void WhenEvaluatedWithCasingDifferences_EvaluationIsInsensitiveToCase()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [])
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -42,7 +42,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", false, [])
+            new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -56,7 +56,7 @@ public class OctopusFeatureContextTests
     public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaluatesToDefaultValue()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("this-is-clearly-not-a-slug", "evaluation-key", true, [])
+            new FeatureToggleEvaluation("this-is-clearly-not-a-slug", true, "evaluation-key", [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -71,7 +71,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToDefaultValue_IfFeatureIsNotContainedWithinSet()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "evaluation-key", true, [])
+            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -101,7 +101,7 @@ public class OctopusFeatureContextTests
         WhenAFeatureIsToggledOnForASpecificSegment_EvaluatesToTrueWhenSegmentIsSpecified()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "evaluation-key", true, [new("license", "trial")])
+            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [new("license", "trial")])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -117,7 +117,7 @@ public class OctopusFeatureContextTests
         WhenFeatureIsNotToggledOnForSpecificSegments_EvaluatesToTrueRegardlessOfSegmentSpecified()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "evaluation-key", true, [])
+            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -132,11 +132,13 @@ public class OctopusFeatureContextTests
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation(
-                "testfeature", "evaluation-key", true, [
+                "testfeature", true, "evaluation-key", [
                     new("license", "trial"),
                     new("region", "au"),
                     new("region", "us"),
-                ], 100)
+                ],
+                100
+            )
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -175,7 +177,7 @@ public class OctopusFeatureContextTests
         WhenAFeatureIsToggledOnForASpecificSegment_ToleratesNullValuesInContext()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "evaluation-key", true, [new("license", "trial")])
+            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [new("license", "trial")])
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -190,7 +192,7 @@ public class OctopusFeatureContextTests
     public void WhenSegmentFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [], rolloutPercentage: 20)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], rolloutPercentage: 20)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -206,7 +208,7 @@ public class OctopusFeatureContextTests
     public void WhenSegmentFallsOutsideRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [], rolloutPercentage: 10)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], rolloutPercentage: 10)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -222,7 +224,7 @@ public class OctopusFeatureContextTests
     public void WhenSegmentIsWithinRolloutPercentage_AndSegmentMatchesRequiredSegments_EvaluatesToTrue()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [new("license", "trial")], rolloutPercentage: 20)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "trial")], rolloutPercentage: 20)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -239,7 +241,7 @@ public class OctopusFeatureContextTests
     public void WhenSegmentIsWithinRolloutPercentage_AndSegmentDoesNotMatchRequiredSegments_EvaluatesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [new("license", "enterprise")], rolloutPercentage: 20)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], rolloutPercentage: 20)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -256,7 +258,7 @@ public class OctopusFeatureContextTests
     public void WhenSegmentIsOutsideRolloutPercentage_AndSegmentDoesNotMatchRequiredSegments_EvaluatesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [new("license", "enterprise")], rolloutPercentage: 10)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], rolloutPercentage: 10)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -273,7 +275,7 @@ public class OctopusFeatureContextTests
     public void WhenNoTargetingKey_RolloutIsLessThanOneHundredPercent_ResolvesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [], rolloutPercentage: 95)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], rolloutPercentage: 95)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -288,7 +290,7 @@ public class OctopusFeatureContextTests
     public void WhenNoTargetingKey_RolloutIsEqualToOneHundredPercent_ResolvesToTrue()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", "evaluation-key", true, [], rolloutPercentage: 100)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], rolloutPercentage: 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
