@@ -70,22 +70,24 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
             return false;
         }
 
-        if (evaluation.ClientRolloutPercentage is not null)
+        if (evaluation.ClientRolloutPercentage is null || evaluation.EvaluationKey is null || evaluation.Segments is null)
         {
-            var targetingKey = context?.TargetingKey;
-            if (string.IsNullOrEmpty(targetingKey))
+            throw new ArgumentException($"Feature toggle {evaluation.Slug} is missing necessary information for client-side evaluation.");
+        }
+        
+        var targetingKey = context?.TargetingKey;
+        if (string.IsNullOrEmpty(targetingKey))
+        {
+            if (evaluation.ClientRolloutPercentage < 100)
             {
-                if (evaluation.ClientRolloutPercentage < 100)
-                {
-                    return false;
-                }
+                return false;
             }
-            else
+        }
+        else
+        {
+            if (GetNormalizedNumber(evaluation.EvaluationKey, targetingKey) > evaluation.ClientRolloutPercentage)
             {
-                if (GetNormalizedNumber(evaluation.EvaluationKey, targetingKey) > evaluation.ClientRolloutPercentage)
-                {
-                    return false; // return false if hash number is larger than rollout percentage
-                }
+                return false; // return false if hash number is larger than rollout percentage
             }
         }
 
