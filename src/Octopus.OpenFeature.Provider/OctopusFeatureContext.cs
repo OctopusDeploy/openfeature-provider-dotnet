@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Buffers.Binary;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Murmur;
@@ -77,7 +78,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
         }
 
         var targetingKey = context?.TargetingKey;
-        if (string.IsNullOrEmpty(targetingKey))
+        if (targetingKey == null || targetingKey == "")
         {
             if (evaluation.ClientRolloutPercentage < 100)
             {
@@ -96,7 +97,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
     }
 
     /// <summary>
-    /// Produces a normalized number between 1 and 100 for a given TargetingKey, with less than 1% variance
+    /// Computes a deterministic integer bucket in the inclusive range 1–100 for the given evaluation and targeting keys.
     /// </summary>
     private int GetNormalizedNumber(string evaluationKey, string targetingKey)
     {
@@ -104,7 +105,8 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
 
         using var algorithm = MurmurHash.Create32();
         var hash = algorithm.ComputeHash(bytes);
-        var value = BitConverter.ToUInt32(hash, 0);
+        // Explicitly little-endian to ensure consistent int values across all client libraries.
+        var value = BinaryPrimitives.ReadUInt32LittleEndian(hash);
         return (int)(value % 100 + 1);
     }
 
