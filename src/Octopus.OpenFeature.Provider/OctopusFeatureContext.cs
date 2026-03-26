@@ -76,6 +76,10 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
         {
             return false;
         }
+        if (evaluation.EvaluationKey == null)
+        {
+            throw new InvalidOperationException($"Enabled feature toggles require an evaluation key.");
+        }
 
         var targetingKey = context?.TargetingKey;
         if (targetingKey == null || targetingKey == "")
@@ -93,7 +97,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
             }
         }
 
-        return evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments);
+        return evaluation.Segments == null || evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments);
     }
 
     /// <summary>
