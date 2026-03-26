@@ -48,7 +48,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.ParseError,
                 $"Feature toggle {slug} is missing necessary information for client-side evaluation.");
         }
-        
+
         return new ResolutionDetails<bool>(slug, Evaluate(feature, context));
     }
 
@@ -107,8 +107,8 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
         var value = BitConverter.ToUInt32(hash, 0);
         return (int)(value % 100 + 1);
     }
-    
-    
+
+
     private static bool MissingRequiredPropertiesForClientSideEvaluation(FeatureToggleEvaluation evaluation)
     {
         if (!evaluation.IsEnabled)
