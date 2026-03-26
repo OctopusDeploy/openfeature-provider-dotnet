@@ -43,6 +43,12 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
                 "The slug provided did not match any of your Octopus Feature Toggles. Please double check your slug and try again.");
         }
 
+        if (MissingRequiredPropertiesForClientSideEvaluation(feature))
+        {
+            return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.ParseError,
+                $"Feature toggle {slug} is missing necessary information for client-side evaluation.");
+        }
+        
         return new ResolutionDetails<bool>(slug, Evaluate(feature, context));
     }
 
@@ -68,11 +74,6 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
         if (!evaluation.IsEnabled)
         {
             return false;
-        }
-
-        if (evaluation.ClientRolloutPercentage is null || evaluation.EvaluationKey is null || evaluation.Segments is null)
-        {
-            throw new ArgumentException($"Feature toggle {evaluation.Slug} is missing necessary information for client-side evaluation.");
         }
 
         var targetingKey = context?.TargetingKey;
@@ -105,5 +106,16 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
         var hash = algorithm.ComputeHash(bytes);
         var value = BitConverter.ToUInt32(hash, 0);
         return (int)(value % 100 + 1);
+    }
+    
+    
+    private static bool MissingRequiredPropertiesForClientSideEvaluation(FeatureToggleEvaluation evaluation)
+    {
+        if (!evaluation.IsEnabled)
+        {
+            return false;
+        }
+
+        return evaluation.ClientRolloutPercentage is null || evaluation.EvaluationKey is null || evaluation.Segments is null;
     }
 }
