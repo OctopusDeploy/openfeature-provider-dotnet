@@ -1,9 +1,6 @@
-using System.Text;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.VisualBasic;
-using Murmur;
 using OpenFeature.Constant;
 using OpenFeature.Model;
 
