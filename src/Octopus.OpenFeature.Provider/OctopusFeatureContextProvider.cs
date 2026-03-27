@@ -16,7 +16,6 @@ class OctopusFeatureContextProvider(
     Task? evaluationContextRefreshTask;
     bool initialized;
     int retryAttempt;
-    readonly TimeSpan retryDelay = TimeSpan.FromSeconds(5);
 
     public OctopusFeatureContext GetEvaluationContext()
     {
@@ -32,11 +31,7 @@ class OctopusFeatureContextProvider(
 
         try
         {
-            var toggles = await client.GetFeatureToggleEvaluationManifest(cancellationTokenSource.Token);
-            currentContext =
-                toggles is not null
-                    ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
-                    : OctopusFeatureContext.Empty(configuration.LoggerFactory);
+            await FetchToggles(cancellationTokenSource.Token);
         }
         catch (Exception e)
         {
@@ -60,18 +55,9 @@ class OctopusFeatureContextProvider(
         {
             try
             {
-                await Task.Delay(delay, cancellationToken);
+                await Task.Delay(configuration.CacheDuration, cancellationToken);
+                await FetchToggles(cancellationToken);
 
-                if (await client.HaveFeaturesChanged(currentContext.ContentHash, cancellationToken))
-                {
-                    var toggles = await client.GetFeatureToggleEvaluationManifest(cancellationToken);
-                    currentContext =
-                        toggles is not null
-                            ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
-                            : OctopusFeatureContext.Empty(configuration.LoggerFactory);
-                }
-
-                delay = configuration.CacheDuration;
                 retryAttempt = 0;
             }
             catch (OperationCanceledException)
@@ -81,11 +67,23 @@ class OctopusFeatureContextProvider(
             catch (Exception e)
             {
                 logger.LogError(e, "{FailedMessage}, attempt {RetryAttempt}. Trying again after {Delay}...", "Failed to retrieve feature manifest", retryAttempt, delay);
-                delay = retryDelay;
                 retryAttempt++;
             }
         }
     }
+
+    async Task FetchToggles(CancellationToken cancellationToken)
+    {
+        var toggles = await client.GetLatestManifest(currentContext.ETag, cancellationToken);
+
+        // If the response is null, it means the toggles have not changed since the last request
+        // of there was an error getting the latest toggles. Either way we want to keep using
+        // what we already have.
+        if (toggles is not null)
+        {
+            currentContext = new OctopusFeatureContext(toggles, configuration.LoggerFactory);
+        }
+    } 
 
     public async ValueTask Shutdown()
     {

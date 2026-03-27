@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Extensions.Logging;
@@ -17,12 +18,7 @@ public class OctopusFeatureContextProviderTests
     {
         FeatureToggles? featureToggles = featureToggles;
 
-        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(true);
-        }
-
-        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+        public Task<FeatureToggles?> GetLatestManifest(EntityTagHeaderValue? eTag, CancellationToken cancellationToken)
         {
             return Task.FromResult(featureToggles);
         }
@@ -42,17 +38,15 @@ public class OctopusFeatureContextProviderTests
 
         using var scope = new AssertionScope();
         context.Should().NotBeNull();
-        context.ContentHash.Length.Should().Be(0);
+        context.ETag.Should().BeNull();
     }
 
     [Fact]
     public async Task WhenInitialized_ProvidesRetrievedEvaluationContext()
     {
-        byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
-
         var client = new MockOctopusFeatureClient(new FeatureToggles(
             [new FeatureToggleEvaluation("Test Feature", "test-feature", true, [])],
-            contentHash));
+            new("\"01-02-03-04\"")));
 
         var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
         await provider.Initialize();
@@ -60,18 +54,17 @@ public class OctopusFeatureContextProviderTests
 
         using var scope = new AssertionScope();
         context.Should().NotBeNull();
-        context.ContentHash.Should().BeEquivalentTo(contentHash);
+        context.ETag.Should().NotBeNull();
+        context.ETag!.Tag.Should().Be("\"01-02-03-04\"");
         context.Evaluate("test-feature", false, context: null).Value.Should().BeTrue();
     }
 
     [Fact]
     public async Task WhenInitialized_RefreshesCacheAfterCacheDurationExpires()
     {
-        byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
-
         var client = new MockOctopusFeatureClient(new FeatureToggles(
             [new FeatureToggleEvaluation("Test Feature", "test-feature", true, [])],
-            contentHash));
+            new("\"01-02-03-04\"")));
 
         // Initialize the provider
         var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
@@ -80,31 +73,28 @@ public class OctopusFeatureContextProviderTests
         // Validate the initial state
         using var scope = new AssertionScope();
         var context = provider.GetEvaluationContext();
-        context.ContentHash.Should().BeEquivalentTo(contentHash);
+        context.ETag.Should().NotBeNull();
+        context.ETag!.Tag.Should().Be("\"01-02-03-04\"");
         context.Evaluate("test-feature", false, context: null).Value.Should().BeTrue();
 
         // Simulate a change in the available feature toggles
         client.ChangeToggles(new FeatureToggles(
             [new FeatureToggleEvaluation("Test Feature", "test-feature", false, [])],
-            [0x01, 0x02, 0x03, 0x05]));
+            new("\"01-02-03-05\"")));
 
         // Wait for the cache to expire
         await Task.Delay(TimeSpan.FromSeconds(5));
 
         // Validate the updated toggles are available
         context = provider.GetEvaluationContext();
-        context.ContentHash.Should().BeEquivalentTo(new byte[] { 0x01, 0x02, 0x03, 0x05 });
+        context.ETag.Should().NotBeNull();
+        context.ETag!.Tag.Should().Be("\"01-02-03-05\"");
         context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
     }
 
     class AlwaysFailsFeatureClient : IOctopusFeatureClient
     {
-        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(true);
-        }
-
-        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+        public Task<FeatureToggles?> GetLatestManifest(EntityTagHeaderValue? eTag, CancellationToken cancellationToken)
         {
             throw new Exception("Oops!");
         }
@@ -120,7 +110,7 @@ public class OctopusFeatureContextProviderTests
         await provider.Initialize();
 
         using var scope = new AssertionScope();
-        provider.GetEvaluationContext().ContentHash.Length.Should().Be(0);
+        provider.GetEvaluationContext().ETag.Should().BeNull();
         logger.LatestRecord.Level.Should().Be(LogLevel.Error);
         logger.LatestRecord.Message.Should().StartWith("Failed to retrieve feature manifest");
 
