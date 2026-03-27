@@ -5,20 +5,26 @@ using Microsoft.Extensions.Logging;
 
 namespace Octopus.OpenFeature.Provider;
 
-internal class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
+public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
 {
     public FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
 
     public byte[] ContentHash { get; } = contentHash;
 }
 
-internal record FeatureToggleEvaluation(
-    string Slug,
-    bool IsEnabled,
-    string? EvaluationKey,
-    KeyValuePair<string, string>[]? Segments,
-    int? ClientRolloutPercentage
-);
+public class FeatureToggleEvaluation(
+    string slug,
+    bool isEnabled,
+    string? evaluationKey,
+    KeyValuePair<string, string>[]? segments,
+    int? clientRolloutPercentage)
+{
+    public string Slug { get; } = slug;
+    public bool IsEnabled { get; } = isEnabled;
+    public string? EvaluationKey { get; } = evaluationKey;
+    public KeyValuePair<string, string>[]? Segments { get; } = segments;
+    public int? ClientRolloutPercentage { get; } = clientRolloutPercentage;
+}
 
 interface IOctopusFeatureClient
 {
