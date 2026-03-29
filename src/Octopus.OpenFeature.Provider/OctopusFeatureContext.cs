@@ -1,5 +1,7 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Murmur;
 using OpenFeature.Constant;
 using OpenFeature.Model;
 
@@ -64,6 +66,23 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
     {
         return evaluation.IsEnabled &&
+                (evaluation.Percentage == 100 || context?.TargetingKey is not null && GetNormalizedNumber(evaluation.EvaluationKey, context.TargetingKey) < evaluation.Percentage) &&
                (evaluation.Segments.Length == 0 || MatchesSegment(context, evaluation.Segments));
+    }
+
+    /// <summary>
+    /// Produces a normalized number between 0 and 100 for a given TargetingKey, with less than 1% variance
+    /// </summary>
+    private int GetNormalizedNumber(string evaluationKey, string targetingKey)
+    {
+        const int one = 1;
+        const string separator = ":";
+
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, separator, targetingKey));
+
+        using var algorithm = MurmurHash.Create32();
+        var hash = algorithm.ComputeHash(bytes);
+        var value = BitConverter.ToUInt32(hash, 0);
+        return (int)(value % 100 + one);
     }
 }

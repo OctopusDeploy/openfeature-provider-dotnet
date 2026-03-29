@@ -12,7 +12,7 @@ public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] conten
     public byte[] ContentHash { get; } = contentHash;
 }
 
-public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, KeyValuePair<string, string>[] segments)
+public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, string evaluationKey, KeyValuePair<string, string>[] segments, int percentage)
 {
     public string Name { get; } = name;
 
@@ -20,7 +20,11 @@ public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, K
 
     public bool IsEnabled { get; } = isEnabled;
 
+    public string EvaluationKey { get; } = evaluationKey;
+
     public KeyValuePair<string, string>[] Segments { get; } = segments;
+
+    public int Percentage { get; } = percentage;
 }
 
 interface IOctopusFeatureClient
