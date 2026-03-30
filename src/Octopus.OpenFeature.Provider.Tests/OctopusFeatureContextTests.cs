@@ -187,7 +187,7 @@ public class OctopusFeatureContextTests
     }
 
     [Fact]
-    public void WhenSegmentFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
+    public void WhenTargetingKeyFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 13)
@@ -203,7 +203,7 @@ public class OctopusFeatureContextTests
     }
 
     [Fact]
-    public void WhenSegmentFallsOutsideRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToFalse()
+    public void WhenTargetingKeyFallsOutsideRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToFalse()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 12)
@@ -219,7 +219,7 @@ public class OctopusFeatureContextTests
     }
 
     [Fact]
-    public void WhenSegmentIsWithinRolloutPercentage_AndSegmentMatchesRequiredSegments_EvaluatesToTrue()
+    public void WhenTargetingKeyFallsWithinRolloutPercentage_AndSegmentMatchesRequiredSegments_EvaluatesToTrue()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "trial")], 13)
@@ -236,7 +236,7 @@ public class OctopusFeatureContextTests
     }
 
     [Fact]
-    public void WhenSegmentIsWithinRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
+    public void WhenTargetingKeyFallsWithinRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 13)
@@ -253,7 +253,7 @@ public class OctopusFeatureContextTests
     }
 
     [Fact]
-    public void WhenSegmentIsOutsideRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
+    public void WhenTargetingKeyFallsOutsideRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
     {
         var featureToggles = new FeatureToggles([
             new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 12)
