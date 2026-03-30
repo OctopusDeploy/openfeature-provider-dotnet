@@ -109,7 +109,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
     {
         var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, ":", targetingKey));
 
-        var hash = RolloutHashAlgorithm.Value!.ComputeHash(bytes);
+        var hash = RolloutHashAlgorithm.Value.ComputeHash(bytes);
         // Explicitly little-endian to ensure consistent int values across all client libraries.
         var value = BinaryPrimitives.ReadUInt32LittleEndian(hash);
         return (int)(value % 100 + 1);
