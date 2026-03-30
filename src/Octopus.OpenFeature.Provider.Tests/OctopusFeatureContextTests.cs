@@ -190,12 +190,12 @@ public class OctopusFeatureContextTests
     public void WhenSegmentFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 20)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 13)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // Key resolves to 13 < 20 => segment is within rollout percentage
+        // Key resolves to 13 => segment is within rollout percentage
         var evaluationContext = BuildContext([], targetingKey: "targeting-key");
         var result = context.Evaluate("test-feature", false, evaluationContext);
 
@@ -206,12 +206,12 @@ public class OctopusFeatureContextTests
     public void WhenSegmentFallsOutsideRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 10)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 12)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // Key resolves to 13 > 10 => segment is outside of rollout percentage
+        // Key resolves to 13 > 12 => segment is outside of rollout percentage
         var evaluationContext = BuildContext([], targetingKey: "targeting-key");
         var result = context.Evaluate("test-feature", false, evaluationContext);
 
@@ -222,12 +222,12 @@ public class OctopusFeatureContextTests
     public void WhenSegmentIsWithinRolloutPercentage_AndSegmentMatchesRequiredSegments_EvaluatesToTrue()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "trial")], 20)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "trial")], 13)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // Key resolves to 13 < 20 => segment is within rollout percentage
+        // Key resolves to 13 => segment is within rollout percentage
         var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
 
         using var scope = new AssertionScope();
@@ -239,12 +239,12 @@ public class OctopusFeatureContextTests
     public void WhenSegmentIsWithinRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 20)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 13)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // Key resolves to 13 < 20 => segment is within rollout percentage
+        // Key resolves to 13 => segment is within rollout percentage
         var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
 
         using var scope = new AssertionScope();
@@ -256,12 +256,12 @@ public class OctopusFeatureContextTests
     public void WhenSegmentIsOutsideRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 10)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 12)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
 
-        // Key resolves to 13 > 10 => segment is outside of rollout percentage
+        // Key resolves to 13 > 12 => segment is outside of rollout percentage
         var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
 
         using var scope = new AssertionScope();
