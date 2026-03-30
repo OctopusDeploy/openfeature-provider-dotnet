@@ -186,7 +186,7 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
     }
 
-     [Fact]
+    [Fact]
     public void WhenSegmentFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
     {
         var featureToggles = new FeatureToggles([
