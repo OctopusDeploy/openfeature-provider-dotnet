@@ -17,7 +17,7 @@ public class Server : IDisposable
     {
         _server = WireMockServer.Start();
         _server
-            .Given(Request.Create().WithPath("/api/featuretoggles/v3/").UsingGet())
+            .Given(Request.Create().WithPath("/api/toggles/evaluations/v3/").UsingGet())
             .RespondWith(Response.Create()
                 .WithTransformer()
                 .WithCallback(req =>

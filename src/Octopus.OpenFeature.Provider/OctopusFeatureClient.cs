@@ -12,15 +12,18 @@ public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] conten
     public byte[] ContentHash { get; } = contentHash;
 }
 
-public class FeatureToggleEvaluation(string name, string slug, bool isEnabled, KeyValuePair<string, string>[] segments)
+public class FeatureToggleEvaluation(
+    string slug,
+    bool isEnabled,
+    string? evaluationKey,
+    KeyValuePair<string, string>[]? segments,
+    int? clientRolloutPercentage)
 {
-    public string Name { get; } = name;
-
     public string Slug { get; } = slug;
-
     public bool IsEnabled { get; } = isEnabled;
-
-    public KeyValuePair<string, string>[] Segments { get; } = segments;
+    public string? EvaluationKey { get; } = evaluationKey;
+    public KeyValuePair<string, string>[]? Segments { get; } = segments;
+    public int? ClientRolloutPercentage { get; } = clientRolloutPercentage;
 }
 
 interface IOctopusFeatureClient
@@ -97,7 +100,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/v3/", ct), cancellationToken);
+        var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/toggles/evaluations/v3/", ct), cancellationToken);
 
         if (response is null or { StatusCode: HttpStatusCode.NotFound })
         {

@@ -12,7 +12,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToTrue_IfFeatureIsContainedWithinTheSet_AndFeatureIsEnabled()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -26,7 +26,7 @@ public class OctopusFeatureContextTests
     public void WhenEvaluatedWithCasingDifferences_EvaluationIsInsensitiveToCase()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "test-feature", true, [])
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -40,7 +40,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToFalse_IfFeatureIsContainedWithinTheSet_AndFeatureIsNotEnabled()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "test-feature", false, [])
+            new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -54,7 +54,7 @@ public class OctopusFeatureContextTests
     public void GivenAFlagKeyThatIsNotASlug_ReturnsFlagNotFound_AndEvaluatesToDefaultValue()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("This is clearly not a slug!", "this-is-clearly-not-a-slug", true, [])
+            new FeatureToggleEvaluation("this-is-clearly-not-a-slug", true, "evaluation-key", [], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -69,7 +69,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToDefaultValue_IfFeatureIsNotContainedWithinSet()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
+            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -80,14 +80,17 @@ public class OctopusFeatureContextTests
         result.Value.Should().BeTrue();
     }
 
-    EvaluationContext BuildContext(IEnumerable<(string key, string value)> values)
+    EvaluationContext BuildContext(IEnumerable<(string key, string value)> values, string? targetingKey = null)
     {
         var builder = EvaluationContext.Builder();
         foreach (var (key, value) in values)
         {
             builder.Set(key, value);
         }
-
+        if (targetingKey != null)
+        {
+            builder.SetTargetingKey(targetingKey);
+        }
         return builder.Build();
     }
 
@@ -96,7 +99,7 @@ public class OctopusFeatureContextTests
         WhenAFeatureIsToggledOnForASpecificSegment_EvaluatesToTrueWhenSegmentIsSpecified()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
+            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [new("license", "trial")], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -112,7 +115,7 @@ public class OctopusFeatureContextTests
         WhenFeatureIsNotToggledOnForSpecificSegments_EvaluatesToTrueRegardlessOfSegmentSpecified()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [])
+            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -126,11 +129,14 @@ public class OctopusFeatureContextTests
     public void WhenAFeatureIsToggledOnForMultipleSegments_EvaluatesCorrectly()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [
-                new("license", "trial"),
-                new("region", "au"),
-                new("region", "us"),
-            ])
+            new FeatureToggleEvaluation(
+                "testfeature", true, "evaluation-key", [
+                    new("license", "trial"),
+                    new("region", "au"),
+                    new("region", "us"),
+                ],
+                100
+            )
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -169,7 +175,7 @@ public class OctopusFeatureContextTests
         WhenAFeatureIsToggledOnForASpecificSegment_ToleratesNullValuesInContext()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", "testfeature", true, [new("license", "trial")])
+            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [new("license", "trial")], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -178,5 +184,118 @@ public class OctopusFeatureContextTests
         context.Evaluate("testfeature", false, context: BuildContext([("license", null)!])).Value.Should().BeFalse();
         context.Evaluate("testfeature", false, context: BuildContext([("other", "segment")])).Value.Should().BeFalse();
         context.Evaluate("testfeature", false, context: null).Value.Should().BeFalse();
+    }
+
+    [Fact]
+    public void WhenTargetingKeyFallsWithinRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToTrue()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 13)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // Key resolves to 13 => segment is within rollout percentage
+        var evaluationContext = BuildContext([], targetingKey: "targeting-key");
+        var result = context.Evaluate("test-feature", false, evaluationContext);
+
+        result.Value.Should().BeTrue("segment is within rollout percentage");
+    }
+
+    [Fact]
+    public void WhenTargetingKeyFallsOutsideRolloutPercentage_AndFeatureIsNotToggledForSegments_ResolvesToFalse()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 12)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // Key resolves to 13 > 12 => segment is outside of rollout percentage
+        var evaluationContext = BuildContext([], targetingKey: "targeting-key");
+        var result = context.Evaluate("test-feature", false, evaluationContext);
+
+        result.Value.Should().BeFalse("segment is outside of rollout percentage");
+    }
+
+    [Fact]
+    public void WhenTargetingKeyFallsWithinRolloutPercentage_AndSegmentMatchesRequiredSegments_EvaluatesToTrue()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "trial")], 13)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // Key resolves to 13 => segment is within rollout percentage
+        var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
+
+        using var scope = new AssertionScope();
+        context.Evaluate("test-feature", false, evaluationContext).Value.Should()
+            .BeTrue("segment matches required segment and falls within rollout percentage");
+    }
+
+    [Fact]
+    public void WhenTargetingKeyFallsWithinRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 99)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // Key resolves to 13 => segment is within rollout percentage
+        var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
+
+        using var scope = new AssertionScope();
+        context.Evaluate("test-feature", false, evaluationContext).Value.Should()
+            .BeFalse("segment value does not match required segment");
+    }
+
+    [Fact]
+    public void WhenTargetingKeyFallsOutsideRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 12)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        // Key resolves to 13 > 12 => segment is outside of rollout percentage
+        var evaluationContext = BuildContext([("license", "trial")], targetingKey: "targeting-key");
+
+        using var scope = new AssertionScope();
+        context.Evaluate("test-feature", false, evaluationContext).Value.Should()
+            .BeFalse("segment is outside of rollout percentage");
+    }
+
+    [Fact]
+    public void WhenNoTargetingKey_RolloutIsLessThanOneHundredPercent_ResolvesToFalse()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 99)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var evaluationContext = BuildContext([], targetingKey: null);
+        var result = context.Evaluate("test-feature", false, evaluationContext);
+
+        result.Value.Should().BeFalse("no targeting key and rollout is less than 100%");
+    }
+
+    [Fact]
+    public void WhenNoTargetingKey_RolloutIsEqualToOneHundredPercent_ResolvesToTrue()
+    {
+        var featureToggles = new FeatureToggles([
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)
+        ], []);
+
+        var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
+
+        var evaluationContext = BuildContext([], targetingKey: null);
+        var result = context.Evaluate("test-feature", false, evaluationContext);
+
+        result.Value.Should().BeTrue("no targeting key and rollout is 100%");
     }
 }
