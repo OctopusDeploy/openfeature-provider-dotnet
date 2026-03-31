@@ -239,7 +239,7 @@ public class OctopusFeatureContextTests
     public void WhenTargetingKeyFallsWithinRolloutPercentage_AndSegmentValueDoesNotMatchRequiredSegment_EvaluatesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 13)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [new("license", "enterprise")], 99)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -273,7 +273,7 @@ public class OctopusFeatureContextTests
     public void WhenNoTargetingKey_RolloutIsLessThanOneHundredPercent_ResolvesToFalse()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 95)
+            new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 99)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
