@@ -12,7 +12,6 @@ namespace Octopus.OpenFeature.Provider;
 partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => toggles.ContentHash;
-    static readonly ThreadLocal<HashAlgorithm> RolloutHashAlgorithm = new(() => MurmurHash.Create32());
     readonly Regex expression = new("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
 
@@ -109,7 +108,8 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
     {
         var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, ":", targetingKey));
 
-        var hash = RolloutHashAlgorithm.Value.ComputeHash(bytes);
+        using var algorithm = MurmurHash.Create32();
+        var hash = algorithm.ComputeHash(bytes);
         // Explicitly little-endian to ensure consistent int values across all client libraries.
         var value = BinaryPrimitives.ReadUInt32LittleEndian(hash);
         return (int)(value % 100 + 1);
