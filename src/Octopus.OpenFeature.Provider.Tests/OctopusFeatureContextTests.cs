@@ -298,7 +298,7 @@ public class OctopusFeatureContextTests
 
         result.Value.Should().BeTrue("no targeting key and rollout is 100%");
     }
-    
+
     // These cases verify that GetNormalizedNumber produces the same bucketing values as the equivalent
     // implementations in other Octopus OpenFeature provider libraries (e.g. Java). The expected values
     // are derived from the reference MurmurHash3 little-endian algorithm and are duplicated verbatim
