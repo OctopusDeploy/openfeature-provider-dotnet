@@ -405,8 +405,13 @@ public class OctopusFeatureContextTests
     [InlineData("checkout-v2", "11eb4678-7889-4121-898d-83332035bce5", 21)]
     [InlineData("4462ebfc-5f91-4ef0-9cfb-ac6e7687a66e", "dff8494d-3bb3-4b25-9f81-20c447f0e17e", 43)]
     [InlineData("63bf9de9-f33f-4a58-b698-0fbe5edcccc1", "48b0083a-3c39-4aba-9b9f-3e14c7608387", 11)]
-    public void GetNormalizedNumberMatchesExpectedValue(string evaluationKey, string targetingKey, int expected)
+    [InlineData("test", "az", 1)]
+    [InlineData("bucket", "j", 1)]
+    [InlineData("test", "y", 100)]
+    [InlineData("flag", "c", 100)]
+    public void GetNormalizedNumber_MatchesExpectedValue(string evaluationKey, string targetingKey, int expected)
     {
         OctopusFeatureContext.GetNormalizedNumber(evaluationKey, targetingKey).Should().Be(expected);
     }
 }
+
