@@ -1,5 +1,4 @@
 ﻿using System.Buffers.Binary;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -104,7 +103,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
     /// <summary>
     /// Computes a deterministic integer bucket in the inclusive range 1–100 for the given evaluation and targeting keys.
     /// </summary>
-    private int GetNormalizedNumber(string evaluationKey, string targetingKey)
+    internal static int GetNormalizedNumber(string evaluationKey, string targetingKey)
     {
         var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, ":", targetingKey));
 
