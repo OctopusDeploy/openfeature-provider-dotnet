@@ -69,7 +69,7 @@ public class OctopusFeatureContextTests
     public void EvaluatesToDefaultValue_IfFeatureIsNotContainedWithinSet()
     {
         var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("testfeature", true, "evaluation-key", [], 100)
+            new FeatureToggleEvaluation("testfeature", false, "evaluation-key", [], 100)
         ], []);
 
         var context = new OctopusFeatureContext(featureToggles, NullLoggerFactory.Instance);
@@ -409,6 +409,16 @@ public class OctopusFeatureContextTests
     [InlineData("bucket", "j", 1)]
     [InlineData("test", "y", 100)]
     [InlineData("flag", "c", 100)]
+    [InlineData("test-feature", "用户", 30)]
+    [InlineData("test-feature", "مستخدم", 19)]
+    [InlineData("test-feature", "ユーザー", 73)]
+    [InlineData("test-feature", "🎉", 54)]
+    [InlineData("test-feature", "café", 31)]
+    [InlineData("test-feature", "naïve", 28)]
+    [InlineData("rollout", "用户-001", 20)]
+    [InlineData("experiment-a", "пользователь", 81)]
+    [InlineData("test-feature", "사용자", 62)]
+    [InlineData("dark-launch", "テナント-001", 8)]
     public void GetNormalizedNumber_MatchesExpectedValue(string evaluationKey, string targetingKey, int expected)
     {
         OctopusFeatureContext.GetNormalizedNumber(evaluationKey, targetingKey).Should().Be(expected);
