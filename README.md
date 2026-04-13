@@ -23,13 +23,13 @@ dotnet add package Octopus.OpenFeature
 ```c#
 var clientIdentifier = Environment.GetEnvironmentVariable("Octopus__Features__ClientIdentifier");
 
-var provider = new OctopusFeatureProvider(new OctopusFeatureConfiguration(clientIdentifier));
+var provider = new OctopusFeatureProvider(new OctopusFeatureConfiguration(clientIdentifier, new ProductMetadata("MyProductName")));
 
 await OpenFeature.Api.Instance.SetProviderAsync(provider);
 
 var client = OpenFeature.Api.Instance.GetClient();
 
-if (await client.GetBooleanValue("to-the-moon-feature", false))
+if (await client.GetBooleanValueAsync("to-the-moon-feature", false))
 {
   Console.WriteLine("🚀🚀🚀");
 }
