@@ -23,7 +23,7 @@ dotnet add package Octopus.OpenFeature
 ```c#
 var clientIdentifier = Environment.GetEnvironmentVariable("Octopus__Features__ClientIdentifier");
 
-var provider = new OctopusFeatureProvider(new OctopusFeatureConfiguration(clientIdentifier, new ProductMetadata("MyProductName"));
+var provider = new OctopusFeatureProvider(new OctopusFeatureConfiguration(clientIdentifier, new ProductMetadata("MyProductName")));
 
 await OpenFeature.Api.Instance.SetProviderAsync(provider);
 
