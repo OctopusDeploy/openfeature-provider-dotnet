@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/OctopusDeploy/openfeature-provider-dotnet/compare/v2.1.0...v2.1.1) (2026-05-14)
+
+
+### Bug Fixes
+
+* log 'slug did not match' warning once per context ([#50](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/50)) ([3d99baa](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/3d99baa86d20f087c52f1dd6f4d341abfa6788f6))
+
 ## [2.1.0](https://github.com/OctopusDeploy/openfeature-provider-dotnet/compare/v2.0.0...v2.1.0) (2026-04-07)
 
 
