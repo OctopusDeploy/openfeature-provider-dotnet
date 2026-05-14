@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
     public byte[] ContentHash => toggles.ContentHash;
     readonly Regex expression = new("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
+    readonly ConcurrentDictionary<string, byte> warnedSlugs = new(StringComparer.OrdinalIgnoreCase);
 
     public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
     {
@@ -36,9 +38,12 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
 
         if (feature == null)
         {
-            logger.LogWarning(
-                "The slug {Slug} did not match any of your Octopus Feature Toggles. Please double check your slug and try again.",
-                slug);
+            if (warnedSlugs.TryAdd(slug, 0))
+            {
+                logger.LogWarning(
+                    "The slug {Slug} did not match any of your Octopus Feature Toggles. Please double check your slug and try again.",
+                    slug);
+            }
 
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
                 "The slug provided did not match any of your Octopus Feature Toggles. Please double check your slug and try again.");
