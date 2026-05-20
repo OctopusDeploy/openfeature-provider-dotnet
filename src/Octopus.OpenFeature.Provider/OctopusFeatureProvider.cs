@@ -17,7 +17,7 @@ public class OctopusFeatureProvider : FeatureProvider
 
     public override Metadata GetMetadata()
     {
-        return new Metadata("octopus-feature");
+        return new Metadata("octopus-dotnet-provider");
     }
 
     public override async Task InitializeAsync(EvaluationContext context, CancellationToken cancellationToken = new())
