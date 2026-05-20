@@ -1,5 +1,5 @@
 using System.Net;
-using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -48,7 +48,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             BaseAddress = configuration.ServerUri
         };
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(configuration.ProductMetadata.ProductHeaderValue));
+        AddOctopusClientHeader(client);
 
         FeatureCheck? hash = null;
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
@@ -73,6 +73,20 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         return haveFeaturesChanged;
     }
 
+    internal void AddOctopusClientHeader(HttpClient client)
+    {
+        var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.CleanProductName);
+        
+        if(!String.IsNullOrWhiteSpace(configuration.ProductMetadata.CleanProductVersion))
+        {
+            clientHeaderValueBuilder.Append($"/{configuration.ProductMetadata.CleanProductVersion}");
+        }
+
+        clientHeaderValueBuilder.Append($" openfeature-provider-dotnet/{typeof(OctopusFeatureClient).Assembly.GetName().Version}");
+        
+        client.DefaultRequestHeaders.Add("X-Octopus-Client", clientHeaderValueBuilder.ToString());
+    }
+
     class FeatureCheck(byte[] contentHash)
     {
         public byte[] ContentHash { get; } = contentHash;
@@ -91,7 +105,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             BaseAddress = configuration.ServerUri
         };
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(configuration.ProductMetadata.ProductHeaderValue));
+        AddOctopusClientHeader(client);
 
         if (configuration.ReleaseVersionOverride is not null)
         {
