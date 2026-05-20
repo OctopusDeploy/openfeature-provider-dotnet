@@ -129,12 +129,14 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             logger.LogWarning("Feature toggle response from {OctoToggleUrl} did not contain expected ContentHash header", configuration.ServerUri);
             return null;
         }
+
         var headerValues = values.ToArray();
         if (!headerValues.Any())
         {
             logger.LogWarning("Feature toggle response from {OctoToggleUrl} returned an empty ContentHash header", configuration.ServerUri);
             return null;
         }
+
         var rawContentHash = headerValues.First();
 
         // WARNING: v2 and v3 endpoints have identical response contracts.

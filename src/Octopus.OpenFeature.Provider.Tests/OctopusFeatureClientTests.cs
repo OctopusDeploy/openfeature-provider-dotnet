@@ -49,7 +49,7 @@ public class OctopusFeatureClientTests
     public void AddOctopusClientHeader_WithNameContainingUnsupportedChars_StripsCharsFromHeader()
     {
         // Note: More character checking tests are in ProductMetadataTests.cs
-        
+
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("My Product"));
         var client = new OctopusFeatureClient(config, NullLogger.Instance);
         var httpClient = new HttpClient();
