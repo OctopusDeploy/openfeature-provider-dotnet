@@ -9,7 +9,7 @@ namespace Octopus.OpenFeature.Provider;
 public class ProductMetadata
 {
     // https://www.rfc-editor.org/rfc/rfc9110.html#name-tokens
-    private static readonly Regex UnsupportedChars = new("[^a-zA-Z0-9!#$%&'*+-.^_`|~]", RegexOptions.Compiled);
+    private static readonly Regex UnsupportedChars = new("[^a-zA-Z0-9!#$%&'*+\\-.^_`|~]", RegexOptions.Compiled);
 
     private string ProductName { get; }
     private string? ProductVersion { get; }

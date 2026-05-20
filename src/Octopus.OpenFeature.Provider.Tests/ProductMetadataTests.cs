@@ -13,11 +13,20 @@ public class ProductMetadataTests
     }
 
     [Fact]
-    public void CleanProductName_WithUnsupportedChars_StripsThemOut()
+    public void CleanProductName_WithCommonUnsupportedChars_StripsThemOut()
     {
-        var metadata = new ProductMetadata("My Product@2024");
+        // Characters that may be used but are not RFC 9110 tchars
+        var metadata = new ProductMetadata("My ,Product (v2.0)/release@2024:final");
 
-        metadata.CleanProductName.Should().Be("MyProduct2024");
+        metadata.CleanProductName.Should().Be("MyProductv2.0release2024final");
+    }
+
+    [Fact]
+    public void CleanProductName_WithHyphen_PreservesIt()
+    {
+        var metadata = new ProductMetadata("My-Product");
+
+        metadata.CleanProductName.Should().Be("My-Product");
     }
 
     [Fact]
