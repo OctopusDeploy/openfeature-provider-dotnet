@@ -26,10 +26,7 @@ public class ProductMetadata
         ProductName = productName;
         ProductVersion = null;
 
-        if (CleanProductName.Length == 0)
-        {
-            throw new ArgumentException("Product name must contain at least one valid token character.");
-        }
+        ValidateProductName();
     }
 
     /// <summary>
@@ -42,11 +39,20 @@ public class ProductMetadata
         ProductName = productName;
         ProductVersion = productVersion;
 
+        ValidateProductName();
+        ValidateProductVersion();
+    }
+
+    private void ValidateProductName()
+    {
         if (CleanProductName.Length == 0)
         {
             throw new ArgumentException("Product name must contain at least one valid token character.");
         }
+    }
 
+    private void ValidateProductVersion()
+    {
         if (CleanProductVersion?.Length == 0)
         {
             throw new ArgumentException("Product version must contain at least one valid token character.");

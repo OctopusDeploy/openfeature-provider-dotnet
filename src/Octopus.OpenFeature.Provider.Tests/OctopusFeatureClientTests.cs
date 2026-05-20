@@ -53,10 +53,11 @@ public class OctopusFeatureClientTests
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("My Product"));
         var client = new OctopusFeatureClient(config, NullLogger.Instance);
         var httpClient = new HttpClient();
+        var expectedVersion = typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3);
 
         client.AddOctopusClientHeader(httpClient);
 
         var headerValue = httpClient.DefaultRequestHeaders.GetValues("X-Octopus-Client").Single();
-        headerValue.Should().StartWith("MyProduct ");
+        headerValue.Should().Be($"MyProduct openfeature-provider-dotnet/{expectedVersion}");
     }
 }

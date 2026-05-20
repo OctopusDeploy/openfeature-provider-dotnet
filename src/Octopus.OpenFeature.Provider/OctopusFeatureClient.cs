@@ -77,13 +77,13 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
     {
         var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.CleanProductName);
 
-        if (!String.IsNullOrWhiteSpace(configuration.ProductMetadata.CleanProductVersion))
+        if (configuration.ProductMetadata.CleanProductVersion is not null)
         {
             clientHeaderValueBuilder.Append($"/{configuration.ProductMetadata.CleanProductVersion}");
         }
 
         clientHeaderValueBuilder.Append(
-            $" openfeature-provider-dotnet/{typeof(OctopusFeatureClient).Assembly.GetName().Version.ToString(3)}"
+            $" openfeature-provider-dotnet/{typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3)}"
         );
 
         client.DefaultRequestHeaders.Add("X-Octopus-Client", clientHeaderValueBuilder.ToString());
