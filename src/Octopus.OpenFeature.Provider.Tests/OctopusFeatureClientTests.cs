@@ -23,7 +23,7 @@ public class OctopusFeatureClientTests
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct"));
         var client = new OctopusFeatureClient(config, NullLogger.Instance);
         var httpClient = new HttpClient();
-        var expectedVersion = typeof(OctopusFeatureClient).Assembly.GetName().Version;
+        var expectedVersion = typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3);
 
         client.AddOctopusClientHeader(httpClient);
 
@@ -37,7 +37,7 @@ public class OctopusFeatureClientTests
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct", "2024.1.0"));
         var client = new OctopusFeatureClient(config, NullLogger.Instance);
         var httpClient = new HttpClient();
-        var expectedVersion = typeof(OctopusFeatureClient).Assembly.GetName().Version;
+        var expectedVersion = typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3);
 
         client.AddOctopusClientHeader(httpClient);
 

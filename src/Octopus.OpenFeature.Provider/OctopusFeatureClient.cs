@@ -76,14 +76,16 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
     internal void AddOctopusClientHeader(HttpClient client)
     {
         var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.CleanProductName);
-        
-        if(!String.IsNullOrWhiteSpace(configuration.ProductMetadata.CleanProductVersion))
+
+        if (!String.IsNullOrWhiteSpace(configuration.ProductMetadata.CleanProductVersion))
         {
             clientHeaderValueBuilder.Append($"/{configuration.ProductMetadata.CleanProductVersion}");
         }
 
-        clientHeaderValueBuilder.Append($" openfeature-provider-dotnet/{typeof(OctopusFeatureClient).Assembly.GetName().Version}");
-        
+        clientHeaderValueBuilder.Append(
+            $" openfeature-provider-dotnet/{typeof(OctopusFeatureClient).Assembly.GetName().Version.ToString(3)}"
+        );
+
         client.DefaultRequestHeaders.Add("X-Octopus-Client", clientHeaderValueBuilder.ToString());
     }
 
