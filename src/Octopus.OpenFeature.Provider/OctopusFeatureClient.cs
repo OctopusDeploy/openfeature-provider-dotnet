@@ -1,5 +1,5 @@
 using System.Net;
-using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -48,7 +48,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             BaseAddress = configuration.ServerUri
         };
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(configuration.ProductMetadata.ProductHeaderValue));
+        AddOctopusClientHeader(client);
 
         FeatureCheck? hash = null;
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
@@ -73,6 +73,22 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         return haveFeaturesChanged;
     }
 
+    internal void AddOctopusClientHeader(HttpClient client)
+    {
+        var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.Name);
+
+        if (configuration.ProductMetadata.Version is not null)
+        {
+            clientHeaderValueBuilder.Append($"/{configuration.ProductMetadata.Version}");
+        }
+
+        clientHeaderValueBuilder.Append(
+            $" openfeature-provider-dotnet/{typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3)}"
+        );
+
+        client.DefaultRequestHeaders.Add("X-Octopus-Client", clientHeaderValueBuilder.ToString());
+    }
+
     class FeatureCheck(byte[] contentHash)
     {
         public byte[] ContentHash { get; } = contentHash;
@@ -91,7 +107,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             BaseAddress = configuration.ServerUri
         };
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(configuration.ProductMetadata.ProductHeaderValue));
+        AddOctopusClientHeader(client);
 
         if (configuration.ReleaseVersionOverride is not null)
         {
@@ -113,12 +129,14 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
             logger.LogWarning("Feature toggle response from {OctoToggleUrl} did not contain expected ContentHash header", configuration.ServerUri);
             return null;
         }
+
         var headerValues = values.ToArray();
         if (!headerValues.Any())
         {
             logger.LogWarning("Feature toggle response from {OctoToggleUrl} returned an empty ContentHash header", configuration.ServerUri);
             return null;
         }
+
         var rawContentHash = headerValues.First();
 
         // WARNING: v2 and v3 endpoints have identical response contracts.
