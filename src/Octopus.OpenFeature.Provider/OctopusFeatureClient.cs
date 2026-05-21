@@ -75,11 +75,11 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
     internal void AddOctopusClientHeader(HttpClient client)
     {
-        var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.CleanProductName);
+        var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.Name);
 
-        if (configuration.ProductMetadata.CleanProductVersion is not null)
+        if (configuration.ProductMetadata.Version is not null)
         {
-            clientHeaderValueBuilder.Append($"/{configuration.ProductMetadata.CleanProductVersion}");
+            clientHeaderValueBuilder.Append($"/{configuration.ProductMetadata.Version}");
         }
 
         clientHeaderValueBuilder.Append(

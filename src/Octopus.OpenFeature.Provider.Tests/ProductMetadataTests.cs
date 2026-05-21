@@ -5,52 +5,52 @@ namespace Octopus.OpenFeature.Provider.Tests;
 public class ProductMetadataTests
 {
     [Fact]
-    public void CleanProductName_WithValidChars_ReturnsNameUnchanged()
+    public void Constructor_WithValidNameChars_SetsNameUnchanged()
     {
         var metadata = new ProductMetadata("OctopusDeploy");
 
-        metadata.CleanProductName.Should().Be("OctopusDeploy");
+        metadata.Name.Should().Be("OctopusDeploy");
     }
 
     [Fact]
-    public void CleanProductName_WithCommonUnsupportedChars_StripsThemOut()
+    public void Constructor_WithCommonUnsupportedCharsInName_StripsThemOut()
     {
         // Characters that may be used but are not RFC 9110 tchars
         var metadata = new ProductMetadata("My ,Product (v2.0)/release@2024:final");
 
-        metadata.CleanProductName.Should().Be("MyProductv2.0release2024final");
+        metadata.Name.Should().Be("MyProductv2.0release2024final");
     }
 
     [Fact]
-    public void CleanProductName_WithHyphen_PreservesIt()
+    public void Constructor_WithHyphenInName_PreservesIt()
     {
         var metadata = new ProductMetadata("My-Product");
 
-        metadata.CleanProductName.Should().Be("My-Product");
+        metadata.Name.Should().Be("My-Product");
     }
 
     [Fact]
-    public void CleanProductVersion_WhenNoVersionProvided_ReturnsNull()
+    public void Constructor_WhenNoVersionProvided_SetsNull()
     {
         var metadata = new ProductMetadata("MyProduct");
 
-        metadata.CleanProductVersion.Should().BeNull();
+        metadata.Version.Should().BeNull();
     }
 
     [Fact]
-    public void CleanProductVersion_WithValidChars_ReturnsVersionUnchanged()
+    public void Constructor_WithValidCharsInVersion_SetsVersionUnchanged()
     {
         var metadata = new ProductMetadata("MyProduct", "2024.1.0");
 
-        metadata.CleanProductVersion.Should().Be("2024.1.0");
+        metadata.Version.Should().Be("2024.1.0");
     }
 
     [Fact]
-    public void CleanProductVersion_WithUnsupportedChars_StripsThemOut()
+    public void Constructor_WithUnsupportedCharsInVersion_StripsThemOut()
     {
         var metadata = new ProductMetadata("MyProduct", "2024.1 (beta)");
 
-        metadata.CleanProductVersion.Should().Be("2024.1beta");
+        metadata.Version.Should().Be("2024.1beta");
     }
 
     [Fact]

@@ -11,49 +11,48 @@ public class ProductMetadata
     // https://www.rfc-editor.org/rfc/rfc9110.html#name-tokens
     private static readonly Regex UnsupportedChars = new("[^a-zA-Z0-9!#$%&'*+\\-.^_`|~]", RegexOptions.Compiled);
 
-    private string ProductName { get; }
-    private string? ProductVersion { get; }
-
-    internal string CleanProductName => UnsupportedChars.Replace(ProductName, "");
-    internal string? CleanProductVersion => ProductVersion == null ? null : UnsupportedChars.Replace(ProductVersion, "");
+    public string Name { get; }
+    public string? Version { get; }
 
     /// <summary>
-    /// Construct a ProductMetadata with the product name only
+    /// Construct a ProductMetadata with the product name only.
     /// </summary>
-    /// <param name="productName">The name of the product</param>
-    public ProductMetadata(string productName)
+    /// <param name="name">The name of the product. Unsupported characters will be removed.</param>
+    public ProductMetadata(string name)
     {
-        ProductName = productName;
-        ProductVersion = null;
+        Name = Clean(name);
+        Version = null;
 
-        ValidateProductName();
+        ValidateName();
     }
 
     /// <summary>
-    /// Construct a ProductMetadata with the product name and version
+    /// Construct a ProductMetadata with the product name and version.
     /// </summary>
-    /// <param name="productName">The name of the product</param>
-    /// <param name="productVersion">The version of the product</param>
-    public ProductMetadata(string productName, string productVersion)
+    /// <param name="name">The name of the product. Unsupported characters will be removed.</param>
+    /// <param name="version">The version of the product. Unsupported characters will be removed.</param>
+    public ProductMetadata(string name, string version)
     {
-        ProductName = productName;
-        ProductVersion = productVersion;
+        Name = Clean(name);
+        Version = Clean(version);
 
-        ValidateProductName();
-        ValidateProductVersion();
+        ValidateName();
+        ValidateVersion();
     }
 
-    private void ValidateProductName()
+    private static string Clean(string value) => UnsupportedChars.Replace(value, "");
+
+    private void ValidateName()
     {
-        if (CleanProductName.Length == 0)
+        if (Name.Length == 0)
         {
             throw new ArgumentException("Product name must contain at least one valid token character.");
         }
     }
 
-    private void ValidateProductVersion()
+    private void ValidateVersion()
     {
-        if (CleanProductVersion?.Length == 0)
+        if (Version?.Length == 0)
         {
             throw new ArgumentException("Product version must contain at least one valid token character.");
         }
