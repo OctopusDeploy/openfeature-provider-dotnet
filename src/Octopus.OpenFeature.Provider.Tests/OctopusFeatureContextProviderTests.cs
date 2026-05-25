@@ -90,13 +90,15 @@ public class OctopusFeatureContextProviderTests
             [new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)],
             [0x01, 0x02, 0x03, 0x05]));
 
-        // Wait for the cache to expire
+        // Wait for the cache to expire and refresh loop to run
         fakeTimeProvider.Advance(configuration.CacheDuration + TimeSpan.FromSeconds(1));
 
         // Validate the updated toggles are available
         context = provider.GetEvaluationContext();
         context.ContentHash.Should().BeEquivalentTo(new byte[] { 0x01, 0x02, 0x03, 0x05 });
         context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
+
+        await provider.Shutdown();
     }
 
     [Fact]
@@ -114,9 +116,9 @@ public class OctopusFeatureContextProviderTests
         var provider = new OctopusFeatureContextProvider(configuration, client, logger, fakeTimeProvider);
         await provider.Initialize();
 
-        // Switch to a failing client for the next refresh
+        // Switch to a failing client
         client.ChangeToggles(null);
-        // Wait for the cache to expire and a refresh to occur
+        // Wait for the cache to expire and refresh loop to run
         fakeTimeProvider.Advance(configuration.CacheDuration + TimeSpan.FromSeconds(1));
 
         var context = provider.GetEvaluationContext();
@@ -124,6 +126,8 @@ public class OctopusFeatureContextProviderTests
         using var scope = new AssertionScope();
         logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
         context.ContentHash.Should().BeEquivalentTo(contentHash);
+
+        await provider.Shutdown();
     }
 
     class AlwaysFailsFeatureClient : IOctopusFeatureClient
