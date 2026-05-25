@@ -112,18 +112,23 @@ public class OctopusFeatureContextProviderTests
         var provider = new OctopusFeatureContextProvider(configuration, client, logger);
         await provider.Initialize();
 
-        // Switch to a failing client
+        // Simulate a failed fetch
         client.ChangeToggles(null);
         // Wait for the cache to expire and refresh loop to run
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var context = provider.GetEvaluationContext();
+        try
+        {
+            var context = provider.GetEvaluationContext();
 
-        using var scope = new AssertionScope();
-        logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
-        context.ContentHash.Should().BeEquivalentTo(contentHash);
-
-        await provider.Shutdown();
+            using var scope = new AssertionScope();
+            logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
+            context.ContentHash.Should().BeEquivalentTo(contentHash);
+        }
+        finally
+        {
+            await provider.Shutdown();
+        }
     }
 
     class AlwaysFailsFeatureClient : IOctopusFeatureClient
