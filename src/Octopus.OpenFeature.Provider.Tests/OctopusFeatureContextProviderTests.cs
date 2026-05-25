@@ -3,7 +3,6 @@ using FluentAssertions.Execution;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Testing;
-using Microsoft.Extensions.Time.Testing;
 
 namespace Octopus.OpenFeature.Provider.Tests;
 
@@ -68,7 +67,6 @@ public class OctopusFeatureContextProviderTests
     [Fact]
     public async Task WhenInitialized_RefreshesCacheAfterCacheDurationExpires()
     {
-        var fakeTimeProvider = new FakeTimeProvider();
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
         var client = new MockOctopusFeatureClient(new FeatureToggles(
@@ -76,7 +74,7 @@ public class OctopusFeatureContextProviderTests
             contentHash));
 
         // Initialize the provider
-        var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance, fakeTimeProvider);
+        var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
         await provider.Initialize();
 
         // Validate the initial state
@@ -90,36 +88,34 @@ public class OctopusFeatureContextProviderTests
             [new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)],
             [0x01, 0x02, 0x03, 0x05]));
 
-        // Wait for the cache to expire and refresh loop to run
-        fakeTimeProvider.Advance(configuration.CacheDuration + TimeSpan.FromSeconds(1));
+        // Wait for the cache to expire
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         // Validate the updated toggles are available
         context = provider.GetEvaluationContext();
         context.ContentHash.Should().BeEquivalentTo(new byte[] { 0x01, 0x02, 0x03, 0x05 });
         context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
-
-        await provider.Shutdown();
     }
 
     [Fact]
     public async Task WhenInitialized_AndRefreshFails_RetainsExistingContextAndLogsError()
     {
         var logger = new FakeLogger();
-        var fakeTimeProvider = new FakeTimeProvider();
 
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
         var client = new MockOctopusFeatureClient(new FeatureToggles(
             [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
-            contentHash));
+            contentHash
+        ));
 
-        var provider = new OctopusFeatureContextProvider(configuration, client, logger, fakeTimeProvider);
+        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
         await provider.Initialize();
 
         // Switch to a failing client
         client.ChangeToggles(null);
         // Wait for the cache to expire and refresh loop to run
-        fakeTimeProvider.Advance(configuration.CacheDuration + TimeSpan.FromSeconds(1));
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         var context = provider.GetEvaluationContext();
 
