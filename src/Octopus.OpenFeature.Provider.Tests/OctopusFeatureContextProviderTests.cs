@@ -99,12 +99,12 @@ public class OctopusFeatureContextProviderTests
         context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
     }
 
-        [Fact]
+    [Fact]
     public async Task WhenInitialized_AndRefreshFails_RetainsExistingContextAndLogsError()
     {
         var logger = new FakeLogger();
         var fakeTimeProvider = new FakeTimeProvider();
-        
+
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
         var client = new MockOctopusFeatureClient(new FeatureToggles(
@@ -113,12 +113,12 @@ public class OctopusFeatureContextProviderTests
 
         var provider = new OctopusFeatureContextProvider(configuration, client, logger, fakeTimeProvider);
         await provider.Initialize();
-        
+
         // Switch to a failing client for the next refresh
         client.ChangeToggles(null);
         // Wait for the cache to expire and a refresh to occur
         fakeTimeProvider.Advance(configuration.CacheDuration + TimeSpan.FromSeconds(1));
-        
+
         var context = provider.GetEvaluationContext();
 
         using var scope = new AssertionScope();
