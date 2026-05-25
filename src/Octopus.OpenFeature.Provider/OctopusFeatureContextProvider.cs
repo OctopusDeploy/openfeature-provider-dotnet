@@ -8,8 +8,10 @@ namespace Octopus.OpenFeature.Provider;
 class OctopusFeatureContextProvider(
     OctopusFeatureConfiguration configuration,
     IOctopusFeatureClient client,
-    ILogger logger)
+    ILogger logger,
+    TimeProvider? timeProvider = null)
 {
+    readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     readonly CancellationTokenSource cancellationTokenSource = new();
 
     OctopusFeatureContext currentContext = OctopusFeatureContext.Empty(configuration.LoggerFactory);
@@ -60,7 +62,7 @@ class OctopusFeatureContextProvider(
         {
             try
             {
-                await Task.Delay(delay, cancellationToken);
+                await _timeProvider.Delay(delay, cancellationToken);
 
                 if (await client.HaveFeaturesChanged(currentContext.ContentHash, cancellationToken))
                 {

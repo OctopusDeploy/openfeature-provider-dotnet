@@ -3,6 +3,7 @@ using FluentAssertions.Execution;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Testing;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Octopus.OpenFeature.Provider.Tests;
 
@@ -67,6 +68,7 @@ public class OctopusFeatureContextProviderTests
     [Fact]
     public async Task WhenInitialized_RefreshesCacheAfterCacheDurationExpires()
     {
+        var fakeTimeProvider = new FakeTimeProvider();
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
         var client = new MockOctopusFeatureClient(new FeatureToggles(
@@ -74,7 +76,7 @@ public class OctopusFeatureContextProviderTests
             contentHash));
 
         // Initialize the provider
-        var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
+        var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance, fakeTimeProvider);
         await provider.Initialize();
 
         // Validate the initial state
@@ -89,12 +91,39 @@ public class OctopusFeatureContextProviderTests
             [0x01, 0x02, 0x03, 0x05]));
 
         // Wait for the cache to expire
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        fakeTimeProvider.Advance(configuration.CacheDuration + TimeSpan.FromSeconds(1));
 
         // Validate the updated toggles are available
         context = provider.GetEvaluationContext();
         context.ContentHash.Should().BeEquivalentTo(new byte[] { 0x01, 0x02, 0x03, 0x05 });
         context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
+    }
+
+        [Fact]
+    public async Task WhenInitialized_AndRefreshFails_RetainsExistingContextAndLogsError()
+    {
+        var logger = new FakeLogger();
+        var fakeTimeProvider = new FakeTimeProvider();
+        
+        byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
+
+        var client = new MockOctopusFeatureClient(new FeatureToggles(
+            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
+            contentHash));
+
+        var provider = new OctopusFeatureContextProvider(configuration, client, logger, fakeTimeProvider);
+        await provider.Initialize();
+        
+        // Switch to a failing client for the next refresh
+        client.ChangeToggles(null);
+        // Wait for the cache to expire and a refresh to occur
+        fakeTimeProvider.Advance(configuration.CacheDuration + TimeSpan.FromSeconds(1));
+        
+        var context = provider.GetEvaluationContext();
+
+        using var scope = new AssertionScope();
+        logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
+        context.ContentHash.Should().BeEquivalentTo(contentHash);
     }
 
     class AlwaysFailsFeatureClient : IOctopusFeatureClient
@@ -125,36 +154,5 @@ public class OctopusFeatureContextProviderTests
         logger.LatestRecord.Message.Should().StartWith("Failed to retrieve feature manifest");
 
         await provider.Shutdown();
-    }
-    
-    [Fact]
-    public async Task WhenRefreshFails_RetainsExistingContextAndLogsError()
-    {
-        var fastConfig = new OctopusFeatureConfiguration("identifier", new ProductMetadata("test-agent"))
-        {
-            CacheDuration = TimeSpan.FromMilliseconds(50)
-        };
-
-        var logger = new FakeLogger();
-        
-        byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
-
-        var client = new MockOctopusFeatureClient(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
-            contentHash));
-
-        var provider = new OctopusFeatureContextProvider(fastConfig, client, logger);
-        await provider.Initialize();
-        
-        // Switch to a failing client for the next refresh
-        client.ChangeToggles(null);
-        // Wait for the cache to expire and a refresh to occur
-        await Task.Delay(TimeSpan.FromMilliseconds(200));
-        
-        var context = provider.GetEvaluationContext();
-
-        using var scope = new AssertionScope();
-        logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
-        context.ContentHash.Should().BeEquivalentTo(contentHash);
     }
 }
