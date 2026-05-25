@@ -70,8 +70,7 @@ class OctopusFeatureContextProvider(
                         currentContext = new OctopusFeatureContext(toggles, configuration.LoggerFactory);
                     } else
                     {
-                        // Fall back to existing context if retrieval fails, to avoid replacing it with an empty context.
-                        logger.LogWarning("Failed to retrieve updated feature manifest. Retaining existing context which may be stale.");
+                        logger.LogError("Failed to retrieve updated feature manifest. Retaining existing context which may be stale.");
                     }
                 }
 
