@@ -65,10 +65,14 @@ class OctopusFeatureContextProvider(
                 if (await client.HaveFeaturesChanged(currentContext.ContentHash, cancellationToken))
                 {
                     var toggles = await client.GetFeatureToggleEvaluationManifest(cancellationToken);
-                    currentContext =
-                        toggles is not null
-                            ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
-                            : OctopusFeatureContext.Empty(configuration.LoggerFactory);
+                    if (toggles is not null)
+                    {
+                        currentContext = new OctopusFeatureContext(toggles, configuration.LoggerFactory);
+                    } else
+                    {
+                        // Fall back to existing context if retrieval fails, to avoid replacing it with an empty context.
+                        logger.LogWarning("Failed to retrieve updated feature manifest. Retaining existing context which may be stale.");
+                    }
                 }
 
                 delay = configuration.CacheDuration;
