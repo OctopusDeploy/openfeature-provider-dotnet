@@ -160,4 +160,47 @@ public class OctopusFeatureContextProviderTests
 
         await provider.Shutdown();
     }
+
+    class ThrowsOnRefreshClient(FeatureToggles initial) : IOctopusFeatureClient
+    {
+        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
+        { 
+            throw new Exception("Oops! Simulated error.");
+        }
+
+        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<FeatureToggles?>(initial);
+        }
+    }
+
+    [Fact]
+    public async Task WhenRefreshThrowsException_LogsRetryAttemptDetails()
+    {
+        byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
+        var logger = new FakeLogger();
+
+        var client = new ThrowsOnRefreshClient(new FeatureToggles(
+            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
+            contentHash));
+
+        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
+        await provider.Initialize();
+
+        // Wait for cache to clear and refresh attempt to occur
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            logger.Collector.GetSnapshot()
+                .Should().Contain(r => r.Message.Contains("Failed to retrieve feature manifest") && r.Message.Contains("Trying again after"));
+
+            var context = provider.GetEvaluationContext();
+            context.ContentHash.Should().BeEquivalentTo(contentHash);
+        }
+        finally
+        {
+            await provider.Shutdown();
+        }
+    }
 }

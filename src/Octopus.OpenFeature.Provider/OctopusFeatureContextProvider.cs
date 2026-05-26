@@ -85,7 +85,6 @@ class OctopusFeatureContextProvider(
             catch (Exception e)
             {
                 logger.LogError(e, "{FailedMessage}, attempt {RetryAttempt}. Trying again after {Delay}...", "Failed to retrieve feature manifest", retryAttempt, delay);
-                delay = retryDelay;
                 retryAttempt++;
             }
         }
