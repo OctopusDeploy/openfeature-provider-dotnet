@@ -97,6 +97,40 @@ public class OctopusFeatureContextProviderTests
         context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task WhenInitialized_AndRefreshFails_RetainsExistingContextAndLogsError()
+    {
+        var logger = new FakeLogger();
+
+        byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
+
+        var client = new MockOctopusFeatureClient(new FeatureToggles(
+            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
+            contentHash
+        ));
+
+        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
+        await provider.Initialize();
+
+        // Simulate a failed fetch
+        client.ChangeToggles(null);
+        // Wait for the cache to expire and refresh loop to run
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            var context = provider.GetEvaluationContext();
+
+            using var scope = new AssertionScope();
+            logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
+            context.ContentHash.Should().BeEquivalentTo(contentHash);
+        }
+        finally
+        {
+            await provider.Shutdown();
+        }
+    }
+
     class AlwaysFailsFeatureClient : IOctopusFeatureClient
     {
         public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
