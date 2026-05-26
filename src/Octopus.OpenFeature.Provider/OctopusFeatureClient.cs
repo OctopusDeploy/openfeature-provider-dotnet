@@ -167,6 +167,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         {
             logger.LogTrace(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}.", configuration.ServerUri);
         }
+
         return default;
     }
 }

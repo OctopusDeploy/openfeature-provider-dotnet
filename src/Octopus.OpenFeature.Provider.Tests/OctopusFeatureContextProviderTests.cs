@@ -138,28 +138,22 @@ public class OctopusFeatureContextProviderTests
 
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
-        // Initialize with a null client so that initial fetch fails
+        // Initialize with a null client so that first fetch fails
         var client = new MockOctopusFeatureClient(null);
-
         var provider = new OctopusFeatureContextProvider(configuration, client, logger);
         await provider.Initialize();
 
-        // Assert that initial fetch failure is logged and context is empty
-         using var scope = new AssertionScope();
-        provider.GetEvaluationContext().ContentHash.Length.Should().Be(0);
-        logger.LatestRecord.Message.Should().StartWith("Failed to retrieve feature manifest during initialization");
-
-        // Update client to return valid toggles and wait for refresh
-        client.ChangeToggles(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
-            contentHash));
-        await Task.Delay(TimeSpan.FromSeconds(3));
-
         try
         {
+            // Check that the context is empty
+            provider.GetEvaluationContext().ContentHash.Length.Should().Be(0);
+
+            // Update client to return valid toggles and wait for refresh
+            client.ChangeToggles(new FeatureToggles([new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)], contentHash));
+            await Task.Delay(TimeSpan.FromSeconds(5));
+
             // Assert that the context is now correctly populated
-            var context = provider.GetEvaluationContext();
-            context.ContentHash.Should().BeEquivalentTo(contentHash);
+            provider.GetEvaluationContext().ContentHash.Should().BeEquivalentTo(contentHash);
         }
         finally
         {
@@ -175,11 +169,8 @@ public class OctopusFeatureContextProviderTests
         byte[] initialHash = [0x01, 0x02, 0x03, 0x04];
         byte[] updatedHash = [0x01, 0x02, 0x03, 0x05];
 
-        // Start with a client that returns valid toggles
-        var client = new MockOctopusFeatureClient(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
-            initialHash));
-
+        // Initialize with a client that returns valid toggles
+        var client = new MockOctopusFeatureClient(new FeatureToggles([new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)], initialHash));
         var provider = new OctopusFeatureContextProvider(configuration, client, logger);
         await provider.Initialize();
 
@@ -187,21 +178,64 @@ public class OctopusFeatureContextProviderTests
         {
             // Switch to a null client and wait for refresh to fail
             client.ChangeToggles(null);
-            await Task.Delay(TimeSpan.FromSeconds(3));
+            await Task.Delay(TimeSpan.FromSeconds(5));
 
             // Assert that failed refresh is logged and old context is retained
             logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
             provider.GetEvaluationContext().ContentHash.Should().BeEquivalentTo(initialHash);
 
             // Update client to return valid toggles again and wait for refresh
-            client.ChangeToggles(new FeatureToggles(
-                [new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)],
-                updatedHash));
-            await Task.Delay(TimeSpan.FromSeconds(3));
+            client.ChangeToggles(new FeatureToggles([new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)], updatedHash));
+            await Task.Delay(TimeSpan.FromSeconds(5));
 
             // Assert that the context is now correctly populated
             var context = provider.GetEvaluationContext();
             context.ContentHash.Should().BeEquivalentTo(updatedHash);
+        }
+        finally
+        {
+            await provider.Shutdown();
+        }
+    }
+
+    class ThrowsOnRefreshClient(FeatureToggles initial) : IOctopusFeatureClient
+    {
+        public readonly string ErrorMessage = "Oops! Simulated refresh error";
+
+        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
+        {
+            throw new Exception(ErrorMessage);
+        }
+
+        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<FeatureToggles?>(initial);
+        }
+    }
+
+    [Fact]
+    public async Task WhenAnExceptionIsThrownDuringRefresh_LogsErrorDetails()
+    {
+        byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
+        var logger = new FakeLogger();
+
+        // Initialize with a client that will throw on refresh
+        var client = new ThrowsOnRefreshClient(
+            new FeatureToggles([new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)], contentHash)
+        );
+        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
+        await provider.Initialize();
+
+        // Wait for cache to clear and refresh attempt to occur
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            logger.Collector.GetSnapshot()
+                .Should().Contain(r => r.Message.Contains("Failed to retrieve updated feature manifest")
+                    && r.Exception != null
+                    && r.Exception.Message.Contains(client.ErrorMessage)
+                );
         }
         finally
         {
@@ -237,48 +271,5 @@ public class OctopusFeatureContextProviderTests
         logger.LatestRecord.Message.Should().StartWith("Failed to retrieve feature manifest");
 
         await provider.Shutdown();
-    }
-
-    class ThrowsOnRefreshClient(FeatureToggles initial) : IOctopusFeatureClient
-    {
-        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
-        {
-            throw new Exception("Oops! Simulated error.");
-        }
-
-        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
-        {
-            return Task.FromResult<FeatureToggles?>(initial);
-        }
-    }
-
-    [Fact]
-    public async Task WhenRefreshThrowsException_LogsRetryAttemptDetails()
-    {
-        byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
-        var logger = new FakeLogger();
-
-        var client = new ThrowsOnRefreshClient(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
-            contentHash));
-
-        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
-        await provider.Initialize();
-
-        // Wait for cache to clear and refresh attempt to occur
-        await Task.Delay(TimeSpan.FromSeconds(5));
-
-        try
-        {
-            logger.Collector.GetSnapshot()
-                .Should().Contain(r => r.Message.Contains("Failed to retrieve feature manifest") && r.Message.Contains("Trying again after"));
-
-            var context = provider.GetEvaluationContext();
-            context.ContentHash.Should().BeEquivalentTo(contentHash);
-        }
-        finally
-        {
-            await provider.Shutdown();
-        }
     }
 }

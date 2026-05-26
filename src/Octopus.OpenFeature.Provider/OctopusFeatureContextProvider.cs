@@ -15,8 +15,6 @@ class OctopusFeatureContextProvider(
     OctopusFeatureContext currentContext = OctopusFeatureContext.Empty(configuration.LoggerFactory);
     Task? evaluationContextRefreshTask;
     bool initialized;
-    int retryAttempt;
-    readonly TimeSpan retryDelay = TimeSpan.FromSeconds(5);
 
     public OctopusFeatureContext GetEvaluationContext()
     {
@@ -55,12 +53,11 @@ class OctopusFeatureContextProvider(
     /// </summary>
     async Task RefreshEvaluationContext(CancellationToken cancellationToken)
     {
-        var delay = configuration.CacheDuration;
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                await Task.Delay(delay, cancellationToken);
+                await Task.Delay(configuration.CacheDuration, cancellationToken);
 
                 if (await client.HaveFeaturesChanged(currentContext.ContentHash, cancellationToken))
                 {
@@ -74,9 +71,6 @@ class OctopusFeatureContextProvider(
                         logger.LogError("Failed to retrieve updated feature manifest. Retaining existing context which may be stale.");
                     }
                 }
-
-                delay = configuration.CacheDuration;
-                retryAttempt = 0;
             }
             catch (OperationCanceledException)
             {
@@ -84,8 +78,7 @@ class OctopusFeatureContextProvider(
             }
             catch (Exception e)
             {
-                logger.LogError(e, "{FailedMessage}, attempt {RetryAttempt}. Trying again after {Delay}...", "Failed to retrieve feature manifest", retryAttempt, delay);
-                retryAttempt++;
+                logger.LogError(e, "Failed to retrieve updated feature manifest. Retaining existing context which may be stale.");
             }
         }
     }
