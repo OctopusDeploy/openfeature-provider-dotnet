@@ -164,7 +164,7 @@ public class OctopusFeatureContextProviderTests
     class ThrowsOnRefreshClient(FeatureToggles initial) : IOctopusFeatureClient
     {
         public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
-        { 
+        {
             throw new Exception("Oops! Simulated error.");
         }
 

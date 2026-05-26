@@ -53,7 +53,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         FeatureCheck? hash = null;
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var result = await ExecuteWithRetry(async ct => await client.GetAsync("api/featuretoggles/check/v3/", ct), cancellationToken);
+        var result = await Execute(async ct => await client.GetAsync("api/featuretoggles/check/v3/", ct), cancellationToken);
 
         if (result is not null && result.IsSuccessStatusCode)
         {
@@ -64,7 +64,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         if (hash is null)
         {
-            logger.LogWarning("Failed to retrieve feature toggles after 3 retries. Previously retrieved feature toggle values will continue to be used.");
+            logger.LogWarning("Failed to retrieve feature toggles. Previously retrieved feature toggle values will continue to be used.");
             return false;
         }
 
@@ -116,7 +116,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var response = await ExecuteWithRetry(async ct => await client.GetAsync("api/toggles/evaluations/v3/", ct), cancellationToken);
+        var response = await Execute(async ct => await client.GetAsync("api/toggles/evaluations/v3/", ct), cancellationToken);
 
         if (response is null or { StatusCode: HttpStatusCode.NotFound })
         {
@@ -157,23 +157,16 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         return toggles;
     }
 
-    async Task<T?> ExecuteWithRetry<T>(Func<CancellationToken, Task<T>> callback, CancellationToken cancellationToken)
+    async Task<T?> Execute<T>(Func<CancellationToken, Task<T>> callback, CancellationToken cancellationToken)
     {
-        var attempts = 0;
-        while (attempts < 3)
+        try
         {
-            try
-            {
-                return await callback(cancellationToken);
-            }
-            catch (Exception e)
-            {
-                attempts++;
-                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempts)), cancellationToken);
-                logger.LogTrace(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}. Retrying (attempt {attempt} out of 3).", configuration.ServerUri, attempts);
-            }
+            return await callback(cancellationToken);
         }
-
+        catch (Exception e)
+        {
+            logger.LogTrace(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}.", configuration.ServerUri);
+        }
         return default;
     }
 }
