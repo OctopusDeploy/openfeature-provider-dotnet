@@ -53,7 +53,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         FeatureCheck? hash = null;
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var result = await Execute(async ct => await client.GetAsync("api/featuretoggles/check/v3/", ct), cancellationToken);
+        var result = await client.GetAsync("api/featuretoggles/check/v3/", cancellationToken);
 
         if (result is not null && result.IsSuccessStatusCode)
         {
@@ -116,7 +116,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var response = await Execute(async ct => await client.GetAsync("api/toggles/evaluations/v3/", ct), cancellationToken);
+        var response = await client.GetAsync("api/toggles/evaluations/v3/", cancellationToken);
 
         if (response is null or { StatusCode: HttpStatusCode.NotFound })
         {
@@ -155,19 +155,5 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         var toggles = new FeatureToggles(evaluations, Convert.FromBase64String(rawContentHash));
 
         return toggles;
-    }
-
-    async Task<T?> Execute<T>(Func<CancellationToken, Task<T>> callback, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await callback(cancellationToken);
-        }
-        catch (Exception e)
-        {
-            logger.LogTrace(e, "Error occurred retrieving feature toggles from {OctoToggleUrl}.", configuration.ServerUri);
-        }
-
-        return default;
     }
 }
