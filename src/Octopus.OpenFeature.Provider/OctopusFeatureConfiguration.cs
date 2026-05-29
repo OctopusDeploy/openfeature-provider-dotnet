@@ -38,7 +38,5 @@ public class OctopusFeatureConfiguration
     /// </summary>
     public TimeSpan CacheDuration { get; set; } = TimeSpan.FromMinutes(1);
 
-    public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
-
     public ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
 }
