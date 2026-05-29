@@ -55,7 +55,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         var result = await client.GetAsync("api/featuretoggles/check/v3/", cancellationToken);
 
-        if (result is not null && result.IsSuccessStatusCode)
+        if (result.IsSuccessStatusCode)
         {
             var rawResult = await result.Content.ReadAsStringAsync();
 
@@ -117,7 +117,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         var response = await client.GetAsync("api/toggles/evaluations/v3/", cancellationToken);
 
-        if (response is null or { StatusCode: HttpStatusCode.NotFound })
+        if (response.StatusCode == HttpStatusCode.NotFound)
         {
             logger.LogWarning("Failed to retrieve feature toggles for client identifier {ClientIdentifier} from {OctoToggleUrl}", configuration.ClientIdentifier, configuration.ServerUri);
             return null;
