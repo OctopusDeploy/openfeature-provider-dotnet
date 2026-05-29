@@ -64,8 +64,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         if (hash is null)
         {
-            logger.LogWarning("Failed to retrieve feature toggles. Previously retrieved feature toggle values will continue to be used.");
-            return false;
+            throw new InvalidOperationException($"Failed to retrieve feature toggles for client identifier. Check did not return a valid content hash.");
         }
 
         var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(contentHash);
