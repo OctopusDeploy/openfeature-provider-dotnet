@@ -6,6 +6,7 @@ using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.SpecificationTests;
 
+[Collection("OpenFeatureApi")]
 public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
 {
     [Theory]

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using OpenFeature;
+using OpenFeature.Error;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider;
@@ -47,24 +48,35 @@ public class OctopusFeatureProvider : FeatureProvider
     public override Task<ResolutionDetails<string>> ResolveStringValueAsync(string flagKey, string defaultValue, EvaluationContext? context = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("Octopus Features only support boolean toggles.");
+        throw RejectNonBooleanEvaluation(flagKey);
     }
 
     public override Task<ResolutionDetails<int>> ResolveIntegerValueAsync(string flagKey, int defaultValue, EvaluationContext? context = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("Octopus Features only support boolean toggles.");
+        throw RejectNonBooleanEvaluation(flagKey);
     }
 
     public override Task<ResolutionDetails<double>> ResolveDoubleValueAsync(string flagKey, double defaultValue, EvaluationContext? context = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("Octopus Features only support boolean toggles.");
+        throw RejectNonBooleanEvaluation(flagKey);
     }
 
     public override Task<ResolutionDetails<Value>> ResolveStructureValueAsync(string flagKey, Value defaultValue, EvaluationContext? context = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("Octopus Features only support boolean toggles.");
+        throw RejectNonBooleanEvaluation(flagKey);
+    }
+
+    Exception RejectNonBooleanEvaluation(string flagKey)
+    {
+        var evaluator = contextProvider.GetEvaluationContext();
+        var toggle = evaluator.FindFeatureToggleBySlug(flagKey);
+        if (toggle == null)
+        {
+            return new FlagNotFoundException(flagKey);
+        }
+        return new TypeMismatchException("Octopus Feature Toggles only support boolean toggles.");
     }
 }

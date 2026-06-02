@@ -7,7 +7,7 @@ public class Cases : IEnumerable<object[]>
 {
     public IEnumerator<object[]> GetEnumerator()
     {
-        var jsonFiles = Directory.EnumerateFiles("Fixtures", "*.json");
+        var jsonFiles = Directory.EnumerateFiles("Fixtures/boolean", "*.json");
 
         foreach (var jsonFile in jsonFiles)
         {
@@ -41,7 +41,8 @@ public record FixtureCase(
     FixtureExpected Expected
 );
 
-public record FixtureConfiguration(string Slug,
+public record FixtureConfiguration(
+    string Slug,
     bool DefaultValue,
     Dictionary<string, string>? Context
 );
