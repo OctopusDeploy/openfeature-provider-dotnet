@@ -3,24 +3,19 @@ using System.Text.Json;
 
 namespace Octopus.OpenFeature.Provider.SpecificationTests;
 
-public interface IFixture<T>
-{
-    JsonElement Response { get; }
-    T[] Cases { get; }
-}
-
-public abstract class Cases<TFixture, TCase>(string directory) : IEnumerable<object[]> where TFixture : IFixture<TCase>
+public class Cases : IEnumerable<object[]>
 {
     public IEnumerator<object[]> GetEnumerator()
     {
-        var jsonFiles = Directory.EnumerateFiles(directory, "*.json");
+        var jsonFiles = Directory.EnumerateFiles("Fixtures", "*.json");
 
         foreach (var jsonFile in jsonFiles)
         {
             var json = File.ReadAllText(jsonFile);
-            var data = JsonSerializer.Deserialize<TFixture>(json, JsonSerializerOptions.Web)!;
+            var data = JsonSerializer.Deserialize<Fixture>(json, JsonSerializerOptions.Web)!;
 
             var responseJson = data.Response.GetRawText();
+            var file = Path.GetFileName(jsonFile);
 
             foreach (var c in data.Cases)
             {
@@ -35,12 +30,10 @@ public abstract class Cases<TFixture, TCase>(string directory) : IEnumerable<obj
     }
 }
 
-public class BooleanCases() : Cases<Fixture, FixtureCase>("Fixtures/boolean");
-
 public record Fixture(
     JsonElement Response,
     FixtureCase[] Cases
-) : IFixture<FixtureCase>;
+);
 
 public record FixtureCase(
     string Description,
@@ -56,27 +49,4 @@ public record FixtureConfiguration(string Slug,
 public record FixtureExpected(
     bool Value,
     string? ErrorCode = null
-);
-
-public class NonBooleanCases() : Cases<NonBooleanFixture, NonBooleanFixtureCase>("Fixtures/non-boolean");
-
-public record NonBooleanFixture(
-    JsonElement Response,
-    NonBooleanFixtureCase[] Cases
-) : IFixture<NonBooleanFixtureCase>;
-
-public record NonBooleanFixtureCase(
-    string Description,
-    NonBooleanFixtureConfiguration Configuration,
-    NonBooleanFixtureExpected Expected
-);
-
-public record NonBooleanFixtureConfiguration(
-    string Slug,
-    string FlagType
-);
-
-public record NonBooleanFixtureExpected(
-    JsonElement Value,
-    string ErrorCode
 );

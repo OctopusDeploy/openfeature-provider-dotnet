@@ -6,11 +6,10 @@ using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.SpecificationTests;
 
-[Collection("OpenFeatureApi")]
 public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
 {
     [Theory]
-    [ClassData(typeof(BooleanCases))]
+    [ClassData(typeof(Cases))]
     public async Task Evaluate(string testResponse, FixtureCase testCase)
     {
         var clientIdentifier = server.Configure(testResponse);
