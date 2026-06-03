@@ -10,7 +10,7 @@ namespace Octopus.OpenFeature.Provider.SpecificationTests;
 public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
 {
     [Theory]
-    [ClassData(typeof(Cases))]
+    [ClassData(typeof(BooleanCases))]
     public async Task Evaluate(string testResponse, FixtureCase testCase)
     {
         var clientIdentifier = server.Configure(testResponse);
