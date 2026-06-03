@@ -1,7 +1,6 @@
 ﻿using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Murmur;
 using OpenFeature.Constant;
@@ -12,7 +11,6 @@ namespace Octopus.OpenFeature.Provider;
 partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => toggles.ContentHash;
-    readonly Regex expression = new("^([a-z0-9]+(-[a-z0-9]+)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
     readonly ConcurrentDictionary<string, byte> warnedSlugs = new(StringComparer.OrdinalIgnoreCase);
 
@@ -23,16 +21,6 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
 
     public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)
     {
-        if (expression.IsMatch(slug) == false)
-        {
-            logger.LogWarning(
-                "Flag key {FlagKey} does not appear to be a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.",
-                slug);
-
-            return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
-                "Flag key provided was not a slug. Please ensure to provide the slug associated with your Octopus Feature Toggle.");
-        }
-
         var feature =
             toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
 
