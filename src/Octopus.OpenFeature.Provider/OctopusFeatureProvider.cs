@@ -16,6 +16,13 @@ public class OctopusFeatureProvider : FeatureProvider
         contextProvider = new OctopusFeatureContextProvider(configuration, client, logger);
     }
 
+    // Allows us to pass in a fake IOctopusFeatureClient for testing purposes.
+    internal OctopusFeatureProvider(OctopusFeatureConfiguration configuration, IOctopusFeatureClient client)
+    {
+        var logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureProvider>();
+        contextProvider = new OctopusFeatureContextProvider(configuration, client, logger);
+    }
+
     public override Metadata GetMetadata()
     {
         return new Metadata("octopus-dotnet-provider");
