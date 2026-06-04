@@ -38,7 +38,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # all
           submodules: 'true'
 
       - name: Build, Test, Pack, and Deploy (Release)
