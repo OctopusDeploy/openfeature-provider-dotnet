@@ -84,6 +84,6 @@ public class OctopusFeatureProvider : FeatureProvider
         {
             return new FlagNotFoundException(flagKey);
         }
-        return new TypeMismatchException("Octopus Feature Toggles only support boolean toggles.");
+        return new TypeMismatchException("Octopus only supports boolean flags.");
     }
 }
