@@ -1,5 +1,6 @@
 using FluentAssertions;
-using OpenFeature.Error;
+using OpenFeature;
+using OpenFeature.Constant;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.Tests;
@@ -14,102 +15,102 @@ public class OctopusFeatureProviderTests
         public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken) => Task.FromResult(featureToggles);
     }
 
-    async Task<OctopusFeatureProvider> CreateInitializedProvider(FeatureToggles toggles)
+    async Task<FeatureClient> CreateClientWithToggles(FeatureToggles toggles)
     {
         var provider = new OctopusFeatureProvider(configuration, new FakeOctopusFeatureClient(toggles));
-        await provider.InitializeAsync(EvaluationContext.Builder().Build());
-        return provider;
+        await Api.Instance.SetProviderAsync(provider);
+        return Api.Instance.GetClient();
     }
 
     [Fact]
-    public async Task ResolveStringValueAsync_WhenFlagExists_ThrowsTypeMismatchException()
+    public async Task GetStringDetailsAsync_WhenFlagExists_ReturnTypeMismatchError()
     {
-        var provider = await CreateInitializedProvider(new FeatureToggles(
+        var client = await CreateClientWithToggles(new FeatureToggles(
             [new FeatureToggleEvaluation("my-flag", true, "key", [], 100)], []));
 
-        var act = () => provider.ResolveStringValueAsync("my-flag", "default");
+        var result = await client.GetStringDetailsAsync("my-flag", "default");
+        await Api.Instance.ShutdownAsync();
 
-        await act.Should().ThrowAsync<TypeMismatchException>();
-        await provider.ShutdownAsync();
+        result.ErrorType.Should().Be(ErrorType.TypeMismatch);
     }
 
     [Fact]
-    public async Task ResolveStringValueAsync_WhenFlagDoesNotExist_ThrowsFlagNotFoundException()
+    public async Task GetStringDetailsAsync_WhenFlagDoesNotExist_ReturnsFlagNotFoundError()
     {
-        var provider = await CreateInitializedProvider(new FeatureToggles([], []));
+        var client = await CreateClientWithToggles(new FeatureToggles([], []));
 
-        var act = () => provider.ResolveStringValueAsync("unknown-flag", "default");
+        var result = await client.GetStringDetailsAsync("unknown-flag", "default");
+        await Api.Instance.ShutdownAsync();
 
-        await act.Should().ThrowAsync<FlagNotFoundException>();
-        await provider.ShutdownAsync();
+        result.ErrorType.Should().Be(ErrorType.FlagNotFound);
     }
 
     [Fact]
-    public async Task ResolveIntegerValueAsync_WhenFlagExists_ThrowsTypeMismatchException()
+    public async Task GetIntegerDetailsAsync_WhenFlagExists_ReturnTypeMismatchError()
     {
-        var provider = await CreateInitializedProvider(new FeatureToggles(
+        var client = await CreateClientWithToggles(new FeatureToggles(
             [new FeatureToggleEvaluation("my-flag", true, "key", [], 100)], []));
 
-        var act = () => provider.ResolveIntegerValueAsync("my-flag", 0);
+        var result = await client.GetIntegerDetailsAsync("my-flag", 0);
+        await Api.Instance.ShutdownAsync();
 
-        await act.Should().ThrowAsync<TypeMismatchException>();
-        await provider.ShutdownAsync();
+        result.ErrorType.Should().Be(ErrorType.TypeMismatch);
     }
 
     [Fact]
-    public async Task ResolveIntegerValueAsync_WhenFlagDoesNotExist_ThrowsFlagNotFoundException()
+    public async Task GetIntegerDetailsAsync_WhenFlagDoesNotExist_ReturnsFlagNotFoundError()
     {
-        var provider = await CreateInitializedProvider(new FeatureToggles([], []));
+        var client = await CreateClientWithToggles(new FeatureToggles([], []));
 
-        var act = () => provider.ResolveIntegerValueAsync("unknown-flag", 0);
+        var result = await client.GetIntegerDetailsAsync("unknown-flag", 0);
+        await Api.Instance.ShutdownAsync();
 
-        await act.Should().ThrowAsync<FlagNotFoundException>();
-        await provider.ShutdownAsync();
+        result.ErrorType.Should().Be(ErrorType.FlagNotFound);
     }
 
     [Fact]
-    public async Task ResolveDoubleValueAsync_WhenFlagExists_ThrowsTypeMismatchException()
+    public async Task GetDoubleDetailsAsync_WhenFlagExists_ReturnTypeMismatchError()
     {
-        var provider = await CreateInitializedProvider(new FeatureToggles(
+        var client = await CreateClientWithToggles(new FeatureToggles(
             [new FeatureToggleEvaluation("my-flag", true, "key", [], 100)], []));
 
-        var act = () => provider.ResolveDoubleValueAsync("my-flag", 0.0);
+        var result = await client.GetDoubleDetailsAsync("my-flag", 0.0);
+        await Api.Instance.ShutdownAsync();
 
-        await act.Should().ThrowAsync<TypeMismatchException>();
-        await provider.ShutdownAsync();
+        result.ErrorType.Should().Be(ErrorType.TypeMismatch);
     }
 
     [Fact]
-    public async Task ResolveDoubleValueAsync_WhenFlagDoesNotExist_ThrowsFlagNotFoundException()
+    public async Task GetDoubleDetailsAsync_WhenFlagDoesNotExist_ReturnsFlagNotFoundError()
     {
-        var provider = await CreateInitializedProvider(new FeatureToggles([], []));
+        var client = await CreateClientWithToggles(new FeatureToggles([], []));
 
-        var act = () => provider.ResolveDoubleValueAsync("unknown-flag", 0.0);
+        var result = await client.GetDoubleDetailsAsync("unknown-flag", 0.0);
+        await Api.Instance.ShutdownAsync();
 
-        await act.Should().ThrowAsync<FlagNotFoundException>();
-        await provider.ShutdownAsync();
+        result.ErrorType.Should().Be(ErrorType.FlagNotFound);
     }
 
     [Fact]
-    public async Task ResolveStructureValueAsync_WhenFlagExists_ThrowsTypeMismatchException()
+    public async Task GetObjectDetailsAsync_WhenFlagExists_ReturnTypeMismatchError()
     {
-        var provider = await CreateInitializedProvider(new FeatureToggles(
+        var client = await CreateClientWithToggles(new FeatureToggles(
             [new FeatureToggleEvaluation("my-flag", true, "key", [], 100)], []));
 
-        var act = () => provider.ResolveStructureValueAsync("my-flag", new Value());
+        var result = await client.GetObjectDetailsAsync("my-flag", new Value());
+        await Api.Instance.ShutdownAsync();
 
-        await act.Should().ThrowAsync<TypeMismatchException>();
-        await provider.ShutdownAsync();
+        result.ErrorType.Should().Be(ErrorType.TypeMismatch);
     }
 
     [Fact]
-    public async Task ResolveStructureValueAsync_WhenFlagDoesNotExist_ThrowsFlagNotFoundException()
+    public async Task GetObjectDetailsAsync_WhenFlagDoesNotExist_ReturnsFlagNotFoundError()
     {
-        var provider = await CreateInitializedProvider(new FeatureToggles([], []));
+        var client = await CreateClientWithToggles(new FeatureToggles([], []));
 
-        var act = () => provider.ResolveStructureValueAsync("unknown-flag", new Value());
+        var result = await client.GetObjectDetailsAsync("unknown-flag", new Value());
+        await Api.Instance.ShutdownAsync();
 
-        await act.Should().ThrowAsync<FlagNotFoundException>();
-        await provider.ShutdownAsync();
+        result.ErrorType.Should().Be(ErrorType.FlagNotFound);
     }
 }
