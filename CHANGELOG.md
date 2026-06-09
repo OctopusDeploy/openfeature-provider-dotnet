@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.0.0](https://github.com/OctopusDeploy/openfeature-provider-dotnet/compare/v2.1.0...v3.0.0) (2026-06-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* Return correct errors for unsupported flag types ([#58](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/58))
+* Send product metadata in custom header ([#52](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/52))
+
+### Features
+
+* Send product metadata in custom header ([#52](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/52)) ([a57a2ad](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/a57a2adec68087790e1ebadbbb501a484e07d795))
+
+
+### Bug Fixes
+
+* Fallback to existing evaluation context on failed refresh ([#54](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/54)) ([8435c1c](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/8435c1c48b4e00f22fea806459172c76c2ae5915))
+* log 'slug did not match' warning once per context ([#50](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/50)) ([3d99baa](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/3d99baa86d20f087c52f1dd6f4d341abfa6788f6))
+* Remove slug formatting check from flag evaluation ([#57](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/57)) ([8870cd3](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/8870cd3765c1fa297b4bd9c51a18ef535de0232a))
+* Return correct errors for unsupported flag types ([#58](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/58)) ([2d71a85](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/2d71a856e00f3e61f11d1a208a3a95295db5abb9))
+* Simplify logic for refresh and retry ([#55](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/55)) ([b3e3cf0](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/b3e3cf019af66a877c4801207551a583630acb08))
+
 ## [2.1.0](https://github.com/OctopusDeploy/openfeature-provider-dotnet/compare/v2.0.0...v2.1.0) (2026-04-07)
 
 
