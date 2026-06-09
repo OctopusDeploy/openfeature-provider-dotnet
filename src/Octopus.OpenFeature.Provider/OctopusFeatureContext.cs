@@ -19,10 +19,14 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
         return new OctopusFeatureContext(new FeatureToggles([], []), loggerFactory);
     }
 
+    internal FeatureToggleEvaluation? FindFeatureToggleBySlug(string slug)
+    {
+        return toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
+    }
+
     public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)
     {
-        var feature =
-            toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
+        var feature = FindFeatureToggleBySlug(slug);
 
         if (feature == null)
         {
