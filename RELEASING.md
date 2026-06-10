@@ -13,9 +13,9 @@ flowchart TD
     TRIG -. "triggers" .-> CI["main.yml"]
 
     RP -->|"opens / updates"| RPR["Release PR<br/>bumps .csproj (ReleasePleaseVersion) + CHANGELOG"]
-    RPR -->|"merged"| TAG["Git tag + GitHub Release"]
-
-    TAG --> ACTR["Build + test + pack<br/>(release version)"]
+    RPR -->|"merged"| RP2["release.yml: release-please"]
+    RP2 --> TAG["Git tag + GitHub Release"]
+    RP2 -->|"release_created"| ACTR["Build + test + pack<br/>(release version)"]
     CI --> ACTP["Build + test + pack<br/>(prerelease version: ci / pr.N.branch)"]
 
     ACTR --> OCT["Octopus Deploy"]
@@ -25,7 +25,7 @@ flowchart TD
 
     classDef gh fill:#eef,stroke:#557;
     classDef oct fill:#efe,stroke:#575;
-    class RP,RPR,TAG,CI,ACTR,ACTP gh;
+    class RP,RPR,RP2,TAG,CI,ACTR,ACTP gh;
     class OCT oct;
 ```
 
