@@ -1,10 +1,6 @@
 # Releasing
 
-Versioning and publishing are automated — there is no manual version bump and no hand-cut GitHub
-release. Release Please owns the version and changelog; GitHub Actions builds, tests, and packs the
-package; and Octopus Deploy publishes release versions to nuget.org.
-
-This repo is the reference the Java and TS providers converge on (see DEVEX-318).
+Versioning and publishing are automated. Release Please owns the version and changelog; GitHub Actions builds, tests, and packs the package; and Octopus Deploy publishes release versions to nuget.org.
 
 ## Pipeline
 
@@ -32,19 +28,14 @@ flowchart TD
     class OCT oct;
 ```
 
-- **Prerelease builds** — pushes to `main` (`ci`), PRs (`pr.<number>.<branch>`), and the nightly
-  schedule — are also handed to Octopus Deploy, but their versions stay internal and are not
-  published to nuget.org. `--version-suffix` moves the package version (and
-  `AssemblyInformationalVersion`); `AssemblyVersion`/`FileVersion` stay at the release base.
-- **Release builds** run only after a Release Please PR is merged; the packaged artifact is handed to
-  Octopus Deploy, from which the release version is published to nuget.org by a manual action.
+- **Release builds** run after a Release Please PR is merged; the packaged artifact is pushed to Octopus Deploy, from which the release version is published to nuget.org by a manual action.
+- **Prerelease builds** run on pushes to `main`, the nightly schedule, and manual dispatches (all tagged `ci`), and PRs (`pr.<number>.<branch>`). These are pushed to Octopus Deploy and stay internal, except for fork PRs and Dependabot branches, which upload the bundle as a GitHub Actions artifact instead.
+
 
 ## Cutting a release
 
-1. Land changes on `main` using [conventional commits](https://www.conventionalcommits.org/)
-   (`fix:` → patch, `feat:` → minor, `feat!:`/`BREAKING CHANGE` → major).
-2. Release Please opens a **release PR** that bumps the version and updates the changelog.
-3. Merge the release PR. The tag, GitHub release, build, and push to Octopus Deploy run
-   automatically.
-4. Publish the release to nuget.org manually from Octopus Deploy.
-5. Confirm the artifact at <https://www.nuget.org/packages/Octopus.OpenFeature>.
+1. Merge changes to `main` using a [conventional commit message](https://www.conventionalcommits.org/).
+2. Release Please opens or updates a **release PR** that bumps the version and updates the changelog.
+3. Merge the release PR. The tag, GitHub release, build, and push to Octopus Deploy run automatically.
+4. Promote the release to nuget.org manually from Octopus Deploy.
+5. Confirm the artifact in [NuGet](https://www.nuget.org/packages/Octopus.OpenFeature).
