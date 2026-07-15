@@ -70,7 +70,7 @@ runs:
         path: src/${{ steps.package.outputs.name }}
 
     - name: Login to Octopus Deploy 🐙
-      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
+      if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
       uses: OctopusDeploy/login@v1
       with:
         server: ${{ inputs.octopus-url }}
@@ -78,14 +78,14 @@ runs:
 
     - name: Push to Octopus 🐙
       uses: OctopusDeploy/push-package-action@v3
-      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
+      if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
       with:
         packages: |
           src/${{ steps.package.outputs.name }}
 
     - name: Create Release in Octopus 🐙
       uses: OctopusDeploy/create-release-action@v3
-      if: github.event.pull_request.head.repo.fork != true && (! contains(github.ref, '/dependabot/'))
+      if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
       with:
         project: "OpenFeature Dotnet Provider"
         packages: |
