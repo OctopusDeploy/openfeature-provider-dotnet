@@ -1,8 +1,8 @@
 name: Renovate update dependencies
 on:
   schedule:
-    # UTC 10:00 PM Sunday - Thursday (AEST 8:00 AM, Monday - Friday)
-    - cron: "0 22 * * 0-4"
+    - cron: "0 8 * * 1-5"
+      timezone: "Australia/Brisbane"
   workflow_dispatch:
     inputs:
       dry-run:
