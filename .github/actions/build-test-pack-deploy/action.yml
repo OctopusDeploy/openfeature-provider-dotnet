@@ -63,7 +63,7 @@ runs:
 
     # We don't push to Octopus from forks, so we upload the package as an artifact instead
     - name: 📤 Publish NuGet package
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: github.event.pull_request.head.repo.fork == true
       with:
         name: ${{ steps.package.outputs.name }}
