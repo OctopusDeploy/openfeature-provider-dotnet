@@ -37,6 +37,14 @@ module.exports = {
 
   packageRules: [
     {
+      // pin/pinDigest/digest updates have no release timestamp, so
+      // minimumReleaseAge can never be satisfied and its stability check
+      // would leave those PRs pending forever.
+      // https://github.com/renovatebot/renovate/issues/40288
+      matchUpdateTypes: ['pin', 'pinDigest', 'digest'],
+      minimumReleaseAge: null,
+    },
+    {
       // Keep FluentAssertions on v7.x. v8 is no longer free.
       matchPackageNames: ['FluentAssertions'],
       allowedVersions: '7.x',
