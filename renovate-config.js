@@ -53,6 +53,12 @@ module.exports = {
       allowedVersions: '7.x',
     },
     {
+      // OpenFeature SDK updates are worth releasing as a minor version, even if not breaking
+      matchPackageNames: ['OpenFeature'], 
+      matchUpdateTypes: ['minor', 'patch'],
+      semanticCommitType: 'feat',
+    },
+    {
       // GitHub Actions: pin third-party actions to commit SHA for security.
       matchManagers: ['github-actions'],
       matchPackageNames: [
