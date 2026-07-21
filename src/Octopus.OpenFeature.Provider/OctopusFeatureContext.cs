@@ -11,8 +11,6 @@ namespace Octopus.OpenFeature.Provider;
 partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => toggles.ContentHash;
-    readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
-    readonly ConcurrentDictionary<string, byte> warnedSlugs = new(StringComparer.OrdinalIgnoreCase);
 
     public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
     {
@@ -30,13 +28,6 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
 
         if (feature == null)
         {
-            if (warnedSlugs.TryAdd(slug, 0))
-            {
-                logger.LogWarning(
-                    "The slug {Slug} did not match any of your Octopus Feature Toggles. Please double check your slug and try again.",
-                    slug);
-            }
-
             return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
                 "The slug provided did not match any of your Octopus Feature Toggles. Please double check your slug and try again.");
         }
