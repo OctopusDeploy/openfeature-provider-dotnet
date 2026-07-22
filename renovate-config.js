@@ -22,7 +22,7 @@ module.exports = {
   osvVulnerabilityAlerts: true,
 
   // Extend with recommended config
-  extends: ['config:recommended'],
+  globalExtends: ['config:recommended'],
 
   // This repo gates PR titles (amannn/action-semantic-pull-request) and releases
   // via release-please, both of which require Conventional Commits. Force semantic
