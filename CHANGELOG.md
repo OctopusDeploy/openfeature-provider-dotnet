@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/OctopusDeploy/openfeature-provider-dotnet/compare/v3.0.0...v3.1.0) (2026-07-24)
+
+
+### Features
+
+* **deps:** update dependency openfeature to 2.14.0 ([#77](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/77)) ([aba6950](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/aba695060ac5fea649dfb32df3619fe7b44db520))
+
 ## [3.0.0](https://github.com/OctopusDeploy/openfeature-provider-dotnet/compare/v2.1.0...v3.0.0) (2026-06-14)
 
 
