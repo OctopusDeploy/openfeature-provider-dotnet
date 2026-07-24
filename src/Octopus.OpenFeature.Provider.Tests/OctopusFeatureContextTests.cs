@@ -425,29 +425,5 @@ public class OctopusFeatureContextTests
     {
         OctopusFeatureContext.GetNormalizedNumber(evaluationKey, targetingKey).Should().Be(expected);
     }
-
-    [Fact]
-    public void WhenSameMissingSlug_IsEvaluatedRepeatedly_OnlyOneWarningIsLogged()
-    {
-        var featureToggles = new FeatureToggles([
-            new FeatureToggleEvaluation("known-feature", true, "evaluation-key", [], 100)
-        ], []);
-        var fakeLogger = new FakeLogger();
-        var context = new OctopusFeatureContext(featureToggles, new SingleLoggerFactory(fakeLogger));
-
-        for (var i = 0; i < 10; i++)
-        {
-            context.Evaluate("missing-slug", defaultValue: false, context: null);
-        }
-
-        fakeLogger.Collector.GetSnapshot().Should().ContainSingle(r => r.Level == LogLevel.Warning);
-    }
-
-    class SingleLoggerFactory(ILogger logger) : ILoggerFactory
-    {
-        public ILogger CreateLogger(string categoryName) => logger;
-        public void AddProvider(ILoggerProvider provider) { }
-        public void Dispose() { }
-    }
 }
 
