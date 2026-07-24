@@ -84,7 +84,7 @@ runs:
           src/${{ steps.package.outputs.name }}
 
     - name: Create Release in Octopus 🐙
-      uses: OctopusDeploy/create-release-action@1c58525ed52e1af84afa68eb495486a52661d6da # v3
+      uses: OctopusDeploy/create-release-action@f4d652ab820942f2c32b66984f29c67285cab2b4 # v4
       if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
       with:
         project: "OpenFeature Dotnet Provider"
