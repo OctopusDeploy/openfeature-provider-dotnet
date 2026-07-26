@@ -77,7 +77,7 @@ runs:
         service_account_id: 42e00747-07e1-4214-979c-af3381e6d951
 
     - name: Push to Octopus 🐙
-      uses: OctopusDeploy/push-package-action@e2050621dbc1f83e223b6a5ca7ff2ec3dd6809e8 # v3
+      uses: OctopusDeploy/push-package-action@39ed2af62de5aeb10692eb62cae1e3a333f0c2f5 # v4
       if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
       with:
         packages: |
