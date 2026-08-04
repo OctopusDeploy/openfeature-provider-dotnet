@@ -208,37 +208,4 @@ public class EvaluationResourceV4DeserializationTests
         flags[1].Rules![0].Conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
     }
 
-    [Fact]
-    public void DeferredFlag_RoundTripsThroughSerialisation()
-    {
-        var original = new EvaluationResourceV4(
-            slug: "my-feature",
-            value: null,
-            reason: null,
-            evaluationKey: "0f8fad5b-d9cb-469f-a165-70867728950e",
-            rules:
-            [
-                new ClientSideRuleResource("Rule 1",
-                [
-                    new PercentageByContextConditionResource(50),
-                    new ContextAttributeIsOneOfConditionResource("user-id", ["1234", "5678"])
-                ])
-            ]);
-
-        var json = JsonSerializer.Serialize(original, Options);
-        var roundTripped = JsonSerializer.Deserialize<EvaluationResourceV4>(json, Options);
-
-        // The server-resolved properties are omitted from the wire form when null. (Guard against the
-        // "values" array key, which also contains the substring "value".)
-        json.Should().NotContain("\"value\":").And.NotContain("\"reason\":");
-        // The polymorphic discriminator is written with the camelCase property name and mirrors the
-        // vocabulary the server uses.
-        json.Should().Contain("\"type\":\"percentage-by-context\"");
-
-        roundTripped.Should().NotBeNull();
-        roundTripped!.EvaluationKey.Should().Be("0f8fad5b-d9cb-469f-a165-70867728950e");
-        roundTripped.Rules!.Should().ContainSingle();
-        roundTripped.Rules![0].Conditions[0].Should().BeOfType<PercentageByContextConditionResource>()
-            .Which.Percentage.Should().Be(50);
-    }
 }

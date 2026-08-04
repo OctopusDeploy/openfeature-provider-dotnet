@@ -5,12 +5,12 @@ using System.Text.Json.Serialization;
 namespace Octopus.OpenFeature.Provider.V4;
 
 /// <summary>
-/// Polymorphic (de)serialisation for <see cref="ClientSideConditionResource"/> using the camelCase
-/// <c>type</c> discriminator OctoToggle writes.
+/// Selects the concrete <see cref="ClientSideConditionResource"/> from the camelCase <c>type</c>
+/// discriminator. An unrecognised (or absent) discriminator deserialises to
+/// <see cref="UnknownConditionResource"/> rather than throwing, so a condition type introduced by a
+/// newer server degrades safely on an older client.
 ///
-/// Unlike the built-in <c>[JsonPolymorphic]</c> handling, an unrecognised (or absent) discriminator
-/// does not throw: it deserialises to <see cref="UnknownConditionResource"/>, so a condition type a
-/// newer server introduces degrades safely on an older client instead of failing the whole response.
+/// The provider only ever reads these conditions, so serialisation is not implemented.
 /// </summary>
 internal sealed class ClientSideConditionResourceJsonConverter : JsonConverter<ClientSideConditionResource>
 {
@@ -37,40 +37,5 @@ internal sealed class ClientSideConditionResourceJsonConverter : JsonConverter<C
     }
 
     public override void Write(Utf8JsonWriter writer, ClientSideConditionResource value, JsonSerializerOptions options)
-    {
-        if (value is UnknownConditionResource unknown)
-        {
-            // The original payload is not retained, so an unknown condition round-trips as just its
-            // discriminator (if it had one).
-            writer.WriteStartObject();
-            if (unknown.Type is not null)
-            {
-                writer.WriteString(Discriminator, unknown.Type);
-            }
-
-            writer.WriteEndObject();
-            return;
-        }
-
-        var type = value switch
-        {
-            PercentageByContextConditionResource => ConditionTypeNames.PercentageByContext,
-            ContextAttributeIsOneOfConditionResource => ConditionTypeNames.ContextAttributeIsOneOf,
-            ContextAttributeIsNotOneOfConditionResource => ConditionTypeNames.ContextAttributeIsNotOneOf,
-            _ => throw new JsonException($"Unexpected client-side condition type '{value.GetType().Name}'.")
-        };
-
-        writer.WriteStartObject();
-        writer.WriteString(Discriminator, type);
-
-        // Serialise the concrete instance's own properties into the same object. Serialising by the
-        // runtime type bypasses this converter, so there's no recursion and no duplicate discriminator.
-        using var document = JsonSerializer.SerializeToDocument(value, value.GetType(), options);
-        foreach (var property in document.RootElement.EnumerateObject())
-        {
-            property.WriteTo(writer);
-        }
-
-        writer.WriteEndObject();
-    }
+        => throw new NotImplementedException("The provider does not serialise client-side conditions.");
 }
