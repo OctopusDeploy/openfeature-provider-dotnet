@@ -3,19 +3,13 @@ using System.Text.Json.Serialization;
 namespace Octopus.OpenFeature.Provider.V4;
 
 /// <summary>
-/// Base type for a rule condition that a provider library is expected to evaluate on the client
-/// side. OctoToggle serialises each condition with a camelCase <c>type</c> discriminator, which
-/// <see cref="ClientSideConditionResourceJsonConverter"/> uses to select the concrete type when
-/// deserialising the v4 evaluation response.
-///
-/// The response only ever carries the client-side conditions; OctoToggle resolves the server-side
-/// conditions itself. These types model the wire shape so the response can be deserialised — the
-/// conditions are intentionally not evaluated yet. Client-side evaluation will be implemented
-/// separately.
+/// Base type for a client-side rule condition, selected from the camelCase <c>type</c> discriminator
+/// when deserialising a v4 evaluation response. These types model the wire shape only; client-side
+/// evaluation is not implemented yet.
 ///
 /// A discriminator this version of the provider does not recognise deserialises to
-/// <see cref="UnknownConditionResource"/> rather than failing, so a newer server capability degrades
-/// safely on an older client.
+/// <see cref="UnknownConditionResource"/> rather than failing, so a condition type introduced by a
+/// newer server degrades safely on an older client.
 /// </summary>
 [JsonConverter(typeof(ClientSideConditionResourceJsonConverter))]
 internal abstract class ClientSideConditionResource
