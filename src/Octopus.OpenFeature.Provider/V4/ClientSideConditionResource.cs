@@ -47,7 +47,7 @@ internal sealed class ContextAttributeIsNotOneOfConditionResource : ClientSideCo
 }
 
 /// <summary>
-/// Matches for <see cref="Percentage"/>% of the population, bucketed by the OpenFeature targeting key.
+/// Matches when the OpenFeature targeting key falls within the <see cref="Percentage"/>% rollout.
 /// </summary>
 internal sealed class PercentageByContextConditionResource : ClientSideConditionResource
 {
