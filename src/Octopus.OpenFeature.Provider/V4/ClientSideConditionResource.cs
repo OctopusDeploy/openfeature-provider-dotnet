@@ -5,17 +5,19 @@ namespace Octopus.OpenFeature.Provider.V4;
 /// <summary>
 /// Base type for a rule condition that a provider library is expected to evaluate on the client
 /// side. OctoToggle serialises each condition with a camelCase <c>type</c> discriminator, which
-/// System.Text.Json uses to select the concrete type when deserialising the v4 evaluation response.
+/// <see cref="ClientSideConditionResourceJsonConverter"/> uses to select the concrete type when
+/// deserialising the v4 evaluation response.
 ///
 /// The response only ever carries the client-side conditions; OctoToggle resolves the server-side
 /// conditions itself. These types model the wire shape so the response can be deserialised — the
 /// conditions are intentionally not evaluated yet. Client-side evaluation will be implemented
 /// separately.
+///
+/// A discriminator this version of the provider does not recognise deserialises to
+/// <see cref="UnknownConditionResource"/> rather than failing, so a newer server capability degrades
+/// safely on an older client.
 /// </summary>
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(ContextAttributeIsNotOneOfConditionResource), ConditionTypeNames.ContextAttributeIsNotOneOf)]
-[JsonDerivedType(typeof(ContextAttributeIsOneOfConditionResource), ConditionTypeNames.ContextAttributeIsOneOf)]
-[JsonDerivedType(typeof(PercentageByContextConditionResource), ConditionTypeNames.PercentageByContext)]
+[JsonConverter(typeof(ClientSideConditionResourceJsonConverter))]
 internal abstract class ClientSideConditionResource
 {
 }
@@ -61,4 +63,22 @@ internal sealed class PercentageByContextConditionResource : ClientSideCondition
     }
 
     public int Percentage { get; }
+}
+
+/// <summary>
+/// A client-side condition whose <c>type</c> discriminator this version of the provider does not
+/// recognise (or which carried no discriminator). Rather than failing the whole evaluation response,
+/// an unrecognised condition is preserved as this type. It always evaluates to <c>false</c>, so a
+/// rule containing an unknown condition can never match — a newer server capability is safely treated
+/// as "not met" by an older client. Client-side evaluation is not implemented yet.
+/// </summary>
+internal sealed class UnknownConditionResource : ClientSideConditionResource
+{
+    public UnknownConditionResource(string? type)
+    {
+        Type = type;
+    }
+
+    /// <summary>The unrecognised discriminator value, or <c>null</c> if none was present.</summary>
+    public string? Type { get; }
 }

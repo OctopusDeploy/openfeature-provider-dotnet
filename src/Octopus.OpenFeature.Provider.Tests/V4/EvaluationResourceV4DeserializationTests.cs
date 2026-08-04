@@ -69,13 +69,52 @@ public class EvaluationResourceV4DeserializationTests
     }
 
     [Fact]
-    public void UnknownConditionType_ThrowsJsonException()
+    public void UnknownConditionType_DeserialisesToUnknownConditionInsteadOfThrowing()
     {
         const string json = """{ "type": "not-a-real-condition", "percentage": 50 }""";
 
-        var deserialise = () => JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
+        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
 
-        deserialise.Should().Throw<JsonException>();
+        var unknown = condition.Should().BeOfType<UnknownConditionResource>().Subject;
+        unknown.Type.Should().Be("not-a-real-condition");
+    }
+
+    [Fact]
+    public void ConditionWithoutTypeDiscriminator_DeserialisesToUnknownCondition()
+    {
+        const string json = """{ "percentage": 50 }""";
+
+        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
+
+        var unknown = condition.Should().BeOfType<UnknownConditionResource>().Subject;
+        unknown.Type.Should().BeNull();
+    }
+
+    [Fact]
+    public void UnknownConditionAlongsideKnownConditions_IsPreservedWithoutFailingTheResponse()
+    {
+        const string json = """
+            {
+                "slug": "my-feature",
+                "evaluationKey": "0f8fad5b-d9cb-469f-a165-70867728950e",
+                "rules": [
+                    {
+                        "name": "Rule 1",
+                        "conditions": [
+                            { "type": "percentage-by-context", "percentage": 50 },
+                            { "type": "some-future-condition", "someField": "someValue" }
+                        ]
+                    }
+                ]
+            }
+            """;
+
+        var flag = JsonSerializer.Deserialize<EvaluationResourceV4>(json, Options);
+
+        var conditions = flag!.Rules![0].Conditions;
+        conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
+        conditions[1].Should().BeOfType<UnknownConditionResource>()
+            .Which.Type.Should().Be("some-future-condition");
     }
 
     [Fact]
