@@ -14,9 +14,9 @@ namespace Octopus.OpenFeature.Provider.V4;
 /// </list>
 /// Properties that do not apply to the returned shape are omitted from the JSON.
 /// </summary>
-internal sealed class EvaluationResourceV4
+internal sealed class EvaluationResource
 {
-    public EvaluationResourceV4(
+    public EvaluationResource(
         string slug,
         bool? value,
         string? reason,

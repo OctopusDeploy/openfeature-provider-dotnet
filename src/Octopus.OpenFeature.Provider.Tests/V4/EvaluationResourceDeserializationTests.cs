@@ -10,7 +10,7 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 /// uses in production — so the discriminator matching, camelCase property binding and null-omission
 /// behaviour are all covered end to end.
 /// </summary>
-public class EvaluationResourceV4DeserializationTests
+public class EvaluationResourceDeserializationTests
 {
     static readonly JsonSerializerOptions Options = JsonSerializerOptions.Web;
 
@@ -109,7 +109,7 @@ public class EvaluationResourceV4DeserializationTests
             }
             """;
 
-        var flag = JsonSerializer.Deserialize<EvaluationResourceV4>(json, Options);
+        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, Options);
 
         var conditions = flag!.Rules![0].Conditions;
         conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
@@ -128,7 +128,7 @@ public class EvaluationResourceV4DeserializationTests
             }
             """;
 
-        var flag = JsonSerializer.Deserialize<EvaluationResourceV4>(json, Options);
+        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, Options);
 
         flag.Should().NotBeNull();
         flag!.Slug.Should().Be("my-feature");
@@ -157,7 +157,7 @@ public class EvaluationResourceV4DeserializationTests
             }
             """;
 
-        var flag = JsonSerializer.Deserialize<EvaluationResourceV4>(json, Options);
+        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, Options);
 
         flag.Should().NotBeNull();
         flag!.Slug.Should().Be("my-feature");
@@ -194,7 +194,7 @@ public class EvaluationResourceV4DeserializationTests
             ]
             """;
 
-        var flags = JsonSerializer.Deserialize<EvaluationResourceV4[]>(json, Options);
+        var flags = JsonSerializer.Deserialize<EvaluationResource[]>(json, Options);
 
         flags.Should().HaveCount(2);
 
