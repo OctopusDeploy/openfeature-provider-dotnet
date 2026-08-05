@@ -63,14 +63,10 @@ internal sealed class ServerSideEvaluation
     /// </summary>
     public ResolutionDetails<bool> Evaluate(EvaluationContext? context)
     {
-        // The server resolved the flag; surface its value and reason unchanged.
+        // The server resolved the flag; surface its value and reason unchanged. A reason is not
+        // required — the flag still resolves, just without one.
         if (Value is { } value)
         {
-            if (Reason is null)
-            {
-                throw new ParseErrorException("The flag was resolved by the server but has no reason.");
-            }
-
             if (EvaluationKey is not null || Rules is not null)
             {
                 throw new ParseErrorException("The flag has both a server-resolved value and client-side rules.");
@@ -114,6 +110,6 @@ internal sealed class ServerSideEvaluation
         return Resolved(false, EvaluationReasons.DidNotMatchAnyRules());
     }
 
-    ResolutionDetails<bool> Resolved(bool value, string reason) => new(Slug, value, reason: reason);
+    ResolutionDetails<bool> Resolved(bool value, string? reason) => new(Slug, value, reason: reason);
 
 }

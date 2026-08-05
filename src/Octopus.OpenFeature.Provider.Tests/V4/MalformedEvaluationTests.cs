@@ -40,8 +40,6 @@ public class MalformedEvaluationTests
         "The flag has neither a value nor rules.")]
     [InlineData("""{ "slug": "my-feature", "value": true, "reason": "Enabled.", "evaluationKey": "evaluation-key", "rules": [ { "name": "Beta ring", "conditions": [ { "type": "context-attribute-is-one-of", "key": "ring", "values": [ "beta" ] } ] } ] }""",
         "The flag has both a server-resolved value and client-side rules.")]
-    [InlineData("""{ "slug": "my-feature", "value": true }""",
-        "The flag was resolved by the server but has no reason.")]
     // Deferred, but not evaluable.
     [InlineData("""{ "slug": "my-feature", "rules": [ { "name": "Beta ring", "conditions": [ { "type": "context-attribute-is-one-of", "key": "ring", "values": [ "beta" ] } ] } ] }""",
         "The flag defers to the client but has no evaluation key.")]

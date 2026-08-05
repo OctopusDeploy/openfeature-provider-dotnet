@@ -14,7 +14,7 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 /// </summary>
 public class ServerSideEvaluationTests
 {
-    static ServerSideEvaluation ServerResolved(bool value, string reason)
+    static ServerSideEvaluation ServerResolved(bool value, string? reason)
         => new(Contexts.Slug, value, reason, evaluationKey: null, rules: null);
 
     static ServerSideEvaluation Deferred(params ClientSideRule[] rules)
@@ -34,6 +34,19 @@ public class ServerSideEvaluationTests
         result.FlagKey.Should().Be(Contexts.Slug);
         result.Value.Should().Be(value);
         result.Reason.Should().Be("the server said so");
+        result.ErrorType.Should().Be(ErrorType.None);
+    }
+
+    [Fact]
+    public void ServerResolvedFlagWithNoReason_StillResolves()
+    {
+        // A reason is not required. The server has already decided the value, so the flag resolves
+        // without one rather than failing over a field nothing depends on.
+        var result = ServerResolved(true, reason: null).Evaluate(Contexts.OpenFeature());
+
+        using var scope = new AssertionScope();
+        result.Value.Should().BeTrue();
+        result.Reason.Should().BeNull();
         result.ErrorType.Should().Be(ErrorType.None);
     }
 
