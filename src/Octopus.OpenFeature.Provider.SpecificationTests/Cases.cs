@@ -89,10 +89,11 @@ public record FixtureCase(
 public record FixtureConfiguration(
     string Slug,
     bool DefaultValue,
-    Dictionary<string, string>? Context
+    Dictionary<string, string?>? Context
 );
 
 public record FixtureExpected(
     bool Value,
+    string? Reason = null,
     string? ErrorCode = null
 );
