@@ -8,7 +8,7 @@ namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
 /// Exercises polymorphic JSON deserialisation of a single client-side condition: selecting the
 /// concrete type from the camelCase <c>type</c> discriminator, and degrading to
 /// <see cref="UnknownConditionResource"/> when it is unrecognised or absent. Deserialisation of a
-/// whole evaluation response is covered by <see cref="V4.EvaluationResourceDeserializationTests"/>.
+/// whole evaluation response is covered by <see cref="V4.ServerSideEvaluationDeserializationTests"/>.
 ///
 /// Uses <see cref="JsonSerializerOptions.Web"/> — the same options the provider client uses in
 /// production — so discriminator matching and camelCase property binding are covered end to end.

@@ -18,8 +18,8 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 /// </summary>
 public class UnrecognisedConditionTests
 {
-    static EvaluationResource Flag(string json)
-        => JsonSerializer.Deserialize<EvaluationResource>(json, JsonSerializerOptions.Web)!;
+    static ServerSideEvaluation Flag(string json)
+        => JsonSerializer.Deserialize<ServerSideEvaluation>(json, JsonSerializerOptions.Web)!;
 
     [Fact]
     public void AnUnrecognisedConditionType_FailsItsRuleWithoutAnError()
@@ -37,8 +37,7 @@ public class UnrecognisedConditionTests
             }
             """;
 
-        var result = ClientSideEvaluator.Evaluate(
-            Flag(json), Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial")));
+        var result = Flag(json).Evaluate(Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial")));
 
         // An unevaluable rule leaves the flag off; it does not error, so the caller's default value never
         // comes into it.
@@ -68,8 +67,7 @@ public class UnrecognisedConditionTests
             }
             """;
 
-        var result = ClientSideEvaluator.Evaluate(
-            Flag(json), Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial"), ("ring", "beta")));
+        var result = Flag(json).Evaluate(Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial"), ("ring", "beta")));
 
         using var scope = new AssertionScope();
         result.Value.Should().BeTrue();

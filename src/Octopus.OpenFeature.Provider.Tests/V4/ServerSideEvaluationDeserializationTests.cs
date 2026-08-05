@@ -14,7 +14,7 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 /// Uses <see cref="JsonSerializerOptions.Web"/> — the same options the provider client uses in
 /// production — so camelCase property binding and null-omission behaviour are covered end to end.
 /// </summary>
-public class EvaluationResourceDeserializationTests
+public class ServerSideEvaluationDeserializationTests
 {
     static readonly JsonSerializerOptions Options = JsonSerializerOptions.Web;
 
@@ -29,7 +29,7 @@ public class EvaluationResourceDeserializationTests
             }
             """;
 
-        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, Options);
+        var flag = JsonSerializer.Deserialize<ServerSideEvaluation>(json, Options);
 
         flag.Should().NotBeNull();
         flag!.Slug.Should().Be("my-feature");
@@ -58,7 +58,7 @@ public class EvaluationResourceDeserializationTests
             }
             """;
 
-        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, Options);
+        var flag = JsonSerializer.Deserialize<ServerSideEvaluation>(json, Options);
 
         flag.Should().NotBeNull();
         flag!.Slug.Should().Be("my-feature");
@@ -98,7 +98,7 @@ public class EvaluationResourceDeserializationTests
             }
             """;
 
-        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, Options);
+        var flag = JsonSerializer.Deserialize<ServerSideEvaluation>(json, Options);
 
         var conditions = flag!.Rules![0].Conditions;
         conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
@@ -122,7 +122,7 @@ public class EvaluationResourceDeserializationTests
             ]
             """;
 
-        var flags = JsonSerializer.Deserialize<EvaluationResource[]>(json, Options);
+        var flags = JsonSerializer.Deserialize<ServerSideEvaluation[]>(json, Options);
 
         flags.Should().HaveCount(2);
 

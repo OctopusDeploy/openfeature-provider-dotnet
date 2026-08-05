@@ -31,8 +31,8 @@ public class MalformedEvaluationTests
     static EvaluationContext MatchingContext()
         => Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial"), ("ring", "beta"));
 
-    static EvaluationResource Flag(string json)
-        => JsonSerializer.Deserialize<EvaluationResource>(json, JsonSerializerOptions.Web)!;
+    static ServerSideEvaluation Flag(string json)
+        => JsonSerializer.Deserialize<ServerSideEvaluation>(json, JsonSerializerOptions.Web)!;
 
     [Theory]
     // Neither shape, or both at once.
@@ -83,7 +83,7 @@ public class MalformedEvaluationTests
         "a context-attribute condition with no key")]
     public void AMalformedFlag_ThrowsAParseError(string flagJson, string expectedProblem)
     {
-        var evaluate = () => ClientSideEvaluator.Evaluate(Flag(flagJson), MatchingContext());
+        var evaluate = () => Flag(flagJson).Evaluate(MatchingContext());
 
         using var scope = new AssertionScope(expectedProblem);
         var exception = evaluate.Should().Throw<ParseErrorException>().Which;
@@ -108,7 +108,7 @@ public class MalformedEvaluationTests
             }
             """;
 
-        var evaluate = () => ClientSideEvaluator.Evaluate(Flag(json), MatchingContext());
+        var evaluate = () => Flag(json).Evaluate(MatchingContext());
 
         evaluate.Should().Throw<ParseErrorException>()
             .Which.Message.Should().Be(Contexts.MalformedMessage("a condition with no type"));
@@ -130,7 +130,7 @@ public class MalformedEvaluationTests
             }
             """;
 
-        var result = ClientSideEvaluator.Evaluate(Flag(json), MatchingContext());
+        var result = Flag(json).Evaluate(MatchingContext());
 
         using var scope = new AssertionScope();
         result.Value.Should().BeTrue();
@@ -147,14 +147,14 @@ public class MalformedEvaluationTests
             ]
             """;
 
-        var flags = JsonSerializer.Deserialize<EvaluationResource[]>(json, JsonSerializerOptions.Web)!;
+        var flags = JsonSerializer.Deserialize<ServerSideEvaluation[]>(json, JsonSerializerOptions.Web)!;
 
         using var scope = new AssertionScope();
 
-        var malformed = () => ClientSideEvaluator.Evaluate(flags[0], MatchingContext());
+        var malformed = () => flags[0].Evaluate(MatchingContext());
         malformed.Should().Throw<ParseErrorException>();
 
-        var wellFormed = ClientSideEvaluator.Evaluate(flags[1], MatchingContext());
+        var wellFormed = flags[1].Evaluate(MatchingContext());
         wellFormed.Value.Should().BeTrue();
         wellFormed.ErrorType.Should().Be(ErrorType.None);
         wellFormed.Reason.Should().Be("The flag is enabled for this environment.");

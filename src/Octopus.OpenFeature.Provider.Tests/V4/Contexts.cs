@@ -35,7 +35,7 @@ static class Contexts
 
     /// <summary>
     /// What a rule or condition is evaluated against: an OpenFeature context paired with the slug and
-    /// evaluation key of the flag being evaluated, as <see cref="ClientSideEvaluator"/> pairs them.
+    /// evaluation key of the flag being evaluated, as <see cref="ServerSideEvaluation.Evaluate"/> pairs them.
     /// </summary>
     public static ClientSideEvaluationContext ForRules(string? targetingKey = null, params (string key, string value)[] attributes)
         => new(Slug, EvaluationKey, OpenFeature(targetingKey, attributes));
