@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Octopus.OpenFeature.Provider.V4;
@@ -38,6 +39,11 @@ public class ClientSideEvaluatorTests
 
     static EvaluationResource DeferredWithRules(params ClientSideRuleResource[] rules)
         => new("my-feature", value: null, reason: null, evaluationKey: EvaluationKey, rules: rules);
+
+    // A malformed response: the server always sends an evaluation key alongside deferred rules.
+    static EvaluationResource DeferredWithoutEvaluationKey(params ClientSideConditionResource[] conditions)
+        => new("my-feature", value: null, reason: null, evaluationKey: null,
+            rules: [new ClientSideRuleResource("Rule 1", conditions)]);
 
     [Theory]
     [InlineData(true)]
@@ -87,15 +93,41 @@ public class ClientSideEvaluatorTests
     }
 
     [Fact]
-    public void RuleWithNoConditions_MatchesEverything()
+    public void RuleWithNoConditions_DoesNotMatch()
     {
+        // The server only defers a rule that has at least one client-side condition, so a rule with
+        // none is a malformed response rather than a "matches everyone" rule. A rule the client cannot
+        // make sense of must not turn a flag on.
         var flag = DeferredWithRules(new ClientSideRuleResource("everyone", []));
 
         var result = ClientSideEvaluator.Evaluate(flag, Context());
 
         using var scope = new AssertionScope();
-        result.Value.Should().BeTrue();
-        result.Reason.Should().Be("Matched rule 'everyone'.");
+        result.Value.Should().BeFalse();
+        result.Reason.Should().Be("Did not match any rules.");
+    }
+
+    // Deserialised rather than constructed: the declared types are non-nullable, so a null rule or a
+    // null/absent conditions array can only arrive off the wire. These shapes cannot come from
+    // OctoToggle today, but none of them may throw out of the evaluator — v3's evaluation path never
+    // throws, and the provider does not wrap this call.
+    [Theory]
+    [InlineData("""{ "name": "R", "conditions": [] }""", "an empty conditions array")]
+    [InlineData("""{ "name": "R" }""", "an absent conditions array")]
+    [InlineData("""{ "name": "R", "conditions": null }""", "a null conditions array")]
+    [InlineData("""{ "name": "R", "conditions": [null] }""", "a null condition")]
+    [InlineData("null", "a null rule")]
+    public void AMalformedRule_DoesNotMatchAndDoesNotThrow(string ruleJson, string because)
+    {
+        var json = $$"""{ "slug": "my-feature", "evaluationKey": "{{EvaluationKey}}", "rules": [ {{ruleJson}} ] }""";
+        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, JsonSerializerOptions.Web)!;
+
+        var evaluate = () => ClientSideEvaluator.Evaluate(flag, Context(TargetingKey));
+
+        using var scope = new AssertionScope();
+        evaluate.Should().NotThrow(because);
+        evaluate().Value.Should().BeFalse(because);
+        evaluate().Reason.Should().Be("Did not match any rules.");
     }
 
     [Fact]
@@ -148,6 +180,36 @@ public class ClientSideEvaluatorTests
         ClientSideEvaluator.Evaluate(flag, Context(attributes: ("REGION", "Us"))).Value.Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData("Plan", "free", "plan", "pro")]
+    [InlineData("plan", "pro", "Plan", "free")]
+    public void ContextAttributeIsOneOf_ChecksEveryEntryWhoseKeyMatches(string firstKey, string firstValue, string secondKey, string secondValue)
+    {
+        // A context can carry several case variants of the same key. Every one of them has to be
+        // considered: AsDictionary returns an immutable dictionary ordered by key hash, and .NET
+        // randomises string hashing per process, so checking only the first matching entry made the
+        // same flag, context and rule evaluate differently from one process to the next.
+        var flag = Deferred(new ContextAttributeIsOneOfConditionResource("plan", ["pro"]));
+
+        var result = ClientSideEvaluator.Evaluate(flag, Context(attributes: [(firstKey, firstValue), (secondKey, secondValue)]));
+
+        result.Value.Should().BeTrue("one of the 'plan' entries is 'pro', whichever order they are iterated in");
+    }
+
+    [Fact]
+    public void ContextAttributeIsOneOf_TreatsANonStringValueAsAbsent()
+    {
+        // OpenFeature's Value.AsString is null for a non-string, and v3 segment matching skips those
+        // entries too, so a numeric attribute never matches a string value.
+        var context = EvaluationContext.Builder().Set("user-id", 1234).Build();
+
+        using var scope = new AssertionScope();
+        ClientSideEvaluator.Evaluate(Deferred(new ContextAttributeIsOneOfConditionResource("user-id", ["1234"])), context)
+            .Value.Should().BeFalse();
+        ClientSideEvaluator.Evaluate(Deferred(new ContextAttributeIsNotOneOfConditionResource("user-id", ["1234"])), context)
+            .Value.Should().BeTrue();
+    }
+
     [Fact]
     public void ContextAttributeIsNotOneOf_MatchesUnlessAttributeValueIsListed()
     {
@@ -157,6 +219,39 @@ public class ClientSideEvaluatorTests
         ClientSideEvaluator.Evaluate(flag, Context(attributes: ("region", "us"))).Value.Should().BeTrue();
         ClientSideEvaluator.Evaluate(flag, Context(attributes: ("region", "eu"))).Value.Should().BeFalse();
         ClientSideEvaluator.Evaluate(flag, Context()).Value.Should().BeTrue("a missing attribute is not one of the values");
+    }
+
+    [Fact]
+    public void WithoutAnEvaluationKey_AnAttributeOnlyRuleIsStillEvaluated()
+    {
+        // Only percentage-by-context needs the evaluation key, so a response missing one must not stop
+        // an attribute-only rule from matching.
+        var flag = DeferredWithoutEvaluationKey(new ContextAttributeIsOneOfConditionResource("plan", ["pro"]));
+
+        var result = ClientSideEvaluator.Evaluate(flag, Context(attributes: ("plan", "pro")));
+
+        using var scope = new AssertionScope();
+        result.Value.Should().BeTrue();
+        result.Reason.Should().Be("Matched rule 'Rule 1'.");
+    }
+
+    [Fact]
+    public void WithoutAnEvaluationKey_APercentageRolloutCannotMatch()
+    {
+        // There is no key to bucket against, so the condition is unmet rather than assumed.
+        var flag = DeferredWithoutEvaluationKey(new PercentageByContextConditionResource(100));
+
+        ClientSideEvaluator.Evaluate(flag, Context(TargetingKey)).Value.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ANullContext_IsTreatedAsAnEmptyContext()
+    {
+        using var scope = new AssertionScope();
+        ClientSideEvaluator.Evaluate(Deferred(new ContextAttributeIsOneOfConditionResource("plan", ["pro"])), null)
+            .Value.Should().BeFalse("there is no attribute to match");
+        ClientSideEvaluator.Evaluate(Deferred(new PercentageByContextConditionResource(100)), null)
+            .Value.Should().BeTrue("a 100% rollout matches without a targeting key");
     }
 
     [Fact]
