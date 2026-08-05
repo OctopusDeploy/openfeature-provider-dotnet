@@ -6,117 +6,17 @@ using Octopus.OpenFeature.Provider.V4.Conditions;
 namespace Octopus.OpenFeature.Provider.Tests.V4;
 
 /// <summary>
-/// Exercises polymorphic JSON deserialisation of the v4 evaluation response. The response is
-/// deserialised with <see cref="JsonSerializerOptions.Web"/> — the same options the provider client
-/// uses in production — so the discriminator matching, camelCase property binding and null-omission
-/// behaviour are all covered end to end.
+/// Exercises JSON deserialisation of a v4 evaluation response: both flag shapes, the array the
+/// endpoint returns, and the rules and conditions hanging off a deferred flag. Deserialisation of an
+/// individual condition is covered by
+/// <see cref="Conditions.ClientSideConditionResourceDeserializationTests"/>.
+///
+/// Uses <see cref="JsonSerializerOptions.Web"/> — the same options the provider client uses in
+/// production — so camelCase property binding and null-omission behaviour are covered end to end.
 /// </summary>
 public class EvaluationResourceDeserializationTests
 {
     static readonly JsonSerializerOptions Options = JsonSerializerOptions.Web;
-
-    [Fact]
-    public void PercentageByContextCondition_DeserialisesToConcreteType()
-    {
-        const string json = """{ "type": "percentage-by-context", "percentage": 50 }""";
-
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
-
-        var percentage = condition.Should().BeOfType<PercentageByContextConditionResource>().Subject;
-        percentage.Percentage.Should().Be(50);
-    }
-
-    [Fact]
-    public void ContextAttributeIsOneOfCondition_DeserialisesToConcreteType()
-    {
-        const string json = """{ "type": "context-attribute-is-one-of", "key": "user-id", "values": ["1234", "5678"] }""";
-
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
-
-        var isOneOf = condition.Should().BeOfType<ContextAttributeIsOneOfConditionResource>().Subject;
-        isOneOf.Key.Should().Be("user-id");
-        isOneOf.Values.Should().Equal("1234", "5678");
-    }
-
-    [Fact]
-    public void ContextAttributeIsNotOneOfCondition_DeserialisesToConcreteType()
-    {
-        const string json = """{ "type": "context-attribute-is-not-one-of", "key": "region", "values": ["us", "eu"] }""";
-
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
-
-        var isNotOneOf = condition.Should().BeOfType<ContextAttributeIsNotOneOfConditionResource>().Subject;
-        isNotOneOf.Key.Should().Be("region");
-        isNotOneOf.Values.Should().Equal("us", "eu");
-    }
-
-    [Fact]
-    public void MixedConditionArray_DeserialisesEachToItsConcreteType()
-    {
-        const string json = """
-            [
-                { "type": "percentage-by-context", "percentage": 25 },
-                { "type": "context-attribute-is-one-of", "key": "user-id", "values": ["1234"] },
-                { "type": "context-attribute-is-not-one-of", "key": "region", "values": ["au"] }
-            ]
-            """;
-
-        var conditions = JsonSerializer.Deserialize<ClientSideConditionResource[]>(json, Options);
-
-        conditions.Should().HaveCount(3);
-        conditions![0].Should().BeOfType<PercentageByContextConditionResource>();
-        conditions[1].Should().BeOfType<ContextAttributeIsOneOfConditionResource>();
-        conditions[2].Should().BeOfType<ContextAttributeIsNotOneOfConditionResource>();
-    }
-
-    [Fact]
-    public void UnknownConditionType_DeserialisesToUnknownConditionInsteadOfThrowing()
-    {
-        const string json = """{ "type": "not-a-real-condition", "percentage": 50 }""";
-
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
-
-        var unknown = condition.Should().BeOfType<UnknownConditionResource>().Subject;
-        unknown.Type.Should().Be("not-a-real-condition");
-    }
-
-    [Fact]
-    public void ConditionWithoutTypeDiscriminator_DeserialisesToUnknownCondition()
-    {
-        const string json = """{ "percentage": 50 }""";
-
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
-
-        var unknown = condition.Should().BeOfType<UnknownConditionResource>().Subject;
-        unknown.Type.Should().BeNull();
-    }
-
-    [Fact]
-    public void UnknownConditionAlongsideKnownConditions_IsPreservedWithoutFailingTheResponse()
-    {
-        const string json = """
-            {
-                "slug": "my-feature",
-                "evaluationKey": "0f8fad5b-d9cb-469f-a165-70867728950e",
-                "rules": [
-                    {
-                        "name": "Rule 1",
-                        "conditions": [
-                            { "type": "percentage-by-context", "percentage": 50 },
-                            { "type": "some-future-condition", "someField": "someValue" }
-                        ]
-                    }
-                ]
-            }
-            """;
-
-        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, Options);
-
-        var conditions = flag!.Rules![0].Conditions;
-        conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
-        conditions[1].Should().BeOfType<UnknownConditionResource>()
-            .Which.Type.Should().Be("some-future-condition");
-    }
 
     [Fact]
     public void ServerResolvedFlag_DeserialisesSlugValueAndReason()
@@ -180,6 +80,33 @@ public class EvaluationResourceDeserializationTests
     }
 
     [Fact]
+    public void UnknownConditionAlongsideKnownConditions_IsPreservedWithoutFailingTheResponse()
+    {
+        const string json = """
+            {
+                "slug": "my-feature",
+                "evaluationKey": "0f8fad5b-d9cb-469f-a165-70867728950e",
+                "rules": [
+                    {
+                        "name": "Rule 1",
+                        "conditions": [
+                            { "type": "percentage-by-context", "percentage": 50 },
+                            { "type": "some-future-condition", "someField": "someValue" }
+                        ]
+                    }
+                ]
+            }
+            """;
+
+        var flag = JsonSerializer.Deserialize<EvaluationResource>(json, Options);
+
+        var conditions = flag!.Rules![0].Conditions;
+        conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
+        conditions[1].Should().BeOfType<UnknownConditionResource>()
+            .Which.Type.Should().Be("some-future-condition");
+    }
+
+    [Fact]
     public void EvaluationsResponse_DeserialisesAsArrayOfFlags()
     {
         const string json = """
@@ -208,5 +135,4 @@ public class EvaluationResourceDeserializationTests
         flags[1].Rules.Should().ContainSingle();
         flags[1].Rules![0].Conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
     }
-
 }
