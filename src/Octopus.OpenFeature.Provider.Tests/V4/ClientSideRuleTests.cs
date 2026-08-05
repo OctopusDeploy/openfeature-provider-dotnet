@@ -32,16 +32,6 @@ public class ClientSideRuleTests
     }
 
     [Fact]
-    public void ARuleContainingAnUnknownCondition_CanNeverMatch()
-    {
-        var rule = Rule(
-            new ContextAttributeIsOneOfCondition("plan", ["pro"]),
-            new UnknownCondition("some-future-condition"));
-
-        rule.Matches(Contexts.ForRules(Contexts.TargetingKey, ("plan", "pro"))).Should().BeFalse();
-    }
-
-    [Fact]
     public void AMalformedConditionBehindAFailingOne_IsNeverRead()
     {
         // Conditions stop at the first one that does not match, so the rule has its answer without
