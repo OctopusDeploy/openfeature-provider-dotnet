@@ -40,14 +40,16 @@ public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
         }
     }
 
-    static EvaluationContext BuildContext(Dictionary<string, string>? context)
+    static EvaluationContext BuildContext(Dictionary<string, string?>? context)
     {
         var builder = EvaluationContext.Builder();
 
         context ??= [];
         foreach (var (key, value) in context)
         {
-            builder.Set(key, value);
+            // A null attribute is present in the context but holds no string, which is what a fixture
+            // means by a null value — not an attribute the caller left out.
+            builder.Set(key, value is null ? new Value() : new Value(value));
         }
 
         return builder.Build();
