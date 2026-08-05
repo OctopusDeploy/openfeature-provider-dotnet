@@ -43,4 +43,59 @@ internal sealed class EvaluationResource
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ClientSideRuleResource[]? Rules { get; }
+
+    /// <summary>
+    /// Describes why this flag is not one of the two shapes above, or returns <c>null</c> when it is.
+    ///
+    /// Every check here mirrors a requirement of the shared fixture schema, so a response the
+    /// specification calls malformed is one this library refuses to evaluate. The single exception is a
+    /// condition naming a type this client does not recognise: that is a newer server's capability
+    /// rather than a bad payload, and only fails its own rule.
+    ///
+    /// Validation is per flag, so a malformed flag costs its own evaluation and no others.
+    /// </summary>
+    public string? Validate()
+    {
+        if (Value is not null)
+        {
+            if (Reason is null)
+            {
+                return "the server resolved the flag but sent no reason";
+            }
+
+            return EvaluationKey is not null || Rules is not null
+                ? "the flag carries both a server-resolved value and client-side rules"
+                : null;
+        }
+
+        if (Rules is null)
+        {
+            return "the flag has neither a value nor rules";
+        }
+
+        if (EvaluationKey is null)
+        {
+            return "the flag defers to the client but has no evaluation key";
+        }
+
+        if (Rules.Length == 0)
+        {
+            return "the flag defers to the client with no rules";
+        }
+
+        foreach (var rule in Rules)
+        {
+            if (rule is null)
+            {
+                return "the flag has a missing rule";
+            }
+
+            if (rule.Validate() is { } problem)
+            {
+                return problem;
+            }
+        }
+
+        return null;
+    }
 }

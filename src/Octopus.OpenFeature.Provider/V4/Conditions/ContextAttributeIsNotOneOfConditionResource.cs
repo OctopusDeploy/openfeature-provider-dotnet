@@ -18,4 +18,6 @@ internal sealed class ContextAttributeIsNotOneOfConditionResource : ClientSideCo
 
     public override bool Matches(ClientSideEvaluationContext context)
         => !ContextAttributes.IsOneOf(context.OpenFeatureContext, Key, Values);
+
+    public override string? Validate() => ContextAttributes.Validate(Key, Values);
 }

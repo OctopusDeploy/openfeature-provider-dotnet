@@ -64,4 +64,43 @@ public class ContextAttributeIsOneOfConditionResourceTests
 
         new ContextAttributeIsOneOfConditionResource("plan", ["pro"]).Matches(context).Should().BeFalse();
     }
+
+    [Fact]
+    public void AKeyAndAtLeastOneValue_IsWellFormed()
+    {
+        new ContextAttributeIsOneOfConditionResource("plan", ["pro"]).Validate().Should().BeNull();
+    }
+
+    // The declared types are non-nullable, so these shapes only arrive off the wire. Both attribute
+    // conditions share this validation; ContextAttributeIsNotOneOfConditionResourceTests checks that it
+    // is wired up there too.
+    [Theory]
+    [InlineData(null, new[] { "pro" }, "a context-attribute condition with no key")]
+    [InlineData("plan", null, "a context-attribute condition on 'plan' with no values")]
+    [InlineData("plan", new string[0], "a context-attribute condition on 'plan' with no values")]
+    public void AMissingKeyOrValues_IsMalformed(string? key, string[]? values, string expectedProblem)
+    {
+        new ContextAttributeIsOneOfConditionResource(key!, values!).Validate().Should().Be(expectedProblem);
+    }
+
+    [Fact]
+    public void AMissingValueInTheList_IsMalformed()
+    {
+        var values = new[] { "pro", null! };
+
+        new ContextAttributeIsOneOfConditionResource("plan", values).Validate()
+            .Should().Be("a context-attribute condition on 'plan' with a missing value");
+    }
+
+    [Fact]
+    public void MatchingAMalformedCondition_DoesNotThrow()
+    {
+        // Validation rejects the flag before evaluation reaches here, but matching still has to be total.
+        var match = () => new ContextAttributeIsOneOfConditionResource(null!, null!)
+            .Matches(Contexts.ForRules(attributes: ("plan", "pro")));
+
+        using var scope = new AssertionScope();
+        match.Should().NotThrow();
+        match().Should().BeFalse();
+    }
 }

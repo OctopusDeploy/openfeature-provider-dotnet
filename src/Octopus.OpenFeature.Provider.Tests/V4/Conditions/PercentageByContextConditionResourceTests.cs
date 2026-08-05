@@ -60,4 +60,33 @@ public class PercentageByContextConditionResourceTests
         new PercentageByContextConditionResource(100).Matches(context).Should().BeTrue();
         new PercentageByContextConditionResource(99).Matches(context).Should().BeFalse();
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(50)]
+    [InlineData(100)]
+    public void APercentageWithinRange_IsWellFormed(int percentage)
+    {
+        new PercentageByContextConditionResource(percentage).Validate().Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(null, "a percentage-by-context condition with no percentage")]
+    [InlineData(101, "a percentage-by-context condition with a percentage of 101")]
+    [InlineData(-1, "a percentage-by-context condition with a percentage of -1")]
+    public void AnAbsentOrOutOfRangePercentage_IsMalformed(int? percentage, string expectedProblem)
+    {
+        // An absent percentage stays distinguishable from an explicit 0, which is a legitimate "nobody".
+        // An out-of-range one is rejected rather than clamped, so a bad payload cannot roll a flag out
+        // to everyone.
+        new PercentageByContextConditionResource(percentage).Validate().Should().Be(expectedProblem);
+    }
+
+    [Fact]
+    public void WithoutAPercentage_NothingMatches()
+    {
+        // Validation rejects the flag before evaluation reaches here, but matching still has to be total.
+        new PercentageByContextConditionResource(percentage: null)
+            .Matches(Contexts.ForRules(Contexts.TargetingKey)).Should().BeFalse();
+    }
 }

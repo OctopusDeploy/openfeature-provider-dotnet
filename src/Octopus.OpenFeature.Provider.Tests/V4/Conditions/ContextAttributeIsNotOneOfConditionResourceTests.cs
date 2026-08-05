@@ -44,4 +44,16 @@ public class ContextAttributeIsNotOneOfConditionResourceTests
 
         new ContextAttributeIsNotOneOfConditionResource("region", ["eu"]).Matches(context).Should().BeTrue();
     }
+
+    [Fact]
+    public void ValidationMatchesTheIsOneOfCondition()
+    {
+        // Both conditions carry the same fields, so they are malformed in the same ways. The cases are
+        // enumerated in ContextAttributeIsOneOfConditionResourceTests; this pins that the shared
+        // validation is wired up here as well, rather than an exclusion silently skipping it.
+        using var scope = new AssertionScope();
+        new ContextAttributeIsNotOneOfConditionResource("region", ["eu"]).Validate().Should().BeNull();
+        new ContextAttributeIsNotOneOfConditionResource("region", []).Validate()
+            .Should().Be("a context-attribute condition on 'region' with no values");
+    }
 }

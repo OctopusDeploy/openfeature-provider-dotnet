@@ -57,6 +57,7 @@ public class ClientSideRuleResourceTests
     [InlineData("""{ "name": "R", "conditions": [null] }""", "a null condition")]
     public void AMalformedRule_DoesNotMatchAndDoesNotThrow(string ruleJson, string because)
     {
+        // The flag carrying such a rule is rejected before evaluation, but matching still has to be total.
         var rule = JsonSerializer.Deserialize<ClientSideRuleResource>(ruleJson, JsonSerializerOptions.Web)!;
 
         var matches = () => rule.Matches(Contexts.ForRules(Contexts.TargetingKey));
@@ -64,5 +65,33 @@ public class ClientSideRuleResourceTests
         using var scope = new AssertionScope();
         matches.Should().NotThrow(because);
         matches().Should().BeFalse(because);
+    }
+
+    [Fact]
+    public void ANamedRuleWithConditions_IsWellFormed()
+    {
+        using var scope = new AssertionScope();
+        Rule(new ContextAttributeIsOneOfConditionResource("plan", ["pro"])).Validate().Should().BeNull();
+        Rule(new UnknownConditionResource("some-future-condition")).Validate()
+            .Should().BeNull("a condition from a newer server is well-formed, it just never matches");
+    }
+
+    // The server only defers a named rule carrying at least one condition it wants the client to check,
+    // so anything else is a malformed response. The rule is named in the problem so whoever reads the
+    // error knows which one to look at.
+    [Theory]
+    [InlineData("""{ "conditions": [ { "type": "percentage-by-context", "percentage": 50 } ] }""",
+        "a rule has no name")]
+    [InlineData("""{ "name": "R", "conditions": [] }""", "rule 'R' has no conditions")]
+    [InlineData("""{ "name": "R" }""", "rule 'R' has no conditions")]
+    [InlineData("""{ "name": "R", "conditions": null }""", "rule 'R' has no conditions")]
+    [InlineData("""{ "name": "R", "conditions": [ null ] }""", "rule 'R' has a missing condition")]
+    [InlineData("""{ "name": "R", "conditions": [ { "type": "percentage-by-context" } ] }""",
+        "rule 'R' has a percentage-by-context condition with no percentage")]
+    public void AMalformedRule_DescribesTheProblem(string ruleJson, string expectedProblem)
+    {
+        var rule = JsonSerializer.Deserialize<ClientSideRuleResource>(ruleJson, JsonSerializerOptions.Web)!;
+
+        rule.Validate().Should().Be(expectedProblem);
     }
 }
