@@ -5,19 +5,19 @@ using OpenFeature.Error;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
 
-public class PercentageByContextConditionResourceTests
+public class PercentageByContextConditionTests
 {
     [Fact]
     public void TargetingKeyInsideTheRollout_Matches()
     {
-        new PercentageByContextConditionResource(Contexts.TargetingKeyBucket)
+        new PercentageByContextCondition(Contexts.TargetingKeyBucket)
             .Matches(Contexts.ForRules(Contexts.TargetingKey)).Should().BeTrue();
     }
 
     [Fact]
     public void TargetingKeyOutsideTheRollout_DoesNotMatch()
     {
-        new PercentageByContextConditionResource(Contexts.TargetingKeyBucket - 1)
+        new PercentageByContextCondition(Contexts.TargetingKeyBucket - 1)
             .Matches(Contexts.ForRules(Contexts.TargetingKey)).Should().BeFalse();
     }
 
@@ -25,11 +25,11 @@ public class PercentageByContextConditionResourceTests
     public void WithoutATargetingKey_OnlyAFullRolloutMatches()
     {
         using var scope = new AssertionScope();
-        new PercentageByContextConditionResource(100).Matches(Contexts.ForRules())
+        new PercentageByContextCondition(100).Matches(Contexts.ForRules())
             .Should().BeTrue("a 100% rollout matches even without a targeting key");
-        new PercentageByContextConditionResource(99).Matches(Contexts.ForRules())
+        new PercentageByContextCondition(99).Matches(Contexts.ForRules())
             .Should().BeFalse("a partial rollout cannot bucket without a targeting key");
-        new PercentageByContextConditionResource(50).Matches(Contexts.ForRules(targetingKey: ""))
+        new PercentageByContextCondition(50).Matches(Contexts.ForRules(targetingKey: ""))
             .Should().BeFalse("an empty targeting key is treated the same as none");
     }
 
@@ -38,7 +38,7 @@ public class PercentageByContextConditionResourceTests
     {
         // The lowest bucket is 1, so nothing is included at 0%. An explicit 0 is a legitimate "nobody",
         // which is why it has to stay distinguishable from an absent percentage.
-        new PercentageByContextConditionResource(0)
+        new PercentageByContextCondition(0)
             .Matches(Contexts.ForRules(Contexts.TargetingKey)).Should().BeFalse();
     }
 
@@ -47,8 +47,8 @@ public class PercentageByContextConditionResourceTests
     {
         using var scope = new AssertionScope();
         var context = Contexts.WithoutOpenFeatureContext();
-        new PercentageByContextConditionResource(100).Matches(context).Should().BeTrue();
-        new PercentageByContextConditionResource(99).Matches(context).Should().BeFalse();
+        new PercentageByContextCondition(100).Matches(context).Should().BeTrue();
+        new PercentageByContextCondition(99).Matches(context).Should().BeFalse();
     }
 
     [Theory]
@@ -59,7 +59,7 @@ public class PercentageByContextConditionResourceTests
     {
         // An out-of-range percentage is rejected rather than clamped, so a bad payload cannot roll a flag
         // out to everyone, and an absent one is not read as a rollout to nobody.
-        var matches = () => new PercentageByContextConditionResource(percentage)
+        var matches = () => new PercentageByContextCondition(percentage)
             .Matches(Contexts.ForRules(Contexts.TargetingKey));
 
         matches.Should().Throw<ParseErrorException>()

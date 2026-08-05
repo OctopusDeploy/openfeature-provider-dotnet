@@ -6,16 +6,16 @@ namespace Octopus.OpenFeature.Provider.V4;
 /// A named rule the provider library still has to evaluate on the client side. The rule matches
 /// when every one of its <see cref="Conditions"/> matches.
 /// </summary>
-internal sealed class ClientSideRuleResource
+internal sealed class ClientSideRule
 {
-    public ClientSideRuleResource(string name, ClientSideConditionResource[] conditions)
+    public ClientSideRule(string name, ClientSideCondition[] conditions)
     {
         Name = name;
         Conditions = conditions;
     }
 
     public string Name { get; }
-    public ClientSideConditionResource[] Conditions { get; }
+    public ClientSideCondition[] Conditions { get; }
 
     /// <summary>
     /// Whether every condition matches.

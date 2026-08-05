@@ -24,7 +24,7 @@ internal sealed class ServerSideEvaluation
         bool? value,
         string? reason,
         string? evaluationKey,
-        ClientSideRuleResource[]? rules)
+        ClientSideRule[]? rules)
     {
         Slug = slug;
         Value = value;
@@ -45,7 +45,7 @@ internal sealed class ServerSideEvaluation
     public string? EvaluationKey { get; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public ClientSideRuleResource[]? Rules { get; }
+    public ClientSideRule[]? Rules { get; }
 
     /// <summary>
     /// Resolves the flag, evaluating the client-side portion of the response if the server left one. A

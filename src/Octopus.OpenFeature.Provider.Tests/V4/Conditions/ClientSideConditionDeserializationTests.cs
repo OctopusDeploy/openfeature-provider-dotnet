@@ -7,13 +7,13 @@ namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
 /// <summary>
 /// Exercises polymorphic JSON deserialisation of a single client-side condition: selecting the
 /// concrete type from the camelCase <c>type</c> discriminator, and degrading to
-/// <see cref="UnknownConditionResource"/> when it is unrecognised or absent. Deserialisation of a
+/// <see cref="UnknownCondition"/> when it is unrecognised or absent. Deserialisation of a
 /// whole evaluation response is covered by <see cref="V4.ServerSideEvaluationDeserializationTests"/>.
 ///
 /// Uses <see cref="JsonSerializerOptions.Web"/> — the same options the provider client uses in
 /// production — so discriminator matching and camelCase property binding are covered end to end.
 /// </summary>
-public class ClientSideConditionResourceDeserializationTests
+public class ClientSideConditionDeserializationTests
 {
     static readonly JsonSerializerOptions Options = JsonSerializerOptions.Web;
 
@@ -22,9 +22,9 @@ public class ClientSideConditionResourceDeserializationTests
     {
         const string json = """{ "type": "percentage-by-context", "percentage": 50 }""";
 
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
+        var condition = JsonSerializer.Deserialize<ClientSideCondition>(json, Options);
 
-        var percentage = condition.Should().BeOfType<PercentageByContextConditionResource>().Subject;
+        var percentage = condition.Should().BeOfType<PercentageByContextCondition>().Subject;
         percentage.Percentage.Should().Be(50);
     }
 
@@ -33,9 +33,9 @@ public class ClientSideConditionResourceDeserializationTests
     {
         const string json = """{ "type": "context-attribute-is-one-of", "key": "user-id", "values": ["1234", "5678"] }""";
 
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
+        var condition = JsonSerializer.Deserialize<ClientSideCondition>(json, Options);
 
-        var isOneOf = condition.Should().BeOfType<ContextAttributeIsOneOfConditionResource>().Subject;
+        var isOneOf = condition.Should().BeOfType<ContextAttributeIsOneOfCondition>().Subject;
         isOneOf.Key.Should().Be("user-id");
         isOneOf.Values.Should().Equal("1234", "5678");
     }
@@ -45,9 +45,9 @@ public class ClientSideConditionResourceDeserializationTests
     {
         const string json = """{ "type": "context-attribute-is-not-one-of", "key": "region", "values": ["us", "eu"] }""";
 
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
+        var condition = JsonSerializer.Deserialize<ClientSideCondition>(json, Options);
 
-        var isNotOneOf = condition.Should().BeOfType<ContextAttributeIsNotOneOfConditionResource>().Subject;
+        var isNotOneOf = condition.Should().BeOfType<ContextAttributeIsNotOneOfCondition>().Subject;
         isNotOneOf.Key.Should().Be("region");
         isNotOneOf.Values.Should().Equal("us", "eu");
     }
@@ -63,12 +63,12 @@ public class ClientSideConditionResourceDeserializationTests
             ]
             """;
 
-        var conditions = JsonSerializer.Deserialize<ClientSideConditionResource[]>(json, Options);
+        var conditions = JsonSerializer.Deserialize<ClientSideCondition[]>(json, Options);
 
         conditions.Should().HaveCount(3);
-        conditions![0].Should().BeOfType<PercentageByContextConditionResource>();
-        conditions[1].Should().BeOfType<ContextAttributeIsOneOfConditionResource>();
-        conditions[2].Should().BeOfType<ContextAttributeIsNotOneOfConditionResource>();
+        conditions![0].Should().BeOfType<PercentageByContextCondition>();
+        conditions[1].Should().BeOfType<ContextAttributeIsOneOfCondition>();
+        conditions[2].Should().BeOfType<ContextAttributeIsNotOneOfCondition>();
     }
 
     [Fact]
@@ -76,9 +76,9 @@ public class ClientSideConditionResourceDeserializationTests
     {
         const string json = """{ "type": "not-a-real-condition", "percentage": 50 }""";
 
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
+        var condition = JsonSerializer.Deserialize<ClientSideCondition>(json, Options);
 
-        var unknown = condition.Should().BeOfType<UnknownConditionResource>().Subject;
+        var unknown = condition.Should().BeOfType<UnknownCondition>().Subject;
         unknown.Type.Should().Be("not-a-real-condition");
     }
 
@@ -87,9 +87,9 @@ public class ClientSideConditionResourceDeserializationTests
     {
         const string json = """{ "percentage": 50 }""";
 
-        var condition = JsonSerializer.Deserialize<ClientSideConditionResource>(json, Options);
+        var condition = JsonSerializer.Deserialize<ClientSideCondition>(json, Options);
 
-        var unknown = condition.Should().BeOfType<UnknownConditionResource>().Subject;
+        var unknown = condition.Should().BeOfType<UnknownCondition>().Subject;
         unknown.Type.Should().BeNull();
     }
 }

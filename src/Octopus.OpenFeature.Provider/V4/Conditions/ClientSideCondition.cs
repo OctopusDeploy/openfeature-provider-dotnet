@@ -8,11 +8,11 @@ namespace Octopus.OpenFeature.Provider.V4.Conditions;
 /// <see cref="ClientSideEvaluationContext"/>.
 ///
 /// A discriminator this version of the provider does not recognise deserialises to
-/// <see cref="UnknownConditionResource"/> rather than failing, so a condition type introduced by a
-/// newer server degrades safely on an older client.
+/// <see cref="UnknownCondition"/> rather than failing, so a condition type introduced by a newer
+/// server degrades safely on an older client.
 /// </summary>
-[JsonConverter(typeof(ClientSideConditionResourceJsonConverter))]
-internal abstract class ClientSideConditionResource
+[JsonConverter(typeof(ClientSideConditionJsonConverter))]
+internal abstract class ClientSideCondition
 {
     /// <summary>
     /// Whether this condition is met for the given context.

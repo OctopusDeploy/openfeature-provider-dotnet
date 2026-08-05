@@ -3,9 +3,9 @@ namespace Octopus.OpenFeature.Provider.V4.Conditions;
 /// <summary>
 /// Matches when the OpenFeature targeting key falls within the <see cref="Percentage"/>% rollout.
 /// </summary>
-internal sealed class PercentageByContextConditionResource : ClientSideConditionResource
+internal sealed class PercentageByContextCondition : ClientSideCondition
 {
-    public PercentageByContextConditionResource(int? percentage)
+    public PercentageByContextCondition(int? percentage)
     {
         Percentage = percentage;
     }

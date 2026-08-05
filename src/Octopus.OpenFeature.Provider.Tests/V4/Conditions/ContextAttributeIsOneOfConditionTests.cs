@@ -7,12 +7,12 @@ using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
 
-public class ContextAttributeIsOneOfConditionResourceTests
+public class ContextAttributeIsOneOfConditionTests
 {
     [Fact]
     public void MatchesWhenTheAttributeValueIsListed()
     {
-        var condition = new ContextAttributeIsOneOfConditionResource("user-id", ["1234", "5678"]);
+        var condition = new ContextAttributeIsOneOfCondition("user-id", ["1234", "5678"]);
 
         using var scope = new AssertionScope();
         condition.Matches(Contexts.ForRules(attributes: ("user-id", "5678"))).Should().BeTrue();
@@ -23,7 +23,7 @@ public class ContextAttributeIsOneOfConditionResourceTests
     [Fact]
     public void TheKeyAndValueAreCaseInsensitive()
     {
-        var condition = new ContextAttributeIsOneOfConditionResource("Region", ["EU", "US"]);
+        var condition = new ContextAttributeIsOneOfCondition("Region", ["EU", "US"]);
 
         using var scope = new AssertionScope();
         condition.Matches(Contexts.ForRules(attributes: ("region", "eu"))).Should().BeTrue();
@@ -39,7 +39,7 @@ public class ContextAttributeIsOneOfConditionResourceTests
         // considered: AsDictionary returns an immutable dictionary ordered by key hash, and .NET
         // randomises string hashing per process, so checking only the first matching entry made the
         // same flag, context and rule evaluate differently from one process to the next.
-        var condition = new ContextAttributeIsOneOfConditionResource("plan", ["pro"]);
+        var condition = new ContextAttributeIsOneOfCondition("plan", ["pro"]);
 
         var context = Contexts.ForRules(attributes: [(firstKey, firstValue), (secondKey, secondValue)]);
 
@@ -55,27 +55,27 @@ public class ContextAttributeIsOneOfConditionResourceTests
         var context = new ClientSideEvaluationContext(Contexts.Slug, Contexts.EvaluationKey,
             EvaluationContext.Builder().Set("user-id", 1234).Build());
 
-        new ContextAttributeIsOneOfConditionResource("user-id", ["1234"]).Matches(context).Should().BeFalse();
+        new ContextAttributeIsOneOfCondition("user-id", ["1234"]).Matches(context).Should().BeFalse();
     }
 
     [Fact]
     public void ANullOpenFeatureContextDoesNotMatch()
     {
-        new ContextAttributeIsOneOfConditionResource("plan", ["pro"])
+        new ContextAttributeIsOneOfCondition("plan", ["pro"])
             .Matches(Contexts.WithoutOpenFeatureContext()).Should().BeFalse();
     }
 
     // Key and Values are declared non-nullable, so these shapes only arrive off the wire. An attribute
     // condition with nothing to match on has no defensible answer, so it fails the evaluation rather than
     // being matched against as far as it can be. Both attribute conditions share this reading;
-    // ContextAttributeIsNotOneOfConditionResourceTests checks it is wired up there too.
+    // ContextAttributeIsNotOneOfConditionTests checks it is wired up there too.
     [Theory]
     [InlineData(null, new[] { "pro" }, "a context-attribute condition with no key")]
     [InlineData("plan", null, "a context-attribute condition on 'plan' with no values")]
     [InlineData("plan", new string[0], "a context-attribute condition on 'plan' with no values")]
     public void AMissingKeyOrValues_ThrowsAParseError(string? key, string[]? values, string expectedProblem)
     {
-        var matches = () => new ContextAttributeIsOneOfConditionResource(key!, values!)
+        var matches = () => new ContextAttributeIsOneOfCondition(key!, values!)
             .Matches(Contexts.ForRules(attributes: ("plan", "pro")));
 
         matches.Should().Throw<ParseErrorException>()
@@ -87,7 +87,7 @@ public class ContextAttributeIsOneOfConditionResourceTests
     {
         var values = new[] { "pro", null! };
 
-        var matches = () => new ContextAttributeIsOneOfConditionResource("plan", values)
+        var matches = () => new ContextAttributeIsOneOfCondition("plan", values)
             .Matches(Contexts.ForRules(attributes: ("plan", "pro")));
 
         matches.Should().Throw<ParseErrorException>()

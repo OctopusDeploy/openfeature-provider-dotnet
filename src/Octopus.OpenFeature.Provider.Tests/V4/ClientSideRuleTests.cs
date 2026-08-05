@@ -7,15 +7,15 @@ using OpenFeature.Error;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4;
 
-public class ClientSideRuleResourceTests
+public class ClientSideRuleTests
 {
-    static ClientSideRuleResource Rule(params ClientSideConditionResource[] conditions)
+    static ClientSideRule Rule(params ClientSideCondition[] conditions)
         => new("Rule 1", conditions);
 
     [Fact]
     public void ASingleMatchingCondition_Matches()
     {
-        Rule(new ContextAttributeIsOneOfConditionResource("plan", ["pro"]))
+        Rule(new ContextAttributeIsOneOfCondition("plan", ["pro"]))
             .Matches(Contexts.ForRules(attributes: ("plan", "pro"))).Should().BeTrue();
     }
 
@@ -23,8 +23,8 @@ public class ClientSideRuleResourceTests
     public void ConditionsAreCombinedWithAnd()
     {
         var rule = Rule(
-            new PercentageByContextConditionResource(100),
-            new ContextAttributeIsOneOfConditionResource("plan", ["pro"]));
+            new PercentageByContextCondition(100),
+            new ContextAttributeIsOneOfCondition("plan", ["pro"]));
 
         using var scope = new AssertionScope();
         rule.Matches(Contexts.ForRules(Contexts.TargetingKey, ("plan", "pro"))).Should().BeTrue("both conditions match");
@@ -35,8 +35,8 @@ public class ClientSideRuleResourceTests
     public void ARuleContainingAnUnknownCondition_CanNeverMatch()
     {
         var rule = Rule(
-            new ContextAttributeIsOneOfConditionResource("plan", ["pro"]),
-            new UnknownConditionResource("some-future-condition"));
+            new ContextAttributeIsOneOfCondition("plan", ["pro"]),
+            new UnknownCondition("some-future-condition"));
 
         rule.Matches(Contexts.ForRules(Contexts.TargetingKey, ("plan", "pro"))).Should().BeFalse();
     }
@@ -47,8 +47,8 @@ public class ClientSideRuleResourceTests
         // Conditions stop at the first one that does not match, so the rule has its answer without
         // reading the rest. A malformed condition only fails the flag if evaluation gets to it.
         var rule = Rule(
-            new ContextAttributeIsOneOfConditionResource("plan", ["pro"]),
-            new PercentageByContextConditionResource(percentage: null));
+            new ContextAttributeIsOneOfCondition("plan", ["pro"]),
+            new PercentageByContextCondition(percentage: null));
 
         rule.Matches(Contexts.ForRules(Contexts.TargetingKey, ("plan", "free"))).Should().BeFalse();
     }
@@ -71,7 +71,7 @@ public class ClientSideRuleResourceTests
         "a percentage-by-context condition with no percentage")]
     public void AMalformedRule_ThrowsAParseErrorDescribingTheProblem(string ruleJson, string expectedProblem)
     {
-        var rule = JsonSerializer.Deserialize<ClientSideRuleResource>(ruleJson, JsonSerializerOptions.Web)!;
+        var rule = JsonSerializer.Deserialize<ClientSideRule>(ruleJson, JsonSerializerOptions.Web)!;
 
         var matches = () => rule.Matches(Contexts.ForRules(Contexts.TargetingKey));
 
@@ -83,9 +83,9 @@ public class ClientSideRuleResourceTests
     public void ANamedRuleWithConditions_Evaluates()
     {
         using var scope = new AssertionScope();
-        Rule(new ContextAttributeIsOneOfConditionResource("plan", ["pro"]))
+        Rule(new ContextAttributeIsOneOfCondition("plan", ["pro"]))
             .Matches(Contexts.ForRules(attributes: ("plan", "pro"))).Should().BeTrue();
-        Rule(new UnknownConditionResource("some-future-condition"))
+        Rule(new UnknownCondition("some-future-condition"))
             .Matches(Contexts.ForRules(Contexts.TargetingKey))
             .Should().BeFalse("a condition from a newer server is well-formed, it just never matches");
     }

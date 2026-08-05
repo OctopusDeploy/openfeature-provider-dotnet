@@ -7,12 +7,12 @@ using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
 
-public class ContextAttributeIsNotOneOfConditionResourceTests
+public class ContextAttributeIsNotOneOfConditionTests
 {
     [Fact]
     public void MatchesUnlessTheAttributeValueIsListed()
     {
-        var condition = new ContextAttributeIsNotOneOfConditionResource("region", ["eu"]);
+        var condition = new ContextAttributeIsNotOneOfCondition("region", ["eu"]);
 
         using var scope = new AssertionScope();
         condition.Matches(Contexts.ForRules(attributes: ("region", "us"))).Should().BeTrue();
@@ -23,7 +23,7 @@ public class ContextAttributeIsNotOneOfConditionResourceTests
     [Fact]
     public void TheKeyAndValueAreCaseInsensitive()
     {
-        var condition = new ContextAttributeIsNotOneOfConditionResource("Region", ["EU"]);
+        var condition = new ContextAttributeIsNotOneOfCondition("Region", ["EU"]);
 
         condition.Matches(Contexts.ForRules(attributes: ("region", "eu"))).Should().BeFalse();
     }
@@ -35,13 +35,13 @@ public class ContextAttributeIsNotOneOfConditionResourceTests
         var context = new ClientSideEvaluationContext(Contexts.Slug, Contexts.EvaluationKey,
             EvaluationContext.Builder().Set("user-id", 1234).Build());
 
-        new ContextAttributeIsNotOneOfConditionResource("user-id", ["1234"]).Matches(context).Should().BeTrue();
+        new ContextAttributeIsNotOneOfCondition("user-id", ["1234"]).Matches(context).Should().BeTrue();
     }
 
     [Fact]
     public void ANullOpenFeatureContextMatches()
     {
-        new ContextAttributeIsNotOneOfConditionResource("region", ["eu"])
+        new ContextAttributeIsNotOneOfCondition("region", ["eu"])
             .Matches(Contexts.WithoutOpenFeatureContext()).Should().BeTrue();
     }
 
@@ -49,9 +49,9 @@ public class ContextAttributeIsNotOneOfConditionResourceTests
     public void AMalformedConditionThrowsTheSameParseErrorAsIsOneOf()
     {
         // Both conditions carry the same fields, so they are malformed in the same ways. The cases are
-        // enumerated in ContextAttributeIsOneOfConditionResourceTests; this pins that the shared reading
+        // enumerated in ContextAttributeIsOneOfConditionTests; this pins that the shared reading
         // is wired up here as well, rather than a missing attribute quietly making this one match.
-        var matches = () => new ContextAttributeIsNotOneOfConditionResource("region", [])
+        var matches = () => new ContextAttributeIsNotOneOfCondition("region", [])
             .Matches(Contexts.ForRules(attributes: ("region", "us")));
 
         matches.Should().Throw<ParseErrorException>()

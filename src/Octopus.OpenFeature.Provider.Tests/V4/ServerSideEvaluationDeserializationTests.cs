@@ -9,7 +9,7 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 /// Exercises JSON deserialisation of a v4 evaluation response: both flag shapes, the array the
 /// endpoint returns, and the rules and conditions hanging off a deferred flag. Deserialisation of an
 /// individual condition is covered by
-/// <see cref="Conditions.ClientSideConditionResourceDeserializationTests"/>.
+/// <see cref="Conditions.ClientSideConditionDeserializationTests"/>.
 ///
 /// Uses <see cref="JsonSerializerOptions.Web"/> — the same options the provider client uses in
 /// production — so camelCase property binding and null-omission behaviour are covered end to end.
@@ -71,10 +71,10 @@ public class ServerSideEvaluationDeserializationTests
         rule.Name.Should().Be("Rule 1");
         rule.Conditions.Should().HaveCount(2);
 
-        var percentage = rule.Conditions[0].Should().BeOfType<PercentageByContextConditionResource>().Subject;
+        var percentage = rule.Conditions[0].Should().BeOfType<PercentageByContextCondition>().Subject;
         percentage.Percentage.Should().Be(50);
 
-        var isOneOf = rule.Conditions[1].Should().BeOfType<ContextAttributeIsOneOfConditionResource>().Subject;
+        var isOneOf = rule.Conditions[1].Should().BeOfType<ContextAttributeIsOneOfCondition>().Subject;
         isOneOf.Key.Should().Be("user-id");
         isOneOf.Values.Should().Equal("1234", "5678");
     }
@@ -101,8 +101,8 @@ public class ServerSideEvaluationDeserializationTests
         var flag = JsonSerializer.Deserialize<ServerSideEvaluation>(json, Options);
 
         var conditions = flag!.Rules![0].Conditions;
-        conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
-        conditions[1].Should().BeOfType<UnknownConditionResource>()
+        conditions[0].Should().BeOfType<PercentageByContextCondition>();
+        conditions[1].Should().BeOfType<UnknownCondition>()
             .Which.Type.Should().Be("some-future-condition");
     }
 
@@ -133,6 +133,6 @@ public class ServerSideEvaluationDeserializationTests
         flags[1].Slug.Should().Be("deferred-feature");
         flags[1].Value.Should().BeNull();
         flags[1].Rules.Should().ContainSingle();
-        flags[1].Rules![0].Conditions[0].Should().BeOfType<PercentageByContextConditionResource>();
+        flags[1].Rules![0].Conditions[0].Should().BeOfType<PercentageByContextCondition>();
     }
 }

@@ -11,9 +11,9 @@ namespace Octopus.OpenFeature.Provider.V4.Conditions;
 /// older client. A condition with no type at all is a payload no server version could have produced, so
 /// it fails the evaluation.
 /// </summary>
-internal sealed class UnknownConditionResource : ClientSideConditionResource
+internal sealed class UnknownCondition : ClientSideCondition
 {
-    public UnknownConditionResource(string? type)
+    public UnknownCondition(string? type)
     {
         Type = type;
     }

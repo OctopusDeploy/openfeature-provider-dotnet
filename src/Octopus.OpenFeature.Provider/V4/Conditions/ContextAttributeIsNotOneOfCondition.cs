@@ -5,9 +5,9 @@ namespace Octopus.OpenFeature.Provider.V4.Conditions;
 /// attribute is not one of them, so it matches — the analog of OctoToggle's tenant-side
 /// <c>TenantIsNotOneOf</c>, where an untenanted caller always matches.
 /// </summary>
-internal sealed class ContextAttributeIsNotOneOfConditionResource : ClientSideConditionResource
+internal sealed class ContextAttributeIsNotOneOfCondition : ClientSideCondition
 {
-    public ContextAttributeIsNotOneOfConditionResource(string key, string[] values)
+    public ContextAttributeIsNotOneOfCondition(string key, string[] values)
     {
         Key = key;
         Values = values;

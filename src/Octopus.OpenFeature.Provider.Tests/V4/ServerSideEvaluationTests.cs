@@ -9,20 +9,19 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 /// <summary>
 /// <see cref="ServerSideEvaluation.Evaluate"/> against a well-formed response: choosing between the
 /// server's answer and the client's rules, combining rules, and the reason reported. Rule and condition
-/// matching are covered by
-/// <see cref="ClientSideRuleResourceTests"/> and the tests in <c>V4/Conditions</c>; a response the
-/// client refuses to evaluate is covered by <see cref="MalformedEvaluationTests"/>.
+/// matching are covered by <see cref="ClientSideRuleTests"/> and the tests in <c>V4/Conditions</c>; a
+/// response the client refuses to evaluate is covered by <see cref="MalformedEvaluationTests"/>.
 /// </summary>
 public class ServerSideEvaluationTests
 {
     static ServerSideEvaluation ServerResolved(bool value, string reason)
         => new(Contexts.Slug, value, reason, evaluationKey: null, rules: null);
 
-    static ServerSideEvaluation Deferred(params ClientSideRuleResource[] rules)
+    static ServerSideEvaluation Deferred(params ClientSideRule[] rules)
         => new(Contexts.Slug, value: null, reason: null, Contexts.EvaluationKey, rules);
 
-    static ClientSideRuleResource RuleMatching(string name, string plan)
-        => new(name, [new ContextAttributeIsOneOfConditionResource("plan", [plan])]);
+    static ClientSideRule RuleMatching(string name, string plan)
+        => new(name, [new ContextAttributeIsOneOfCondition("plan", [plan])]);
 
     [Theory]
     [InlineData(true)]
@@ -71,8 +70,8 @@ public class ServerSideEvaluationTests
     {
         var flag = Deferred(
             RuleMatching("beta-testers", "beta"),
-            new ClientSideRuleResource("internal",
-                [new ContextAttributeIsOneOfConditionResource("email", ["staff@octopus.com"])]));
+            new ClientSideRule("internal",
+                [new ContextAttributeIsOneOfCondition("email", ["staff@octopus.com"])]));
 
         using var scope = new AssertionScope();
         flag.Evaluate(Contexts.OpenFeature(attributes: ("plan", "beta")))
@@ -102,7 +101,7 @@ public class ServerSideEvaluationTests
         using var scope = new AssertionScope();
         Deferred(RuleMatching("pro-users", "pro")).Evaluate(context: null)
             .Value.Should().BeFalse("there is no attribute to match");
-        Deferred(new ClientSideRuleResource("everyone", [new PercentageByContextConditionResource(100)]))
+        Deferred(new ClientSideRule("everyone", [new PercentageByContextCondition(100)]))
             .Evaluate(context: null)
             .Value.Should().BeTrue("a 100% rollout matches without a targeting key");
     }
