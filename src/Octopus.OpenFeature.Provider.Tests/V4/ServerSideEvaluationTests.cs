@@ -87,25 +87,20 @@ public class ServerSideEvaluationTests
                 [new ContextAttributeIsOneOfCondition("email", ["staff@octopus.com"])]));
 
         using var scope = new AssertionScope();
-        flag.Evaluate(Contexts.OpenFeature(attributes: ("plan", "beta")))
-            .Value.Should().BeTrue("first rule matches");
-        flag.Evaluate(Contexts.OpenFeature(attributes: ("email", "staff@octopus.com")))
-            .Value.Should().BeTrue("second rule matches");
-        flag.Evaluate(Contexts.OpenFeature(attributes: ("plan", "free")))
-            .Value.Should().BeFalse("no rule matches");
-    }
 
-    [Fact]
-    public void FirstMatchingRule_ProvidesTheReason()
-    {
-        // Both rules match; the reason should name the first one that did.
-        var flag = Deferred(RuleMatching("first", "pro"), RuleMatching("second", "pro"));
+        // Both rules match, so the reason names the first one that did.
+        var both = flag.Evaluate(
+            Contexts.OpenFeature(attributes: [("plan", "beta"), ("email", "staff@octopus.com")]));
+        both.Value.Should().BeTrue();
+        both.Reason.Should().Be("Matched rule 'beta-testers'.");
 
-        var result = flag.Evaluate(Contexts.OpenFeature(attributes: ("plan", "pro")));
+        var second = flag.Evaluate(Contexts.OpenFeature(attributes: ("email", "staff@octopus.com")));
+        second.Value.Should().BeTrue("second rule matches");
+        second.Reason.Should().Be("Matched rule 'internal'.");
 
-        using var scope = new AssertionScope();
-        result.Value.Should().BeTrue();
-        result.Reason.Should().Be("Matched rule 'first'.");
+        var neither = flag.Evaluate(Contexts.OpenFeature(attributes: ("plan", "free")));
+        neither.Value.Should().BeFalse("no rule matches");
+        neither.Reason.Should().Be("Did not match any rules.");
     }
 
     [Fact]
