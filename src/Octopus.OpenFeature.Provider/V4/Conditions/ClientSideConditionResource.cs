@@ -14,17 +14,13 @@ namespace Octopus.OpenFeature.Provider.V4.Conditions;
 [JsonConverter(typeof(ClientSideConditionResourceJsonConverter))]
 internal abstract class ClientSideConditionResource
 {
-    /// <summary>Whether this condition is met for the given context.</summary>
-    public abstract bool Matches(ClientSideEvaluationContext context);
-
     /// <summary>
-    /// Describes why this condition is not a well-formed condition of its type, or returns
-    /// <c>null</c> when it is. The description is a noun phrase the containing rule can compose into
-    /// a sentence.
+    /// Whether this condition is met for the given context.
     ///
-    /// An unrecognised condition <i>type</i> is well-formed — it is a capability from a newer server,
-    /// and simply never matches. Anything else the server could not legitimately have sent is
-    /// malformed, and fails the whole flag rather than just its own rule.
+    /// The condition is assumed to have arrived in a shape its type can be evaluated in. One that did
+    /// not — a rollout with no percentage, an attribute condition with no values — throws the parse
+    /// error <see cref="ClientSideEvaluationContext.ParseError"/> builds rather than reading a value it
+    /// was not sent.
     /// </summary>
-    public abstract string? Validate();
+    public abstract bool Matches(ClientSideEvaluationContext context);
 }

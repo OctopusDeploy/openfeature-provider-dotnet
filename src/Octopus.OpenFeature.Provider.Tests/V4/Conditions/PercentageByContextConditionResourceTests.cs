@@ -1,7 +1,7 @@
 using FluentAssertions;
 using FluentAssertions.Execution;
-using Octopus.OpenFeature.Provider.V4;
 using Octopus.OpenFeature.Provider.V4.Conditions;
+using OpenFeature.Error;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
 
@@ -36,57 +36,33 @@ public class PercentageByContextConditionResourceTests
     [Fact]
     public void AtZeroPercent_NothingMatches()
     {
-        // The lowest bucket is 1, so nothing is included at 0%.
+        // The lowest bucket is 1, so nothing is included at 0%. An explicit 0 is a legitimate "nobody",
+        // which is why it has to stay distinguishable from an absent percentage.
         new PercentageByContextConditionResource(0)
             .Matches(Contexts.ForRules(Contexts.TargetingKey)).Should().BeFalse();
-    }
-
-    [Fact]
-    public void WithoutAnEvaluationKey_NothingMatches()
-    {
-        // There is no key to bucket against, so the condition is unmet rather than assumed.
-        using var scope = new AssertionScope();
-        new PercentageByContextConditionResource(100)
-            .Matches(Contexts.WithoutEvaluationKey(Contexts.TargetingKey)).Should().BeFalse();
-        new PercentageByContextConditionResource(100)
-            .Matches(Contexts.WithoutEvaluationKey()).Should().BeFalse();
     }
 
     [Fact]
     public void WithANullOpenFeatureContext_OnlyAFullRolloutMatches()
     {
         using var scope = new AssertionScope();
-        var context = new ClientSideEvaluationContext(Contexts.EvaluationKey, openFeatureContext: null);
+        var context = Contexts.WithoutOpenFeatureContext();
         new PercentageByContextConditionResource(100).Matches(context).Should().BeTrue();
         new PercentageByContextConditionResource(99).Matches(context).Should().BeFalse();
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(50)]
-    [InlineData(100)]
-    public void APercentageWithinRange_IsWellFormed(int percentage)
-    {
-        new PercentageByContextConditionResource(percentage).Validate().Should().BeNull();
     }
 
     [Theory]
     [InlineData(null, "a percentage-by-context condition with no percentage")]
     [InlineData(101, "a percentage-by-context condition with a percentage of 101")]
     [InlineData(-1, "a percentage-by-context condition with a percentage of -1")]
-    public void AnAbsentOrOutOfRangePercentage_IsMalformed(int? percentage, string expectedProblem)
+    public void AnAbsentOrOutOfRangePercentage_ThrowsAParseError(int? percentage, string expectedProblem)
     {
-        // An absent percentage stays distinguishable from an explicit 0, which is a legitimate "nobody".
-        // An out-of-range one is rejected rather than clamped, so a bad payload cannot roll a flag out
-        // to everyone.
-        new PercentageByContextConditionResource(percentage).Validate().Should().Be(expectedProblem);
-    }
+        // An out-of-range percentage is rejected rather than clamped, so a bad payload cannot roll a flag
+        // out to everyone, and an absent one is not read as a rollout to nobody.
+        var matches = () => new PercentageByContextConditionResource(percentage)
+            .Matches(Contexts.ForRules(Contexts.TargetingKey));
 
-    [Fact]
-    public void WithoutAPercentage_NothingMatches()
-    {
-        // Validation rejects the flag before evaluation reaches here, but matching still has to be total.
-        new PercentageByContextConditionResource(percentage: null)
-            .Matches(Contexts.ForRules(Contexts.TargetingKey)).Should().BeFalse();
+        matches.Should().Throw<ParseErrorException>()
+            .Which.Message.Should().Be(Contexts.MalformedMessage(expectedProblem));
     }
 }

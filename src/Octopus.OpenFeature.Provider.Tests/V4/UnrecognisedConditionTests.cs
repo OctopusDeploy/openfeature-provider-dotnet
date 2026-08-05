@@ -37,10 +37,11 @@ public class UnrecognisedConditionTests
             }
             """;
 
-        // Defaulting to true: an unevaluable rule leaves the flag off, it does not fall back.
         var result = ClientSideEvaluator.Evaluate(
-            Flag(json), defaultValue: true, Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial")));
+            Flag(json), Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial")));
 
+        // An unevaluable rule leaves the flag off; it does not error, so the caller's default value never
+        // comes into it.
         using var scope = new AssertionScope();
         result.Value.Should().BeFalse();
         result.ErrorType.Should().Be(ErrorType.None);
@@ -68,7 +69,7 @@ public class UnrecognisedConditionTests
             """;
 
         var result = ClientSideEvaluator.Evaluate(
-            Flag(json), defaultValue: false, Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial"), ("ring", "beta")));
+            Flag(json), Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial"), ("ring", "beta")));
 
         using var scope = new AssertionScope();
         result.Value.Should().BeTrue();

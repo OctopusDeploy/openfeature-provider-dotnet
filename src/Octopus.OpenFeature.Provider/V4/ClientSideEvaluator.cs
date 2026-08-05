@@ -1,5 +1,4 @@
-using System.Linq;
-using OpenFeature.Constant;
+using OpenFeature.Error;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.V4;
@@ -12,50 +11,74 @@ namespace Octopus.OpenFeature.Provider.V4;
 /// which are surfaced unchanged. A flag deferred to the client carries rules: the flag is enabled
 /// when any rule matches, and a rule matches when all of its conditions match.
 ///
-/// A flag in neither shape is malformed. It resolves to the caller's default value with
-/// <see cref="ErrorType.ParseError"/>, as v3's evaluation path does, rather than being evaluated as
-/// far as it can be — a bad payload should not quietly decide a flag either way. The one thing that is
-/// not malformed is a condition type this client does not recognise: that is a newer server capability,
-/// so it simply never matches and fails only its own rule. See <see cref="EvaluationResource.Validate"/>.
+/// The response is assumed to be well-formed. A flag in neither shape, or one whose rules cannot be
+/// read, throws the parse error described by <see cref="MalformedEvaluation"/> rather than being
+/// evaluated as far as it can be — a bad payload should not quietly decide a flag either way. The one
+/// thing that is not malformed is a condition type this client does not recognise: that is a newer
+/// server capability, so it simply never matches and fails only its own rule.
 /// </summary>
 internal static class ClientSideEvaluator
 {
-    public static ResolutionDetails<bool> Evaluate(EvaluationResource flag, bool defaultValue, EvaluationContext? context)
+    /// <summary>
+    /// The caller's default value is not a parameter: when this throws, the OpenFeature SDK is the one
+    /// that hands it back.
+    /// </summary>
+    public static ResolutionDetails<bool> Evaluate(EvaluationResource flag, EvaluationContext? context)
     {
-        if (flag.Validate() is { } problem)
-        {
-            return Malformed(flag, defaultValue, problem);
-        }
-
         // The server resolved the flag; surface its value and reason unchanged.
         if (flag.Value is { } value)
         {
+            if (flag.Reason is null)
+            {
+                throw Malformed(flag, "the server resolved the flag but sent no reason");
+            }
+
+            if (flag.EvaluationKey is not null || flag.Rules is not null)
+            {
+                throw Malformed(flag, "the flag carries both a server-resolved value and client-side rules");
+            }
+
             return Resolved(flag, value, flag.Reason);
         }
 
-        // A deferred flag is enabled when any rule matches. Validation has already established that
-        // there is at least one rule and that every rule is evaluable.
-        var ruleContext = new ClientSideEvaluationContext(flag.EvaluationKey, context);
+        if (flag.Rules is null)
+        {
+            throw Malformed(flag, "the flag has neither a value nor rules");
+        }
 
-        var matchedRule = flag.Rules!.FirstOrDefault(rule => rule.Matches(ruleContext));
+        if (flag.EvaluationKey is null)
+        {
+            throw Malformed(flag, "the flag defers to the client but has no evaluation key");
+        }
 
-        return matchedRule is not null
-            ? Resolved(flag, true, EvaluationReasons.MatchedRule(matchedRule.Name))
-            : Resolved(flag, false, EvaluationReasons.DidNotMatchAnyRules());
+        if (flag.Rules.Length == 0)
+        {
+            throw Malformed(flag, "the flag defers to the client with no rules");
+        }
+
+        // A deferred flag is enabled when any rule matches. Rules are read in order and stop at the
+        // first match, so the reason names the rule that decided it.
+        var ruleContext = new ClientSideEvaluationContext(flag.Slug, flag.EvaluationKey, context);
+
+        foreach (var rule in flag.Rules)
+        {
+            if (rule is null)
+            {
+                throw Malformed(flag, "the flag has a missing rule");
+            }
+
+            if (rule.Matches(ruleContext))
+            {
+                return Resolved(flag, true, EvaluationReasons.MatchedRule(rule.Name));
+            }
+        }
+
+        return Resolved(flag, false, EvaluationReasons.DidNotMatchAnyRules());
     }
 
-    static ResolutionDetails<bool> Resolved(EvaluationResource flag, bool value, string? reason)
+    static ResolutionDetails<bool> Resolved(EvaluationResource flag, bool value, string reason)
         => new(flag.Slug, value, reason: reason);
 
-    /// <summary>
-    /// The reason carries the same sentence v3 returns for an unevaluable flag; the specific problem
-    /// goes in the error message, where it is available to whoever has to work out what the server
-    /// sent.
-    /// </summary>
-    static ResolutionDetails<bool> Malformed(EvaluationResource flag, bool defaultValue, string problem)
-        => new(flag.Slug,
-            defaultValue,
-            ErrorType.ParseError,
-            reason: EvaluationReasons.MalformedEvaluation(flag.Slug),
-            errorMessage: $"Feature toggle {flag.Slug} could not be evaluated because {problem}.");
+    static ParseErrorException Malformed(EvaluationResource flag, string problem)
+        => MalformedEvaluation.ParseError(flag.Slug, problem);
 }

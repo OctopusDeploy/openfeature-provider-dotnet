@@ -11,6 +11,7 @@ static class Contexts
     // OctopusFeatureContext.GetNormalizedNumber("evaluation-key", "targeting-key") == 13, so a
     // targeting key of "targeting-key" is inside a >=13% rollout and outside a <13% one. The pair of
     // rollout tests either side of the bucket pins that value, so it cannot drift unnoticed.
+    public const string Slug = "my-feature";
     public const string EvaluationKey = "evaluation-key";
     public const string TargetingKey = "targeting-key";
     public const int TargetingKeyBucket = 13;
@@ -33,13 +34,17 @@ static class Contexts
     }
 
     /// <summary>
-    /// What a rule or condition is evaluated against: an OpenFeature context paired with the flag's
-    /// evaluation key, as <see cref="ClientSideEvaluator"/> pairs them.
+    /// What a rule or condition is evaluated against: an OpenFeature context paired with the slug and
+    /// evaluation key of the flag being evaluated, as <see cref="ClientSideEvaluator"/> pairs them.
     /// </summary>
     public static ClientSideEvaluationContext ForRules(string? targetingKey = null, params (string key, string value)[] attributes)
-        => new(EvaluationKey, OpenFeature(targetingKey, attributes));
+        => new(Slug, EvaluationKey, OpenFeature(targetingKey, attributes));
 
-    /// <summary>A context for a malformed response that carried no evaluation key.</summary>
-    public static ClientSideEvaluationContext WithoutEvaluationKey(string? targetingKey = null)
-        => new(evaluationKey: null, OpenFeature(targetingKey));
+    /// <summary>A rule context whose caller supplied no OpenFeature context at all.</summary>
+    public static ClientSideEvaluationContext WithoutOpenFeatureContext()
+        => new(Slug, EvaluationKey, openFeatureContext: null);
+
+    /// <summary>The parse error message a malformed flag reports for <paramref name="problem"/>.</summary>
+    public static string MalformedMessage(string problem)
+        => $"Feature toggle {Slug} could not be evaluated because {problem}.";
 }

@@ -15,10 +15,10 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 public class ClientSideEvaluatorTests
 {
     static EvaluationResource ServerResolved(bool value, string reason)
-        => new("my-feature", value, reason, evaluationKey: null, rules: null);
+        => new(Contexts.Slug, value, reason, evaluationKey: null, rules: null);
 
     static EvaluationResource Deferred(params ClientSideRuleResource[] rules)
-        => new("my-feature", value: null, reason: null, evaluationKey: Contexts.EvaluationKey, rules: rules);
+        => new(Contexts.Slug, value: null, reason: null, Contexts.EvaluationKey, rules);
 
     static ClientSideRuleResource RuleMatching(string name, string plan)
         => new(name, [new ContextAttributeIsOneOfConditionResource("plan", [plan])]);
@@ -28,12 +28,11 @@ public class ClientSideEvaluatorTests
     [InlineData(false)]
     public void ServerResolvedFlag_ReturnsTheServerValueAndReason(bool value)
     {
-        // The default value is the opposite of the server's, so it cannot be mistaken for a pass-through.
         var result = ClientSideEvaluator.Evaluate(
-            ServerResolved(value, "the server said so"), defaultValue: !value, Contexts.OpenFeature());
+            ServerResolved(value, "the server said so"), Contexts.OpenFeature());
 
         using var scope = new AssertionScope();
-        result.FlagKey.Should().Be("my-feature");
+        result.FlagKey.Should().Be(Contexts.Slug);
         result.Value.Should().Be(value);
         result.Reason.Should().Be("the server said so");
         result.ErrorType.Should().Be(ErrorType.None);
@@ -44,7 +43,7 @@ public class ClientSideEvaluatorTests
     {
         var flag = Deferred(RuleMatching("beta-testers", "beta"));
 
-        var result = ClientSideEvaluator.Evaluate(flag, defaultValue: false, Contexts.OpenFeature(attributes: ("plan", "beta")));
+        var result = ClientSideEvaluator.Evaluate(flag, Contexts.OpenFeature(attributes: ("plan", "beta")));
 
         using var scope = new AssertionScope();
         result.Value.Should().BeTrue();
@@ -55,10 +54,11 @@ public class ClientSideEvaluatorTests
     [Fact]
     public void NoMatchingRule_ResolvesToFalseWithTheDidNotMatchReason()
     {
+        // A flag whose rules simply did not match is off, not defaulted: it resolves rather than erroring,
+        // so the caller's default value never comes into it.
         var flag = Deferred(RuleMatching("beta-testers", "beta"));
 
-        // Defaulting to true: a flag whose rules simply did not match is off, not defaulted.
-        var result = ClientSideEvaluator.Evaluate(flag, defaultValue: true, Contexts.OpenFeature(attributes: ("plan", "free")));
+        var result = ClientSideEvaluator.Evaluate(flag, Contexts.OpenFeature(attributes: ("plan", "free")));
 
         using var scope = new AssertionScope();
         result.Value.Should().BeFalse();
@@ -75,11 +75,11 @@ public class ClientSideEvaluatorTests
                 [new ContextAttributeIsOneOfConditionResource("email", ["staff@octopus.com"])]));
 
         using var scope = new AssertionScope();
-        ClientSideEvaluator.Evaluate(flag, defaultValue: false, Contexts.OpenFeature(attributes: ("plan", "beta")))
+        ClientSideEvaluator.Evaluate(flag, Contexts.OpenFeature(attributes: ("plan", "beta")))
             .Value.Should().BeTrue("first rule matches");
-        ClientSideEvaluator.Evaluate(flag, defaultValue: false, Contexts.OpenFeature(attributes: ("email", "staff@octopus.com")))
+        ClientSideEvaluator.Evaluate(flag, Contexts.OpenFeature(attributes: ("email", "staff@octopus.com")))
             .Value.Should().BeTrue("second rule matches");
-        ClientSideEvaluator.Evaluate(flag, defaultValue: false, Contexts.OpenFeature(attributes: ("plan", "free")))
+        ClientSideEvaluator.Evaluate(flag, Contexts.OpenFeature(attributes: ("plan", "free")))
             .Value.Should().BeFalse("no rule matches");
     }
 
@@ -89,7 +89,7 @@ public class ClientSideEvaluatorTests
         // Both rules match; the reason should name the first one that did.
         var flag = Deferred(RuleMatching("first", "pro"), RuleMatching("second", "pro"));
 
-        var result = ClientSideEvaluator.Evaluate(flag, defaultValue: false, Contexts.OpenFeature(attributes: ("plan", "pro")));
+        var result = ClientSideEvaluator.Evaluate(flag, Contexts.OpenFeature(attributes: ("plan", "pro")));
 
         using var scope = new AssertionScope();
         result.Value.Should().BeTrue();
@@ -100,11 +100,10 @@ public class ClientSideEvaluatorTests
     public void ANullContext_IsTreatedAsAnEmptyContext()
     {
         using var scope = new AssertionScope();
-        ClientSideEvaluator.Evaluate(Deferred(RuleMatching("pro-users", "pro")), defaultValue: true, context: null)
+        ClientSideEvaluator.Evaluate(Deferred(RuleMatching("pro-users", "pro")), context: null)
             .Value.Should().BeFalse("there is no attribute to match");
         ClientSideEvaluator.Evaluate(
                 Deferred(new ClientSideRuleResource("everyone", [new PercentageByContextConditionResource(100)])),
-                defaultValue: false,
                 context: null)
             .Value.Should().BeTrue("a 100% rollout matches without a targeting key");
     }

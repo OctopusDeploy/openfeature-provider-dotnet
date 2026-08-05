@@ -2,6 +2,7 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using Octopus.OpenFeature.Provider.V4;
 using Octopus.OpenFeature.Provider.V4.Conditions;
+using OpenFeature.Error;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
@@ -51,7 +52,7 @@ public class ContextAttributeIsOneOfConditionResourceTests
     {
         // OpenFeature's Value.AsString is null for a non-string, and v3 segment matching skips those
         // entries too, so a numeric attribute never matches a string value.
-        var context = new ClientSideEvaluationContext(Contexts.EvaluationKey,
+        var context = new ClientSideEvaluationContext(Contexts.Slug, Contexts.EvaluationKey,
             EvaluationContext.Builder().Set("user-id", 1234).Build());
 
         new ContextAttributeIsOneOfConditionResource("user-id", ["1234"]).Matches(context).Should().BeFalse();
@@ -60,47 +61,37 @@ public class ContextAttributeIsOneOfConditionResourceTests
     [Fact]
     public void ANullOpenFeatureContextDoesNotMatch()
     {
-        var context = new ClientSideEvaluationContext(Contexts.EvaluationKey, openFeatureContext: null);
-
-        new ContextAttributeIsOneOfConditionResource("plan", ["pro"]).Matches(context).Should().BeFalse();
+        new ContextAttributeIsOneOfConditionResource("plan", ["pro"])
+            .Matches(Contexts.WithoutOpenFeatureContext()).Should().BeFalse();
     }
 
-    [Fact]
-    public void AKeyAndAtLeastOneValue_IsWellFormed()
-    {
-        new ContextAttributeIsOneOfConditionResource("plan", ["pro"]).Validate().Should().BeNull();
-    }
-
-    // The declared types are non-nullable, so these shapes only arrive off the wire. Both attribute
-    // conditions share this validation; ContextAttributeIsNotOneOfConditionResourceTests checks that it
-    // is wired up there too.
+    // Key and Values are declared non-nullable, so these shapes only arrive off the wire. An attribute
+    // condition with nothing to match on has no defensible answer, so it fails the evaluation rather than
+    // being matched against as far as it can be. Both attribute conditions share this reading;
+    // ContextAttributeIsNotOneOfConditionResourceTests checks it is wired up there too.
     [Theory]
     [InlineData(null, new[] { "pro" }, "a context-attribute condition with no key")]
     [InlineData("plan", null, "a context-attribute condition on 'plan' with no values")]
     [InlineData("plan", new string[0], "a context-attribute condition on 'plan' with no values")]
-    public void AMissingKeyOrValues_IsMalformed(string? key, string[]? values, string expectedProblem)
+    public void AMissingKeyOrValues_ThrowsAParseError(string? key, string[]? values, string expectedProblem)
     {
-        new ContextAttributeIsOneOfConditionResource(key!, values!).Validate().Should().Be(expectedProblem);
+        var matches = () => new ContextAttributeIsOneOfConditionResource(key!, values!)
+            .Matches(Contexts.ForRules(attributes: ("plan", "pro")));
+
+        matches.Should().Throw<ParseErrorException>()
+            .Which.Message.Should().Be(Contexts.MalformedMessage(expectedProblem));
     }
 
     [Fact]
-    public void AMissingValueInTheList_IsMalformed()
+    public void AMissingValueInTheList_ThrowsAParseError()
     {
         var values = new[] { "pro", null! };
 
-        new ContextAttributeIsOneOfConditionResource("plan", values).Validate()
-            .Should().Be("a context-attribute condition on 'plan' with a missing value");
-    }
-
-    [Fact]
-    public void MatchingAMalformedCondition_DoesNotThrow()
-    {
-        // Validation rejects the flag before evaluation reaches here, but matching still has to be total.
-        var match = () => new ContextAttributeIsOneOfConditionResource(null!, null!)
+        var matches = () => new ContextAttributeIsOneOfConditionResource("plan", values)
             .Matches(Contexts.ForRules(attributes: ("plan", "pro")));
 
-        using var scope = new AssertionScope();
-        match.Should().NotThrow();
-        match().Should().BeFalse();
+        matches.Should().Throw<ParseErrorException>()
+            .Which.Message.Should().Be(
+                Contexts.MalformedMessage("a context-attribute condition on 'plan' with a missing value"));
     }
 }

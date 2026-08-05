@@ -2,6 +2,7 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using Octopus.OpenFeature.Provider.V4;
 using Octopus.OpenFeature.Provider.V4.Conditions;
+using OpenFeature.Error;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
@@ -31,7 +32,7 @@ public class ContextAttributeIsNotOneOfConditionResourceTests
     public void ANonStringValueIsTreatedAsAbsent()
     {
         // Absent means "not one of", so the condition matches.
-        var context = new ClientSideEvaluationContext(Contexts.EvaluationKey,
+        var context = new ClientSideEvaluationContext(Contexts.Slug, Contexts.EvaluationKey,
             EvaluationContext.Builder().Set("user-id", 1234).Build());
 
         new ContextAttributeIsNotOneOfConditionResource("user-id", ["1234"]).Matches(context).Should().BeTrue();
@@ -40,20 +41,21 @@ public class ContextAttributeIsNotOneOfConditionResourceTests
     [Fact]
     public void ANullOpenFeatureContextMatches()
     {
-        var context = new ClientSideEvaluationContext(Contexts.EvaluationKey, openFeatureContext: null);
-
-        new ContextAttributeIsNotOneOfConditionResource("region", ["eu"]).Matches(context).Should().BeTrue();
+        new ContextAttributeIsNotOneOfConditionResource("region", ["eu"])
+            .Matches(Contexts.WithoutOpenFeatureContext()).Should().BeTrue();
     }
 
     [Fact]
-    public void ValidationMatchesTheIsOneOfCondition()
+    public void AMalformedConditionThrowsTheSameParseErrorAsIsOneOf()
     {
         // Both conditions carry the same fields, so they are malformed in the same ways. The cases are
-        // enumerated in ContextAttributeIsOneOfConditionResourceTests; this pins that the shared
-        // validation is wired up here as well, rather than an exclusion silently skipping it.
-        using var scope = new AssertionScope();
-        new ContextAttributeIsNotOneOfConditionResource("region", ["eu"]).Validate().Should().BeNull();
-        new ContextAttributeIsNotOneOfConditionResource("region", []).Validate()
-            .Should().Be("a context-attribute condition on 'region' with no values");
+        // enumerated in ContextAttributeIsOneOfConditionResourceTests; this pins that the shared reading
+        // is wired up here as well, rather than a missing attribute quietly making this one match.
+        var matches = () => new ContextAttributeIsNotOneOfConditionResource("region", [])
+            .Matches(Contexts.ForRules(attributes: ("region", "us")));
+
+        matches.Should().Throw<ParseErrorException>()
+            .Which.Message.Should().Be(
+                Contexts.MalformedMessage("a context-attribute condition on 'region' with no values"));
     }
 }

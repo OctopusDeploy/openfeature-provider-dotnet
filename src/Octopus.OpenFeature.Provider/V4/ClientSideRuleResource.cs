@@ -1,4 +1,3 @@
-using System.Linq;
 using Octopus.OpenFeature.Provider.V4.Conditions;
 
 namespace Octopus.OpenFeature.Provider.V4;
@@ -19,45 +18,42 @@ internal sealed class ClientSideRuleResource
     public ClientSideConditionResource[] Conditions { get; }
 
     /// <summary>
-    /// Whether every condition matches. A rule with no conditions does not match: the server only
-    /// defers rules carrying at least one, so an empty or missing set is a malformed response and must
-    /// not turn a flag on. Individual conditions are null-checked for the same reason — the declared
-    /// types are non-nullable, but nothing enforces that on a deserialised payload. Such a rule is
-    /// rejected by <see cref="Validate"/> before evaluation, so this only has to stay total.
+    /// Whether every condition matches.
+    ///
+    /// The server only defers a named rule carrying at least one condition, so a rule without either is
+    /// a malformed response and fails the evaluation rather than being read as a rule that matches
+    /// everyone. Individual conditions are null-checked for the same reason: the declared types are
+    /// non-nullable, but nothing enforces that on a deserialised payload.
+    ///
+    /// Conditions are combined with AND and stop at the first one that does not match, so a malformed
+    /// condition behind a condition that already failed is never read — the rule has its answer without
+    /// it.
     /// </summary>
     public bool Matches(ClientSideEvaluationContext context)
-        => Conditions is { Length: > 0 } conditions
-           && conditions.All(condition => condition?.Matches(context) is true);
-
-    /// <summary>
-    /// Describes why this rule is not well-formed, or returns <c>null</c> when it is. The server only
-    /// defers a named rule carrying at least one condition, so anything else is a malformed response.
-    /// </summary>
-    public string? Validate()
     {
         if (Name is null)
         {
-            return "a rule has no name";
+            throw context.ParseError("a rule has no name");
         }
 
         if (Conditions is not { Length: > 0 })
         {
-            return $"rule '{Name}' has no conditions";
+            throw context.ParseError($"rule '{Name}' has no conditions");
         }
 
         foreach (var condition in Conditions)
         {
             if (condition is null)
             {
-                return $"rule '{Name}' has a missing condition";
+                throw context.ParseError($"rule '{Name}' has a missing condition");
             }
 
-            if (condition.Validate() is { } problem)
+            if (!condition.Matches(context))
             {
-                return $"rule '{Name}' has {problem}";
+                return false;
             }
         }
 
-        return null;
+        return true;
     }
 }

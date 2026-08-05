@@ -18,18 +18,17 @@ internal sealed class PercentageByContextConditionResource : ClientSideCondition
 
     public override bool Matches(ClientSideEvaluationContext context)
     {
-        // Only a malformed response has no percentage, and the flag is rejected before evaluation
-        // reaches here. Guarded anyway so the condition never throws on a payload nothing enforces.
+        // The server always sends a percentage in 0–100. An absent one is not read as "nobody", and an
+        // out-of-range one is not clamped: reading 101 as "everyone" would turn a flag on off the back
+        // of a bad payload.
         if (Percentage is not { } percentage)
         {
-            return false;
+            throw context.ParseError("a percentage-by-context condition with no percentage");
         }
 
-        // Without an evaluation key the bucket cannot be computed at all, so the condition is unmet —
-        // the same safe degradation as an unknown condition. Only a malformed response gets here.
-        if (context.EvaluationKey is null)
+        if (percentage is < 0 or > 100)
         {
-            return false;
+            throw context.ParseError($"a percentage-by-context condition with a percentage of {percentage}");
         }
 
         var targetingKey = context.OpenFeatureContext?.TargetingKey;
@@ -45,16 +44,4 @@ internal sealed class PercentageByContextConditionResource : ClientSideCondition
         // provider libraries.
         return OctopusFeatureContext.GetNormalizedNumber(context.EvaluationKey, targetingKey!) <= percentage;
     }
-
-    /// <summary>
-    /// A percentage outside 0–100 is rejected rather than clamped: the server cannot produce one, so
-    /// reading 101 as "everyone" would turn a flag on off the back of a bad payload.
-    /// </summary>
-    public override string? Validate()
-        => Percentage switch
-        {
-            null => "a percentage-by-context condition with no percentage",
-            < 0 or > 100 => $"a percentage-by-context condition with a percentage of {Percentage}",
-            _ => null
-        };
 }
