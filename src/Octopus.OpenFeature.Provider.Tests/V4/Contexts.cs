@@ -38,13 +38,9 @@ static class Contexts
     /// evaluation key of the flag being evaluated, as <see cref="ServerSideEvaluation.Evaluate"/> pairs them.
     /// </summary>
     public static ClientSideEvaluationContext ForRules(string? targetingKey = null, params (string key, string value)[] attributes)
-        => new(Slug, EvaluationKey, OpenFeature(targetingKey, attributes));
+        => new(EvaluationKey, OpenFeature(targetingKey, attributes));
 
     /// <summary>A rule context whose caller supplied no OpenFeature context at all.</summary>
     public static ClientSideEvaluationContext WithoutOpenFeatureContext()
-        => new(Slug, EvaluationKey, openFeatureContext: null);
-
-    /// <summary>The parse error message a malformed flag reports for <paramref name="problem"/>.</summary>
-    public static string MalformedMessage(string problem)
-        => $"Feature toggle {Slug} could not be evaluated because {problem}.";
+        => new(EvaluationKey, openFeatureContext: null);
 }

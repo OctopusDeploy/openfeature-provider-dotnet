@@ -62,13 +62,13 @@ public class ClientSideRuleTests
     // wire.
     [Theory]
     [InlineData("""{ "conditions": [ { "type": "percentage-by-context", "percentage": 50 } ] }""",
-        "a rule has no name")]
-    [InlineData("""{ "name": "R", "conditions": [] }""", "rule 'R' has no conditions")]
-    [InlineData("""{ "name": "R" }""", "rule 'R' has no conditions")]
-    [InlineData("""{ "name": "R", "conditions": null }""", "rule 'R' has no conditions")]
-    [InlineData("""{ "name": "R", "conditions": [ null ] }""", "rule 'R' has a missing condition")]
+        "A rule has no name.")]
+    [InlineData("""{ "name": "R", "conditions": [] }""", "Rule 'R' has no conditions.")]
+    [InlineData("""{ "name": "R" }""", "Rule 'R' has no conditions.")]
+    [InlineData("""{ "name": "R", "conditions": null }""", "Rule 'R' has no conditions.")]
+    [InlineData("""{ "name": "R", "conditions": [ null ] }""", "Rule 'R' has a missing condition.")]
     [InlineData("""{ "name": "R", "conditions": [ { "type": "percentage-by-context" } ] }""",
-        "a percentage-by-context condition with no percentage")]
+        "A condition has no percentage.")]
     public void AMalformedRule_ThrowsAParseErrorDescribingTheProblem(string ruleJson, string expectedProblem)
     {
         var rule = JsonSerializer.Deserialize<ClientSideRule>(ruleJson, JsonSerializerOptions.Web)!;
@@ -76,7 +76,7 @@ public class ClientSideRuleTests
         var matches = () => rule.Matches(Contexts.ForRules(Contexts.TargetingKey));
 
         matches.Should().Throw<ParseErrorException>()
-            .Which.Message.Should().Be(Contexts.MalformedMessage(expectedProblem));
+            .Which.Message.Should().Be(expectedProblem);
     }
 
     [Fact]

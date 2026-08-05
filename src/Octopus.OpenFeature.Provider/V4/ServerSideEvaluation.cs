@@ -53,7 +53,7 @@ internal sealed class ServerSideEvaluation
     /// match.
     ///
     /// The response is assumed to be well-formed. A flag in neither shape, or one whose rules cannot be
-    /// read, throws the parse error described by <see cref="MalformedEvaluation"/> rather than being
+    /// read, throws a <see cref="ParseErrorException"/> rather than being
     /// evaluated as far as it can be — a bad payload should not quietly decide a flag either way. The one
     /// thing that is not malformed is a condition type this client does not recognise: that is a newer
     /// server capability, so it simply never matches and fails only its own rule.
@@ -68,12 +68,12 @@ internal sealed class ServerSideEvaluation
         {
             if (Reason is null)
             {
-                throw ParseError("the server resolved the flag but sent no reason");
+                throw new ParseErrorException("The flag was resolved by the server but has no reason.");
             }
 
             if (EvaluationKey is not null || Rules is not null)
             {
-                throw ParseError("the flag carries both a server-resolved value and client-side rules");
+                throw new ParseErrorException("The flag has both a server-resolved value and client-side rules.");
             }
 
             return Resolved(value, Reason);
@@ -81,28 +81,28 @@ internal sealed class ServerSideEvaluation
 
         if (Rules is null)
         {
-            throw ParseError("the flag has neither a value nor rules");
+            throw new ParseErrorException("The flag has neither a value nor rules.");
         }
 
         if (EvaluationKey is null)
         {
-            throw ParseError("the flag defers to the client but has no evaluation key");
+            throw new ParseErrorException("The flag defers to the client but has no evaluation key.");
         }
 
         if (Rules.Length == 0)
         {
-            throw ParseError("the flag defers to the client with no rules");
+            throw new ParseErrorException("The flag defers to the client with no rules.");
         }
 
         // Rules are read in order and stop at the first match, so the reason names the rule that decided
         // it.
-        var ruleContext = new ClientSideEvaluationContext(Slug, EvaluationKey, context);
+        var ruleContext = new ClientSideEvaluationContext(EvaluationKey, context);
 
         foreach (var rule in Rules)
         {
             if (rule is null)
             {
-                throw ParseError("the flag has a missing rule");
+                throw new ParseErrorException("The flag has a missing rule.");
             }
 
             if (rule.Matches(ruleContext))
@@ -116,5 +116,4 @@ internal sealed class ServerSideEvaluation
 
     ResolutionDetails<bool> Resolved(bool value, string reason) => new(Slug, value, reason: reason);
 
-    ParseErrorException ParseError(string problem) => MalformedEvaluation.ParseError(Slug, problem);
 }

@@ -1,3 +1,5 @@
+using OpenFeature.Error;
+
 namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
 /// <summary>
@@ -23,12 +25,12 @@ internal sealed class PercentageByContextCondition : ClientSideCondition
         // of a bad payload.
         if (Percentage is not { } percentage)
         {
-            throw context.ParseError("a percentage-by-context condition with no percentage");
+            throw new ParseErrorException("A condition has no percentage.");
         }
 
         if (percentage is < 0 or > 100)
         {
-            throw context.ParseError($"a percentage-by-context condition with a percentage of {percentage}");
+            throw new ParseErrorException($"A condition has a percentage of {percentage}.");
         }
 
         var targetingKey = context.OpenFeatureContext?.TargetingKey;

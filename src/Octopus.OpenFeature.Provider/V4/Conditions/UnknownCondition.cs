@@ -1,3 +1,5 @@
+using OpenFeature.Error;
+
 namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
 /// <summary>
@@ -25,7 +27,7 @@ internal sealed class UnknownCondition : ClientSideCondition
     {
         if (Type is null)
         {
-            throw context.ParseError("a condition with no type");
+            throw new ParseErrorException("A condition has no type.");
         }
 
         return false;

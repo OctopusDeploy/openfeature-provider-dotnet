@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using OpenFeature.Error;
 
 namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
@@ -28,17 +29,17 @@ internal static class ContextAttributes
     {
         if (key is null)
         {
-            throw context.ParseError("a context-attribute condition with no key");
+            throw new ParseErrorException("A context-attribute condition has no key.");
         }
 
         if (values is not { Length: > 0 })
         {
-            throw context.ParseError($"a context-attribute condition on '{key}' with no values");
+            throw new ParseErrorException($"A context-attribute condition on '{key}' has no values.");
         }
 
         if (values.Any(value => value is null))
         {
-            throw context.ParseError($"a context-attribute condition on '{key}' with a missing value");
+            throw new ParseErrorException($"A context-attribute condition on '{key}' has a missing value.");
         }
 
         return context.OpenFeatureContext is { } openFeatureContext

@@ -1,4 +1,5 @@
 using Octopus.OpenFeature.Provider.V4.Conditions;
+using OpenFeature.Error;
 
 namespace Octopus.OpenFeature.Provider.V4;
 
@@ -33,19 +34,19 @@ internal sealed class ClientSideRule
     {
         if (Name is null)
         {
-            throw context.ParseError("a rule has no name");
+            throw new ParseErrorException("A rule has no name.");
         }
 
         if (Conditions is not { Length: > 0 })
         {
-            throw context.ParseError($"rule '{Name}' has no conditions");
+            throw new ParseErrorException($"Rule '{Name}' has no conditions.");
         }
 
         foreach (var condition in Conditions)
         {
             if (condition is null)
             {
-                throw context.ParseError($"rule '{Name}' has a missing condition");
+                throw new ParseErrorException($"Rule '{Name}' has a missing condition.");
             }
 
             if (!condition.Matches(context))

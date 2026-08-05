@@ -37,50 +37,50 @@ public class MalformedEvaluationTests
     [Theory]
     // Neither shape, or both at once.
     [InlineData("""{ "slug": "my-feature" }""",
-        "the flag has neither a value nor rules")]
+        "The flag has neither a value nor rules.")]
     [InlineData("""{ "slug": "my-feature", "value": true, "reason": "Enabled.", "evaluationKey": "evaluation-key", "rules": [ { "name": "Beta ring", "conditions": [ { "type": "context-attribute-is-one-of", "key": "ring", "values": [ "beta" ] } ] } ] }""",
-        "the flag carries both a server-resolved value and client-side rules")]
+        "The flag has both a server-resolved value and client-side rules.")]
     [InlineData("""{ "slug": "my-feature", "value": true }""",
-        "the server resolved the flag but sent no reason")]
+        "The flag was resolved by the server but has no reason.")]
     // Deferred, but not evaluable.
     [InlineData("""{ "slug": "my-feature", "rules": [ { "name": "Beta ring", "conditions": [ { "type": "context-attribute-is-one-of", "key": "ring", "values": [ "beta" ] } ] } ] }""",
-        "the flag defers to the client but has no evaluation key")]
+        "The flag defers to the client but has no evaluation key.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [] }""",
-        "the flag defers to the client with no rules")]
+        "The flag defers to the client with no rules.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ null ] }""",
-        "the flag has a missing rule")]
+        "The flag has a missing rule.")]
     // Rules.
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "conditions": [ { "type": "context-attribute-is-one-of", "key": "ring", "values": [ "beta" ] } ] } ] }""",
-        "a rule has no name")]
+        "A rule has no name.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Beta ring", "conditions": [] } ] }""",
-        "rule 'Beta ring' has no conditions")]
+        "Rule 'Beta ring' has no conditions.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Beta ring" } ] }""",
-        "rule 'Beta ring' has no conditions")]
+        "Rule 'Beta ring' has no conditions.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Beta ring", "conditions": null } ] }""",
-        "rule 'Beta ring' has no conditions")]
+        "Rule 'Beta ring' has no conditions.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Beta ring", "conditions": [ null ] } ] }""",
-        "rule 'Beta ring' has a missing condition")]
+        "Rule 'Beta ring' has a missing condition.")]
     // Conditions with no usable type. Unlike an unrecognised type, no server version emits these.
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "key": "license", "values": [ "trial" ] } ] } ] }""",
-        "a condition with no type")]
+        "A condition has no type.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": 123, "key": "license", "values": [ "trial" ] } ] } ] }""",
-        "a condition with no type")]
+        "A condition has no type.")]
     // percentage-by-context.
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Partial rollout", "conditions": [ { "type": "percentage-by-context" } ] } ] }""",
-        "a percentage-by-context condition with no percentage")]
+        "A condition has no percentage.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Partial rollout", "conditions": [ { "type": "percentage-by-context", "percentage": 101 } ] } ] }""",
-        "a percentage-by-context condition with a percentage of 101")]
+        "A condition has a percentage of 101.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Partial rollout", "conditions": [ { "type": "percentage-by-context", "percentage": -1 } ] } ] }""",
-        "a percentage-by-context condition with a percentage of -1")]
+        "A condition has a percentage of -1.")]
     // Attribute conditions.
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": "context-attribute-is-one-of", "key": "license" } ] } ] }""",
-        "a context-attribute condition on 'license' with no values")]
+        "A context-attribute condition on 'license' has no values.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": "context-attribute-is-one-of", "key": "license", "values": [] } ] } ] }""",
-        "a context-attribute condition on 'license' with no values")]
+        "A context-attribute condition on 'license' has no values.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": "context-attribute-is-one-of", "key": "license", "values": [ null ] } ] } ] }""",
-        "a context-attribute condition on 'license' with a missing value")]
+        "A context-attribute condition on 'license' has a missing value.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": "context-attribute-is-not-one-of", "values": [ "trial" ] } ] } ] }""",
-        "a context-attribute condition with no key")]
+        "A context-attribute condition has no key.")]
     public void AMalformedFlag_ThrowsAParseError(string flagJson, string expectedProblem)
     {
         var evaluate = () => Flag(flagJson).Evaluate(MatchingContext());
@@ -88,7 +88,7 @@ public class MalformedEvaluationTests
         using var scope = new AssertionScope(expectedProblem);
         var exception = evaluate.Should().Throw<ParseErrorException>().Which;
         exception.ErrorType.Should().Be(ErrorType.ParseError);
-        exception.Message.Should().Be(Contexts.MalformedMessage(expectedProblem));
+        exception.Message.Should().Be(expectedProblem);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class MalformedEvaluationTests
         var evaluate = () => Flag(json).Evaluate(MatchingContext());
 
         evaluate.Should().Throw<ParseErrorException>()
-            .Which.Message.Should().Be(Contexts.MalformedMessage("a condition with no type"));
+            .Which.Message.Should().Be("A condition has no type.");
     }
 
     [Fact]

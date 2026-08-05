@@ -18,9 +18,8 @@ internal abstract class ClientSideCondition
     /// Whether this condition is met for the given context.
     ///
     /// The condition is assumed to have arrived in a shape its type can be evaluated in. One that did
-    /// not — a rollout with no percentage, an attribute condition with no values — throws the parse
-    /// error <see cref="ClientSideEvaluationContext.ParseError"/> builds rather than reading a value it
-    /// was not sent.
+    /// not — a rollout with no percentage, an attribute condition with no values — throws a
+    /// <see cref="OpenFeature.Error.ParseErrorException"/> rather than reading a value it was not sent.
     /// </summary>
     public abstract bool Matches(ClientSideEvaluationContext context);
 }

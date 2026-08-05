@@ -52,7 +52,7 @@ public class ContextAttributeIsOneOfConditionTests
     {
         // OpenFeature's Value.AsString is null for a non-string, and v3 segment matching skips those
         // entries too, so a numeric attribute never matches a string value.
-        var context = new ClientSideEvaluationContext(Contexts.Slug, Contexts.EvaluationKey,
+        var context = new ClientSideEvaluationContext(Contexts.EvaluationKey,
             EvaluationContext.Builder().Set("user-id", 1234).Build());
 
         new ContextAttributeIsOneOfCondition("user-id", ["1234"]).Matches(context).Should().BeFalse();
@@ -70,16 +70,16 @@ public class ContextAttributeIsOneOfConditionTests
     // being matched against as far as it can be. Both attribute conditions share this reading;
     // ContextAttributeIsNotOneOfConditionTests checks it is wired up there too.
     [Theory]
-    [InlineData(null, new[] { "pro" }, "a context-attribute condition with no key")]
-    [InlineData("plan", null, "a context-attribute condition on 'plan' with no values")]
-    [InlineData("plan", new string[0], "a context-attribute condition on 'plan' with no values")]
+    [InlineData(null, new[] { "pro" }, "A context-attribute condition has no key.")]
+    [InlineData("plan", null, "A context-attribute condition on 'plan' has no values.")]
+    [InlineData("plan", new string[0], "A context-attribute condition on 'plan' has no values.")]
     public void AMissingKeyOrValues_ThrowsAParseError(string? key, string[]? values, string expectedProblem)
     {
         var matches = () => new ContextAttributeIsOneOfCondition(key!, values!)
             .Matches(Contexts.ForRules(attributes: ("plan", "pro")));
 
         matches.Should().Throw<ParseErrorException>()
-            .Which.Message.Should().Be(Contexts.MalformedMessage(expectedProblem));
+            .Which.Message.Should().Be(expectedProblem);
     }
 
     [Fact]
@@ -92,6 +92,6 @@ public class ContextAttributeIsOneOfConditionTests
 
         matches.Should().Throw<ParseErrorException>()
             .Which.Message.Should().Be(
-                Contexts.MalformedMessage("a context-attribute condition on 'plan' with a missing value"));
+                "A context-attribute condition on 'plan' has a missing value.");
     }
 }

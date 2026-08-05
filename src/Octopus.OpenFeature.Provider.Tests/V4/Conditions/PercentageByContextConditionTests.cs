@@ -52,9 +52,9 @@ public class PercentageByContextConditionTests
     }
 
     [Theory]
-    [InlineData(null, "a percentage-by-context condition with no percentage")]
-    [InlineData(101, "a percentage-by-context condition with a percentage of 101")]
-    [InlineData(-1, "a percentage-by-context condition with a percentage of -1")]
+    [InlineData(null, "A condition has no percentage.")]
+    [InlineData(101, "A condition has a percentage of 101.")]
+    [InlineData(-1, "A condition has a percentage of -1.")]
     public void AnAbsentOrOutOfRangePercentage_ThrowsAParseError(int? percentage, string expectedProblem)
     {
         // An out-of-range percentage is rejected rather than clamped, so a bad payload cannot roll a flag
@@ -63,6 +63,6 @@ public class PercentageByContextConditionTests
             .Matches(Contexts.ForRules(Contexts.TargetingKey));
 
         matches.Should().Throw<ParseErrorException>()
-            .Which.Message.Should().Be(Contexts.MalformedMessage(expectedProblem));
+            .Which.Message.Should().Be(expectedProblem);
     }
 }

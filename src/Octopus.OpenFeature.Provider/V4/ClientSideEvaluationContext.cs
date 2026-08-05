@@ -1,24 +1,20 @@
-using OpenFeature.Error;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider.V4;
 
 /// <summary>
 /// Everything a flag's rules and conditions are evaluated against: the OpenFeature context supplied
-/// by the caller, and the slug and evaluation key of the flag being evaluated.
+/// by the caller, and the evaluation key of the flag being evaluated.
 ///
 /// A condition needing some other input widens this context rather than changing every signature.
 /// </summary>
 internal sealed class ClientSideEvaluationContext
 {
-    public ClientSideEvaluationContext(string slug, string evaluationKey, EvaluationContext? openFeatureContext)
+    public ClientSideEvaluationContext(string evaluationKey, EvaluationContext? openFeatureContext)
     {
-        Slug = slug;
         EvaluationKey = evaluationKey;
         OpenFeatureContext = openFeatureContext;
     }
-
-    public string Slug { get; }
 
     /// <summary>
     /// The key <c>percentage-by-context</c> buckets against. Non-nullable: the server always sends one
@@ -28,10 +24,4 @@ internal sealed class ClientSideEvaluationContext
 
     /// <summary>The caller's context, or <c>null</c> if they supplied none.</summary>
     public EvaluationContext? OpenFeatureContext { get; }
-
-    /// <summary>
-    /// Reports that this flag is in a shape the server could not have sent. See
-    /// <see cref="MalformedEvaluation"/>.
-    /// </summary>
-    public ParseErrorException ParseError(string problem) => MalformedEvaluation.ParseError(Slug, problem);
 }

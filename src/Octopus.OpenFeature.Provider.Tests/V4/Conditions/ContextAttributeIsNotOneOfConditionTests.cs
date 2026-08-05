@@ -32,7 +32,7 @@ public class ContextAttributeIsNotOneOfConditionTests
     public void ANonStringValueIsTreatedAsAbsent()
     {
         // Absent means "not one of", so the condition matches.
-        var context = new ClientSideEvaluationContext(Contexts.Slug, Contexts.EvaluationKey,
+        var context = new ClientSideEvaluationContext(Contexts.EvaluationKey,
             EvaluationContext.Builder().Set("user-id", 1234).Build());
 
         new ContextAttributeIsNotOneOfCondition("user-id", ["1234"]).Matches(context).Should().BeTrue();
@@ -56,6 +56,6 @@ public class ContextAttributeIsNotOneOfConditionTests
 
         matches.Should().Throw<ParseErrorException>()
             .Which.Message.Should().Be(
-                Contexts.MalformedMessage("a context-attribute condition on 'region' with no values"));
+                "A context-attribute condition on 'region' has no values.");
     }
 }
