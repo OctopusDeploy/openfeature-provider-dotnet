@@ -10,9 +10,10 @@ public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
 {
     [Theory]
     [ClassData(typeof(Cases))]
-    public async Task Evaluate(string testResponse, FixtureCase testCase)
+    public async Task Evaluate(SpecificationCase specificationCase)
     {
-        var clientIdentifier = server.Configure(testResponse);
+        var testCase = specificationCase.Case;
+        var clientIdentifier = server.Configure(specificationCase.Response);
         var configuration = new OctopusFeatureConfiguration(clientIdentifier, new ProductMetadata("test-agent"))
         {
             ServerUri = new Uri(server.Url)
