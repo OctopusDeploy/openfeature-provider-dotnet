@@ -2,7 +2,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Octopus.OpenFeature.Provider.V4;
+namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
 /// <summary>
 /// Selects the concrete <see cref="ClientSideConditionResource"/> from the camelCase <c>type</c>

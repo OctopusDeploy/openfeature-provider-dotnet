@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using Octopus.OpenFeature.Provider.V4;
+using Octopus.OpenFeature.Provider.V4.Conditions;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4;
 
