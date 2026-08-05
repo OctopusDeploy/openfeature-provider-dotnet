@@ -36,8 +36,7 @@ public class PercentageByContextConditionTests
     [Fact]
     public void AtZeroPercent_NothingMatches()
     {
-        // The lowest bucket is 1, so nothing is included at 0%. An explicit 0 is a legitimate "nobody",
-        // which is why it has to stay distinguishable from an absent percentage.
+        // The lowest bucket is 1, so nothing is included at 0%.
         new PercentageByContextCondition(0)
             .Matches(Contexts.ForRules(Contexts.TargetingKey)).Should().BeFalse();
     }
@@ -57,8 +56,6 @@ public class PercentageByContextConditionTests
     [InlineData(-1, "A condition has a percentage of -1.")]
     public void AnAbsentOrOutOfRangePercentage_ThrowsAParseError(int? percentage, string expectedProblem)
     {
-        // An out-of-range percentage is rejected rather than clamped, so a bad payload cannot roll a flag
-        // out to everyone, and an absent one is not read as a rollout to nobody.
         var matches = () => new PercentageByContextCondition(percentage)
             .Matches(Contexts.ForRules(Contexts.TargetingKey));
 

@@ -9,14 +9,8 @@ using OpenFeature.Model;
 namespace Octopus.OpenFeature.Provider.Tests.V4;
 
 /// <summary>
-/// A response the server could not legitimately have sent throws a <see cref="ParseErrorException"/>,
-/// rather than being evaluated as far as it can be. The OpenFeature SDK catches that and hands the
-/// caller the default value they passed, with <see cref="ErrorType.ParseError"/> and the exception's
-/// message — so these tests assert on what is thrown, and the specification fixture tests assert on the
-/// details the SDK returns. The shapes below mirror <c>malformed-evaluations.json</c> in the shared
-/// provider specification, so the two stay in step.
-///
-/// The deliberate exception — a condition naming a type this client does not recognise — is covered by
+/// A response the server could not legitimately have sent throws <see cref="ParseErrorException"/>. The
+/// one exception — a condition type this client does not recognise — is covered by
 /// <see cref="UnrecognisedConditionTests"/>.
 ///
 /// Every case is deserialised rather than constructed: the declared types are non-nullable, so these
@@ -24,10 +18,7 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 /// </summary>
 public class MalformedEvaluationTests
 {
-    /// <summary>
-    /// A context that satisfies every rule in the cases below, so a flag that failed to throw would
-    /// visibly turn on rather than quietly resolving to the same value by another route.
-    /// </summary>
+    /// <summary>Satisfies every rule below, so a flag that failed to throw would visibly turn on.</summary>
     static EvaluationContext MatchingContext()
         => Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial"), ("ring", "beta"));
 
@@ -92,9 +83,8 @@ public class MalformedEvaluationTests
     [Fact]
     public void AMalformedRule_FailsTheFlagEvenWhenALaterRuleMatches()
     {
-        // The second rule matches this context. A rule the client cannot make sense of is not simply
-        // skipped: evaluation reaches it and bails, rather than answering off the rules that happened to
-        // parse.
+        // The second rule matches, but the first is read before it: a rule the client cannot make sense
+        // of is not skipped in favour of the ones that happened to parse.
         const string json = """
             {
                 "slug": "my-feature",
@@ -115,8 +105,7 @@ public class MalformedEvaluationTests
     [Fact]
     public void AMalformedRule_BehindAMatchingRule_IsNeverRead()
     {
-        // Nothing checks the response up front, so a rule only fails the flag if evaluation gets as far
-        // as reading it. An earlier rule matching means the flag has its answer without the bad one.
+        // Nothing checks the response up front, so a rule only fails the flag if evaluation reaches it.
         const string json = """
             {
                 "slug": "my-feature",

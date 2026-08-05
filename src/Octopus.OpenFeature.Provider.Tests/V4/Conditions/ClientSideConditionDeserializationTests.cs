@@ -5,13 +5,9 @@ using Octopus.OpenFeature.Provider.V4.Conditions;
 namespace Octopus.OpenFeature.Provider.Tests.V4.Conditions;
 
 /// <summary>
-/// Exercises polymorphic JSON deserialisation of a single client-side condition: selecting the
-/// concrete type from the camelCase <c>type</c> discriminator, and degrading to
-/// <see cref="UnknownCondition"/> when it is unrecognised or absent. Deserialisation of a
-/// whole evaluation response is covered by <see cref="V4.ServerSideEvaluationDeserializationTests"/>.
-///
-/// Uses <see cref="JsonSerializerOptions.Web"/> — the same options the provider client uses in
-/// production — so discriminator matching and camelCase property binding are covered end to end.
+/// Polymorphic deserialisation of a single condition. Uses <see cref="JsonSerializerOptions.Web"/>, as
+/// the provider client does; whole responses are covered by
+/// <see cref="V4.ServerSideEvaluationDeserializationTests"/>.
 /// </summary>
 public class ClientSideConditionDeserializationTests
 {

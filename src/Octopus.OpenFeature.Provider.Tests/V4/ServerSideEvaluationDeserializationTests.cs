@@ -6,13 +6,9 @@ using Octopus.OpenFeature.Provider.V4.Conditions;
 namespace Octopus.OpenFeature.Provider.Tests.V4;
 
 /// <summary>
-/// Exercises JSON deserialisation of a v4 evaluation response: both flag shapes, the array the
-/// endpoint returns, and the rules and conditions hanging off a deferred flag. Deserialisation of an
-/// individual condition is covered by
-/// <see cref="Conditions.ClientSideConditionDeserializationTests"/>.
-///
-/// Uses <see cref="JsonSerializerOptions.Web"/> — the same options the provider client uses in
-/// production — so camelCase property binding and null-omission behaviour are covered end to end.
+/// Deserialisation of a v4 evaluation response: both flag shapes and the array the endpoint returns.
+/// Uses <see cref="JsonSerializerOptions.Web"/>, as the provider client does; individual conditions are
+/// covered by <see cref="Conditions.ClientSideConditionDeserializationTests"/>.
 /// </summary>
 public class ServerSideEvaluationDeserializationTests
 {

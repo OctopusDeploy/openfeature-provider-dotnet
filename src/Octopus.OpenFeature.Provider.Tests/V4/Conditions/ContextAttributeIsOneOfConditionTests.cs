@@ -35,10 +35,8 @@ public class ContextAttributeIsOneOfConditionTests
     [InlineData("plan", "pro", "Plan", "free")]
     public void EveryEntryWhoseKeyMatchesIsChecked(string firstKey, string firstValue, string secondKey, string secondValue)
     {
-        // A context can carry several case variants of the same key. Every one of them has to be
-        // considered: AsDictionary returns an immutable dictionary ordered by key hash, and .NET
-        // randomises string hashing per process, so checking only the first matching entry made the
-        // same flag, context and rule evaluate differently from one process to the next.
+        // AsDictionary is ordered by key hash and .NET randomises string hashing per process, so
+        // checking only the first matching entry evaluated differently from one run to the next.
         var condition = new ContextAttributeIsOneOfCondition("plan", ["pro"]);
 
         var context = Contexts.ForRules(attributes: [(firstKey, firstValue), (secondKey, secondValue)]);

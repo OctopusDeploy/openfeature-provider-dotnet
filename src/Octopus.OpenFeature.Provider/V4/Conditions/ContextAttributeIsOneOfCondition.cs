@@ -2,7 +2,7 @@ namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
 /// <summary>
 /// Matches when the context attribute <see cref="Key"/> is one of <see cref="Values"/>. A missing
-/// attribute is not one of them, so it does not match.
+/// attribute does not match.
 /// </summary>
 internal sealed class ContextAttributeIsOneOfCondition : ClientSideCondition
 {

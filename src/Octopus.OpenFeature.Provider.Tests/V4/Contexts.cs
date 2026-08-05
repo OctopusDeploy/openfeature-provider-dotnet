@@ -8,9 +8,8 @@ namespace Octopus.OpenFeature.Provider.Tests.V4;
 /// </summary>
 static class Contexts
 {
-    // OctopusFeatureContext.GetNormalizedNumber("evaluation-key", "targeting-key") == 13, so a
-    // targeting key of "targeting-key" is inside a >=13% rollout and outside a <13% one. The pair of
-    // rollout tests either side of the bucket pins that value, so it cannot drift unnoticed.
+    // GetNormalizedNumber("evaluation-key", "targeting-key") == 13, so this targeting key is inside a
+    // >=13% rollout and outside a <13% one. The rollout tests either side of the bucket pin that value.
     public const string Slug = "my-feature";
     public const string EvaluationKey = "evaluation-key";
     public const string TargetingKey = "targeting-key";
@@ -33,14 +32,11 @@ static class Contexts
         return builder.Build();
     }
 
-    /// <summary>
-    /// What a rule or condition is evaluated against: an OpenFeature context paired with the slug and
-    /// evaluation key of the flag being evaluated, as <see cref="ServerSideEvaluation.Evaluate"/> pairs them.
-    /// </summary>
+    /// <summary>What a rule or condition is evaluated against.</summary>
     public static ClientSideEvaluationContext ForRules(string? targetingKey = null, params (string key, string value)[] attributes)
         => new(EvaluationKey, OpenFeature(targetingKey, attributes));
 
-    /// <summary>A rule context whose caller supplied no OpenFeature context at all.</summary>
+    /// <summary>A rule context whose caller supplied no context at all.</summary>
     public static ClientSideEvaluationContext WithoutOpenFeatureContext()
         => new(EvaluationKey, openFeatureContext: null);
 }

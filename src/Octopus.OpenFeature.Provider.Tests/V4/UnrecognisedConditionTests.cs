@@ -7,14 +7,10 @@ using OpenFeature.Constant;
 namespace Octopus.OpenFeature.Provider.Tests.V4;
 
 /// <summary>
-/// A condition naming a type this version of the provider does not recognise is a capability from a
-/// newer server, not a bad payload. It never matches, so it fails its own rule and nothing else — no
-/// parse error, and other rules still decide the flag. Mirrors <c>unrecognised-conditions.json</c> in
-/// the shared provider specification.
-///
-/// This is the one deliberate departure from <see cref="MalformedEvaluationTests"/>, which is what
-/// happens to every other shape the server could not have sent — including a condition with no type at
-/// all.
+/// A condition naming a type this version does not recognise is a capability from a newer server, not a
+/// bad payload: it fails its own rule and nothing else. The deliberate departure from
+/// <see cref="MalformedEvaluationTests"/>, which covers every other shape — including a condition with
+/// no type at all.
 /// </summary>
 public class UnrecognisedConditionTests
 {
@@ -39,8 +35,6 @@ public class UnrecognisedConditionTests
 
         var result = Flag(json).Evaluate(Contexts.OpenFeature(Contexts.TargetingKey, ("license", "trial")));
 
-        // An unevaluable rule leaves the flag off; it does not error, so the caller's default value never
-        // comes into it.
         using var scope = new AssertionScope();
         result.Value.Should().BeFalse();
         result.ErrorType.Should().Be(ErrorType.None);

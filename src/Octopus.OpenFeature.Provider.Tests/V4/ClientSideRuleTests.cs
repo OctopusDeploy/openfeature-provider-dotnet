@@ -34,8 +34,7 @@ public class ClientSideRuleTests
     [Fact]
     public void AMalformedConditionBehindAFailingOne_IsNeverRead()
     {
-        // Conditions stop at the first one that does not match, so the rule has its answer without
-        // reading the rest. A malformed condition only fails the flag if evaluation gets to it.
+        // Conditions stop at the first that does not match, so the rest are never read.
         var rule = Rule(
             new ContextAttributeIsOneOfCondition("plan", ["pro"]),
             new PercentageByContextCondition(percentage: null));
@@ -43,13 +42,8 @@ public class ClientSideRuleTests
         rule.Matches(Contexts.ForRules(Contexts.TargetingKey, ("plan", "free"))).Should().BeFalse();
     }
 
-    // The server only defers a named rule carrying at least one condition it wants the client to check,
-    // so anything else is a malformed response. The rule is named in the problem so whoever reads the
-    // error knows which one to look at.
-    //
-    // Deserialised rather than constructed: Name and Conditions are declared non-nullable, so a missing
-    // name, and a null or absent conditions array — or a null element within it — can only arrive off the
-    // wire.
+    // Deserialised rather than constructed: Name and Conditions are declared non-nullable, so these
+    // shapes only arrive off the wire.
     [Theory]
     [InlineData("""{ "conditions": [ { "type": "percentage-by-context", "percentage": 50 } ] }""",
         "A rule has no name.")]

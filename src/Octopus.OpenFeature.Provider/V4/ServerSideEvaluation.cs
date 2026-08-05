@@ -5,17 +5,10 @@ using OpenFeature.Model;
 namespace Octopus.OpenFeature.Provider.V4;
 
 /// <summary>
-/// How far the OctoToggle v4 evaluations endpoint got with a single feature flag, and how the provider
-/// library finishes the job. The endpoint returns an array of these.
-///
-/// A flag comes back in one of two shapes:
-/// <list type="bullet">
-/// <item>Resolved by the server — <see cref="Value"/> and <see cref="Reason"/> are populated, and
-/// <see cref="Evaluate"/> surfaces them unchanged.</item>
-/// <item>Deferred to the client — <see cref="EvaluationKey"/> and <see cref="Rules"/> are populated and
-/// <see cref="Evaluate"/> evaluates the remaining client-side conditions.</item>
-/// </list>
-/// Properties that do not apply to the returned shape are omitted from the JSON.
+/// A single feature flag from the v4 evaluations endpoint, either resolved by the server
+/// (<see cref="Value"/> and <see cref="Reason"/>) or deferred to the client
+/// (<see cref="EvaluationKey"/> and <see cref="Rules"/>). Properties that do not apply to the returned
+/// shape are omitted from the JSON.
 /// </summary>
 internal sealed class ServerSideEvaluation
 {
@@ -48,23 +41,14 @@ internal sealed class ServerSideEvaluation
     public ClientSideRule[]? Rules { get; }
 
     /// <summary>
-    /// Resolves the flag, evaluating the client-side portion of the response if the server left one. A
-    /// deferred flag is enabled when any rule matches, and a rule matches when all of its conditions
-    /// match.
+    /// Resolves the flag, evaluating the client-side rules if the server left any: the flag is enabled
+    /// when any rule matches.
     ///
-    /// The response is assumed to be well-formed. A flag in neither shape, or one whose rules cannot be
-    /// read, throws a <see cref="ParseErrorException"/> rather than being
-    /// evaluated as far as it can be — a bad payload should not quietly decide a flag either way. The one
-    /// thing that is not malformed is a condition type this client does not recognise: that is a newer
-    /// server capability, so it simply never matches and fails only its own rule.
-    ///
-    /// The caller's default value is not a parameter: when this throws, the OpenFeature SDK is the one
-    /// that hands it back.
+    /// A response in neither shape throws <see cref="ParseErrorException"/>, which the OpenFeature SDK
+    /// turns into the caller's default value.
     /// </summary>
     public ResolutionDetails<bool> Evaluate(EvaluationContext? context)
     {
-        // The server resolved the flag; surface its value and reason unchanged. A reason is not
-        // required — the flag still resolves, just without one.
         if (Value is { } value)
         {
             if (EvaluationKey is not null || Rules is not null)
@@ -90,8 +74,6 @@ internal sealed class ServerSideEvaluation
             throw new ParseErrorException("The flag defers to the client with no rules.");
         }
 
-        // Rules are read in order and stop at the first match, so the reason names the rule that decided
-        // it.
         var ruleContext = new ClientSideEvaluationContext(EvaluationKey, context);
 
         foreach (var rule in Rules)
@@ -111,5 +93,4 @@ internal sealed class ServerSideEvaluation
     }
 
     ResolutionDetails<bool> Resolved(bool value, string? reason) => new(Slug, value, reason: reason);
-
 }

@@ -2,8 +2,8 @@ namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
 /// <summary>
 /// Matches when the context attribute <see cref="Key"/> is not one of <see cref="Values"/>. A missing
-/// attribute is not one of them, so it matches — the analog of OctoToggle's tenant-side
-/// <c>TenantIsNotOneOf</c>, where an untenanted caller always matches.
+/// attribute matches, mirroring OctoToggle's <c>TenantIsNotOneOf</c>, where an untenanted caller always
+/// matches.
 /// </summary>
 internal sealed class ContextAttributeIsNotOneOfCondition : ClientSideCondition
 {

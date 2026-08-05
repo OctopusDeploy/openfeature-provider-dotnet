@@ -7,10 +7,9 @@ using OpenFeature.Constant;
 namespace Octopus.OpenFeature.Provider.Tests.V4;
 
 /// <summary>
-/// <see cref="ServerSideEvaluation.Evaluate"/> against a well-formed response: choosing between the
-/// server's answer and the client's rules, combining rules, and the reason reported. Rule and condition
-/// matching are covered by <see cref="ClientSideRuleTests"/> and the tests in <c>V4/Conditions</c>; a
-/// response the client refuses to evaluate is covered by <see cref="MalformedEvaluationTests"/>.
+/// <see cref="ServerSideEvaluation.Evaluate"/> against a well-formed response. Rules and conditions are
+/// covered by <see cref="ClientSideRuleTests"/> and <c>V4/Conditions</c>; malformed responses by
+/// <see cref="MalformedEvaluationTests"/>.
 /// </summary>
 public class ServerSideEvaluationTests
 {
@@ -40,8 +39,6 @@ public class ServerSideEvaluationTests
     [Fact]
     public void ServerResolvedFlagWithNoReason_StillResolves()
     {
-        // A reason is not required. The server has already decided the value, so the flag resolves
-        // without one rather than failing over a field nothing depends on.
         var result = ServerResolved(true, reason: null).Evaluate(Contexts.OpenFeature());
 
         using var scope = new AssertionScope();
@@ -66,8 +63,7 @@ public class ServerSideEvaluationTests
     [Fact]
     public void NoMatchingRule_ResolvesToFalseWithTheDidNotMatchReason()
     {
-        // A flag whose rules simply did not match is off, not defaulted: it resolves rather than erroring,
-        // so the caller's default value never comes into it.
+        // Off, not defaulted: this resolves rather than erroring, so no default value is involved.
         var flag = Deferred(RuleMatching("beta-testers", "beta"));
 
         var result = flag.Evaluate(Contexts.OpenFeature(attributes: ("plan", "free")));

@@ -5,12 +5,9 @@ using System.Text.Json.Serialization;
 namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
 /// <summary>
-/// Selects the concrete <see cref="ClientSideCondition"/> from the camelCase <c>type</c>
-/// discriminator. An unrecognised (or absent) discriminator deserialises to
-/// <see cref="UnknownCondition"/> rather than throwing, so a condition type introduced by a newer
-/// server degrades safely on an older client.
-///
-/// The provider only ever reads these conditions, so serialisation is not implemented.
+/// Selects the concrete <see cref="ClientSideCondition"/> from the camelCase <c>type</c> discriminator.
+/// An unrecognised or absent discriminator deserialises to <see cref="UnknownCondition"/> rather than
+/// throwing, so a condition type introduced by a newer server degrades safely on an older client.
 /// </summary>
 internal sealed class ClientSideConditionJsonConverter : JsonConverter<ClientSideCondition>
 {
