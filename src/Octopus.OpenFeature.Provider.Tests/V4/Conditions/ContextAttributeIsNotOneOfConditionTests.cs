@@ -45,17 +45,27 @@ public class ContextAttributeIsNotOneOfConditionTests
             .Matches(Contexts.WithoutOpenFeatureContext()).Should().BeTrue();
     }
 
-    [Fact]
-    public void AMalformedConditionThrowsTheSameParseErrorAsIsOneOf()
+    [Theory]
+    [InlineData(null, new[] { "eu" }, "A condition has no key.")]
+    [InlineData("region", null, "A condition has no values.")]
+    [InlineData("region", new string[0], "A condition has no values.")]
+    public void AMissingKeyOrValues_ThrowsAParseError(string? key, string[]? values, string expectedMessage)
     {
-        // Both conditions carry the same fields, so they are malformed in the same ways. The cases are
-        // enumerated in ContextAttributeIsOneOfConditionTests; this pins that the shared reading
-        // is wired up here as well, rather than a missing attribute quietly making this one match.
-        var matches = () => new ContextAttributeIsNotOneOfCondition("region", [])
+        var matches = () => new ContextAttributeIsNotOneOfCondition(key!, values!)
+            .Matches(Contexts.ForRules(attributes: ("region", "us")));
+
+        matches.Should().Throw<ParseErrorException>().Which.Message.Should().Be(expectedMessage);
+    }
+
+    [Fact]
+    public void AMissingValueInTheList_ThrowsAParseError()
+    {
+        var values = new[] { "eu", null! };
+
+        var matches = () => new ContextAttributeIsNotOneOfCondition("region", values)
             .Matches(Contexts.ForRules(attributes: ("region", "us")));
 
         matches.Should().Throw<ParseErrorException>()
-            .Which.Message.Should().Be(
-                "A condition has no values.");
+            .Which.Message.Should().Be("A condition has a missing value.");
     }
 }

@@ -65,10 +65,8 @@ public class ContextAttributeIsOneOfConditionTests
             .Matches(Contexts.WithoutOpenFeatureContext()).Should().BeFalse();
     }
 
-    // Key and Values are declared non-nullable, so these shapes only arrive off the wire. An attribute
-    // condition with nothing to match on has no defensible answer, so it fails the evaluation rather than
-    // being matched against as far as it can be. Both attribute conditions share this reading;
-    // ContextAttributeIsNotOneOfConditionTests checks it is wired up there too.
+    // Key and Values are declared non-nullable, so these shapes only arrive off the wire. A condition
+    // with nothing to match on has no defensible answer, so it fails the evaluation.
     [Theory]
     [InlineData(null, new[] { "pro" }, "A condition has no key.")]
     [InlineData("plan", null, "A condition has no values.")]
