@@ -40,14 +40,9 @@ internal static class ClientSideEvaluator
     static ResolutionDetails<bool> Resolved(EvaluationResource flag, bool value, string? reason)
         => new(flag.Slug, value, reason: reason);
 
-    // A rule matches when every one of its conditions matches.
-    //
-    // A rule carrying no conditions does not match. The server never emits one — it only defers a rule
-    // that has at least one client-side condition — so this only arises from a malformed response,
-    // where a rule with nothing to check is meaningless rather than universally true. Treating it as
-    // unmet keeps it consistent with an unknown condition: a rule the client cannot make sense of
-    // never turns a flag on. The rule and its conditions are null-checked for the same reason — the
-    // declared types are non-nullable, but nothing enforces that on a deserialised payload.
+    // A rule with no conditions does not match: the server only defers rules carrying at least one, so
+    // an empty or missing set is a malformed response and must not turn a flag on. The nullable
+    // parameters are deliberate — a deserialised payload can hold nulls the declared types forbid.
     static bool Matches(ClientSideRuleResource? rule, string? evaluationKey, EvaluationContext? context)
         => rule?.Conditions is { Length: > 0 } conditions
            && conditions.All(condition => Matches(condition, evaluationKey, context));
@@ -87,14 +82,10 @@ internal static class ClientSideEvaluator
         return OctopusFeatureContext.GetNormalizedNumber(evaluationKey, targetingKey!) <= condition.Percentage;
     }
 
-    // Matches when *any* context entry whose key matches (case-insensitively, as v3 segment matching
-    // does) holds one of the values. Checking every matching entry rather than just the first matters
-    // because a context can carry several case variants of the same key ("Plan" and "plan"), and
-    // EvaluationContext.AsDictionary is an immutable dictionary whose iteration order is arbitrary —
-    // picking the first would make the outcome depend on that order. This mirrors the Any-based
-    // matching in OctopusFeatureContext.MatchesSegment.
-    //
-    // A non-string value (Value.AsString is null) is treated as absent, again matching v3.
+    // Mirrors v3 segment matching (OctopusFeatureContext.MatchesSegment): keys and values compare
+    // case-insensitively and a non-string value counts as absent. *Every* entry whose key matches is
+    // checked — a context can hold several case variants of one key, and AsDictionary's order is
+    // unstable, so taking the first evaluated inconsistently from one process to the next.
     static bool AttributeIsOneOf(string key, string[] values, EvaluationContext? context)
         => context is not null && context.AsDictionary().Any(entry =>
             entry.Key.Equals(key, StringComparison.OrdinalIgnoreCase)
