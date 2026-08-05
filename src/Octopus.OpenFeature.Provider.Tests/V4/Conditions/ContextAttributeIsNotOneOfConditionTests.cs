@@ -56,6 +56,6 @@ public class ContextAttributeIsNotOneOfConditionTests
 
         matches.Should().Throw<ParseErrorException>()
             .Which.Message.Should().Be(
-                "A context-attribute condition on 'region' has no values.");
+                "A condition has no values.");
     }
 }

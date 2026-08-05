@@ -70,9 +70,9 @@ public class ContextAttributeIsOneOfConditionTests
     // being matched against as far as it can be. Both attribute conditions share this reading;
     // ContextAttributeIsNotOneOfConditionTests checks it is wired up there too.
     [Theory]
-    [InlineData(null, new[] { "pro" }, "A context-attribute condition has no key.")]
-    [InlineData("plan", null, "A context-attribute condition on 'plan' has no values.")]
-    [InlineData("plan", new string[0], "A context-attribute condition on 'plan' has no values.")]
+    [InlineData(null, new[] { "pro" }, "A condition has no key.")]
+    [InlineData("plan", null, "A condition has no values.")]
+    [InlineData("plan", new string[0], "A condition has no values.")]
     public void AMissingKeyOrValues_ThrowsAParseError(string? key, string[]? values, string expectedProblem)
     {
         var matches = () => new ContextAttributeIsOneOfCondition(key!, values!)
@@ -92,6 +92,6 @@ public class ContextAttributeIsOneOfConditionTests
 
         matches.Should().Throw<ParseErrorException>()
             .Which.Message.Should().Be(
-                "A context-attribute condition on 'plan' has a missing value.");
+                "A condition has a missing value.");
     }
 }
