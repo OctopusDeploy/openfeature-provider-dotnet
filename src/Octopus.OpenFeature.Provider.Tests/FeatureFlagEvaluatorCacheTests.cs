@@ -7,7 +7,7 @@ using Octopus.OpenFeature.Provider.V4;
 
 namespace Octopus.OpenFeature.Provider.Tests;
 
-public class OctopusFeatureContextProviderTests
+public class FeatureFlagEvaluatorCacheTests
 {
     const string Slug = "test-feature";
 
@@ -30,7 +30,7 @@ public class OctopusFeatureContextProviderTests
                 rules: null)
         ], contentHash);
 
-    class MockOctopusFeatureClient(EvaluationResponse? evaluationResponse) : IOctopusFeatureClient
+    class MockFeatureFlagApiClient(EvaluationResponse? evaluationResponse) : IFeatureFlagApiClient
     {
         EvaluationResponse? evaluationResponse = evaluationResponse;
 
@@ -51,32 +51,32 @@ public class OctopusFeatureContextProviderTests
     }
 
     [Fact]
-    public void WhenInstantiated_ProvidesAnEmptyEvaluationContext()
+    public void WhenInstantiated_ProvidesAnEmptyEvaluator()
     {
-        var provider = new OctopusFeatureContextProvider(configuration, new MockOctopusFeatureClient(null), NullLogger.Instance);
+        var cache = new FeatureFlagEvaluatorCache(configuration, new MockFeatureFlagApiClient(null), NullLogger.Instance);
 
-        var context = provider.GetEvaluationContext();
+        var evaluator = cache.GetEvaluator();
 
         using var scope = new AssertionScope();
-        context.Should().NotBeNull();
-        context.ContentHash.Length.Should().Be(0);
+        evaluator.Should().NotBeNull();
+        evaluator.ContentHash.Length.Should().Be(0);
     }
 
     [Fact]
-    public async Task WhenInitialized_ProvidesRetrievedEvaluationContext()
+    public async Task WhenInitialized_ProvidesTheRetrievedEvaluator()
     {
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
-        var client = new MockOctopusFeatureClient(Response(value: true, contentHash));
+        var client = new MockFeatureFlagApiClient(Response(value: true, contentHash));
 
-        var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
-        await provider.Initialize();
-        var context = provider.GetEvaluationContext();
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, NullLogger.Instance);
+        await cache.Initialize();
+        var evaluator = cache.GetEvaluator();
 
         using var scope = new AssertionScope();
-        context.Should().NotBeNull();
-        context.ContentHash.Should().BeEquivalentTo(contentHash);
-        context.Evaluate(Slug, context: null).Value.Should().BeTrue();
+        evaluator.Should().NotBeNull();
+        evaluator.ContentHash.Should().BeEquivalentTo(contentHash);
+        evaluator.Evaluate(Slug, context: null).Value.Should().BeTrue();
     }
 
     [Fact]
@@ -84,17 +84,17 @@ public class OctopusFeatureContextProviderTests
     {
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
-        var client = new MockOctopusFeatureClient(Response(value: true, contentHash));
+        var client = new MockFeatureFlagApiClient(Response(value: true, contentHash));
 
-        // Initialize the provider
-        var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
-        await provider.Initialize();
+        // Initialize the cache
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, NullLogger.Instance);
+        await cache.Initialize();
 
         // Validate the initial state
         using var scope = new AssertionScope();
-        var context = provider.GetEvaluationContext();
-        context.ContentHash.Should().BeEquivalentTo(contentHash);
-        context.Evaluate(Slug, context: null).Value.Should().BeTrue();
+        var evaluator = cache.GetEvaluator();
+        evaluator.ContentHash.Should().BeEquivalentTo(contentHash);
+        evaluator.Evaluate(Slug, context: null).Value.Should().BeTrue();
 
         // Simulate a change in the available feature flags
         client.ChangeEvaluations(Response(value: false, [0x01, 0x02, 0x03, 0x05]));
@@ -103,22 +103,22 @@ public class OctopusFeatureContextProviderTests
         await Task.Delay(TimeSpan.FromSeconds(5));
 
         // Validate the updated evaluations are available
-        context = provider.GetEvaluationContext();
-        context.ContentHash.Should().BeEquivalentTo(new byte[] { 0x01, 0x02, 0x03, 0x05 });
-        context.Evaluate(Slug, context: null).Value.Should().BeFalse();
+        evaluator = cache.GetEvaluator();
+        evaluator.ContentHash.Should().BeEquivalentTo(new byte[] { 0x01, 0x02, 0x03, 0x05 });
+        evaluator.Evaluate(Slug, context: null).Value.Should().BeFalse();
     }
 
     [Fact]
-    public async Task WhenInitialized_AndRefreshFails_RetainsExistingContextAndLogsError()
+    public async Task WhenInitialized_AndRefreshFails_RetainsTheExistingEvaluatorAndLogsError()
     {
         var logger = new FakeLogger();
 
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
-        var client = new MockOctopusFeatureClient(Response(value: true, contentHash));
+        var client = new MockFeatureFlagApiClient(Response(value: true, contentHash));
 
-        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
-        await provider.Initialize();
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger);
+        await cache.Initialize();
 
         // Simulate a failed fetch
         client.ChangeEvaluations(null);
@@ -127,50 +127,50 @@ public class OctopusFeatureContextProviderTests
 
         try
         {
-            var context = provider.GetEvaluationContext();
+            var evaluator = cache.GetEvaluator();
 
             using var scope = new AssertionScope();
             logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
-            context.ContentHash.Should().BeEquivalentTo(contentHash);
+            evaluator.ContentHash.Should().BeEquivalentTo(contentHash);
         }
         finally
         {
-            await provider.Shutdown();
+            await cache.Shutdown();
         }
     }
 
     [Fact]
-    public async Task WhenInitialFetchReturnsNothing_AndRefreshSucceeds_ContextIsPopulated()
+    public async Task WhenInitialFetchReturnsNothing_AndRefreshSucceeds_TheEvaluatorIsPopulated()
     {
         var logger = new FakeLogger();
 
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
         // Initialize with a null client so that first fetch fails
-        var client = new MockOctopusFeatureClient(null);
-        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
-        await provider.Initialize();
+        var client = new MockFeatureFlagApiClient(null);
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger);
+        await cache.Initialize();
 
         try
         {
-            // Check that the context is empty
-            provider.GetEvaluationContext().ContentHash.Length.Should().Be(0);
+            // Check that the evaluator is empty
+            cache.GetEvaluator().ContentHash.Length.Should().Be(0);
 
             // Update client to return valid evaluations and wait for refresh
             client.ChangeEvaluations(Response(value: false, contentHash));
             await Task.Delay(TimeSpan.FromSeconds(5));
 
-            // Assert that the context is now correctly populated
-            provider.GetEvaluationContext().ContentHash.Should().BeEquivalentTo(contentHash);
+            // Assert that the evaluator is now correctly populated
+            cache.GetEvaluator().ContentHash.Should().BeEquivalentTo(contentHash);
         }
         finally
         {
-            await provider.Shutdown();
+            await cache.Shutdown();
         }
     }
 
     [Fact]
-    public async Task WhenRefreshReturnsNothing_AndSubsequentRefreshSucceeds_ContextIsUpdated()
+    public async Task WhenRefreshReturnsNothing_AndSubsequentRefreshSucceeds_TheEvaluatorIsUpdated()
     {
         var logger = new FakeLogger();
 
@@ -178,9 +178,9 @@ public class OctopusFeatureContextProviderTests
         byte[] updatedHash = [0x01, 0x02, 0x03, 0x05];
 
         // Initialize with a client that returns valid evaluations
-        var client = new MockOctopusFeatureClient(Response(value: true, initialHash));
-        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
-        await provider.Initialize();
+        var client = new MockFeatureFlagApiClient(Response(value: true, initialHash));
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger);
+        await cache.Initialize();
 
         try
         {
@@ -188,25 +188,25 @@ public class OctopusFeatureContextProviderTests
             client.ChangeEvaluations(null);
             await Task.Delay(TimeSpan.FromSeconds(5));
 
-            // Assert that failed refresh is logged and old context is retained
+            // Assert that failed refresh is logged and the old evaluator is retained
             logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
-            provider.GetEvaluationContext().ContentHash.Should().BeEquivalentTo(initialHash);
+            cache.GetEvaluator().ContentHash.Should().BeEquivalentTo(initialHash);
 
             // Update client to return valid evaluations again and wait for refresh
             client.ChangeEvaluations(Response(value: false, updatedHash));
             await Task.Delay(TimeSpan.FromSeconds(5));
 
-            // Assert that the context is now correctly populated
-            var context = provider.GetEvaluationContext();
-            context.ContentHash.Should().BeEquivalentTo(updatedHash);
+            // Assert that the evaluator is now correctly populated
+            var evaluator = cache.GetEvaluator();
+            evaluator.ContentHash.Should().BeEquivalentTo(updatedHash);
         }
         finally
         {
-            await provider.Shutdown();
+            await cache.Shutdown();
         }
     }
 
-    class ThrowsOnRefreshClient(EvaluationResponse initial) : IOctopusFeatureClient
+    class ThrowsOnRefreshClient(EvaluationResponse initial) : IFeatureFlagApiClient
     {
         public readonly string ErrorMessage = "Oops! Simulated refresh error";
 
@@ -229,8 +229,8 @@ public class OctopusFeatureContextProviderTests
 
         // Initialize with a client that will throw on refresh
         var client = new ThrowsOnRefreshClient(Response(value: true, contentHash));
-        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
-        await provider.Initialize();
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger);
+        await cache.Initialize();
 
         // Wait for cache to clear and refresh attempt to occur
         await Task.Delay(TimeSpan.FromSeconds(5));
@@ -245,11 +245,11 @@ public class OctopusFeatureContextProviderTests
         }
         finally
         {
-            await provider.Shutdown();
+            await cache.Shutdown();
         }
     }
 
-    class AlwaysFailsFeatureClient : IOctopusFeatureClient
+    class AlwaysFailsFeatureFlagApiClient : IFeatureFlagApiClient
     {
         public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
         {
@@ -265,17 +265,17 @@ public class OctopusFeatureContextProviderTests
     [Fact]
     public async Task WhenFeatureEvaluationRetrievalFails_LogsError()
     {
-        var client = new AlwaysFailsFeatureClient();
+        var client = new AlwaysFailsFeatureFlagApiClient();
         var logger = new FakeLogger();
-        var provider = new OctopusFeatureContextProvider(configuration, client, logger);
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger);
 
-        await provider.Initialize();
+        await cache.Initialize();
 
         using var scope = new AssertionScope();
-        provider.GetEvaluationContext().ContentHash.Length.Should().Be(0);
+        cache.GetEvaluator().ContentHash.Length.Should().Be(0);
         logger.LatestRecord.Level.Should().Be(LogLevel.Error);
         logger.LatestRecord.Message.Should().StartWith("Failed to retrieve feature manifest");
 
-        await provider.Shutdown();
+        await cache.Shutdown();
     }
 }

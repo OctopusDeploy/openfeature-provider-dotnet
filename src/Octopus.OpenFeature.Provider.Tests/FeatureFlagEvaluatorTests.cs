@@ -9,7 +9,7 @@ using OpenFeature.Error;
 
 namespace Octopus.OpenFeature.Provider.Tests;
 
-public class OctopusFeatureContextTests
+public class FeatureFlagEvaluatorTests
 {
     static ServerSideEvaluation Flag(string slug, bool value)
         => new(
@@ -19,18 +19,18 @@ public class OctopusFeatureContextTests
             evaluationKey: null,
             rules: null);
 
-    static OctopusFeatureContext ContextWith(params ServerSideEvaluation[] evaluations)
-        => ContextWith(NullLoggerFactory.Instance, evaluations);
+    static FeatureFlagEvaluator EvaluatorFor(params ServerSideEvaluation[] evaluations)
+        => EvaluatorFor(NullLoggerFactory.Instance, evaluations);
 
-    static OctopusFeatureContext ContextWith(ILoggerFactory loggerFactory, params ServerSideEvaluation[] evaluations)
+    static FeatureFlagEvaluator EvaluatorFor(ILoggerFactory loggerFactory, params ServerSideEvaluation[] evaluations)
         => new(new EvaluationResponse(evaluations, []), loggerFactory);
 
     [Fact]
     public void Evaluate_WhenTheFlagIsInTheResponse_ReturnsTheFlagsEvaluation()
     {
-        var featureContext = ContextWith(Flag("test-feature", true));
+        var evaluator = EvaluatorFor(Flag("test-feature", true));
 
-        var result = featureContext.Evaluate("test-feature", context: null);
+        var result = evaluator.Evaluate("test-feature", context: null);
 
         using var scope = new AssertionScope();
         result.Value.Should().BeTrue();
@@ -40,9 +40,9 @@ public class OctopusFeatureContextTests
     [Fact]
     public void Evaluate_WhenTheSlugDiffersOnlyInCase_ReturnsTheFlagValueAndTheFlagsOwnSlug()
     {
-        var featureContext = ContextWith(Flag("test-feature", true));
+        var evaluator = EvaluatorFor(Flag("test-feature", true));
 
-        var result = featureContext.Evaluate("Test-Feature", context: null);
+        var result = evaluator.Evaluate("Test-Feature", context: null);
 
         using var scope = new AssertionScope();
         result.Value.Should().BeTrue();
@@ -52,9 +52,9 @@ public class OctopusFeatureContextTests
     [Fact]
     public void Evaluate_WhenTheFlagKeyIsNotASlug_ThrowsFlagNotFound()
     {
-        var featureContext = ContextWith(Flag("this-is-clearly-not-a-slug", true));
+        var evaluator = EvaluatorFor(Flag("this-is-clearly-not-a-slug", true));
 
-        var evaluate = () => featureContext.Evaluate("This is clearly not a slug!", context: null);
+        var evaluate = () => evaluator.Evaluate("This is clearly not a slug!", context: null);
 
         evaluate.Should().Throw<FlagNotFoundException>().Which.ErrorType.Should().Be(ErrorType.FlagNotFound);
     }
@@ -62,9 +62,9 @@ public class OctopusFeatureContextTests
     [Fact]
     public void Evaluate_WhenTheFlagIsNotInTheResponse_ThrowsFlagNotFound()
     {
-        var featureContext = ContextWith(Flag("testfeature", false));
+        var evaluator = EvaluatorFor(Flag("testfeature", false));
 
-        var evaluate = () => featureContext.Evaluate("anotherfeature", context: null);
+        var evaluate = () => evaluator.Evaluate("anotherfeature", context: null);
 
         evaluate.Should().Throw<FlagNotFoundException>().Which.ErrorType.Should().Be(ErrorType.FlagNotFound);
     }
@@ -191,18 +191,18 @@ public class OctopusFeatureContextTests
     [InlineData("dark-launch", "テナント-001", 8)]
     public void GetNormalizedNumber_WhenGivenAnEvaluationAndTargetingKey_ReturnsTheSharedBucket(string evaluationKey, string targetingKey, int expected)
     {
-        OctopusFeatureContext.GetNormalizedNumber(evaluationKey, targetingKey).Should().Be(expected);
+        FeatureFlagEvaluator.GetNormalizedNumber(evaluationKey, targetingKey).Should().Be(expected);
     }
 
     [Fact]
     public void Evaluate_WhenTheSameMissingSlugIsEvaluatedRepeatedly_LogsOneWarning()
     {
         var fakeLogger = new FakeLogger();
-        var featureContext = ContextWith(new SingleLoggerFactory(fakeLogger), Flag("known-feature", true));
+        var evaluator = EvaluatorFor(new SingleLoggerFactory(fakeLogger), Flag("known-feature", true));
 
         for (var i = 0; i < 10; i++)
         {
-            var evaluate = () => featureContext.Evaluate("missing-slug", context: null);
+            var evaluate = () => evaluator.Evaluate("missing-slug", context: null);
             evaluate.Should().Throw<FlagNotFoundException>();
         }
 

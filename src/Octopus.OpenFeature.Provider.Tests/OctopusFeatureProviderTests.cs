@@ -10,7 +10,7 @@ public class OctopusFeatureProviderTests
 {
     readonly OctopusFeatureConfiguration configuration = new("identifier", new ProductMetadata("test-agent"));
 
-    class FakeOctopusFeatureClient(EvaluationResponse? evaluationResponse) : IOctopusFeatureClient
+    class FakeFeatureFlagApiClient(EvaluationResponse? evaluationResponse) : IFeatureFlagApiClient
     {
         public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken) => Task.FromResult(evaluationResponse);
@@ -23,7 +23,7 @@ public class OctopusFeatureProviderTests
 
     async Task<FeatureClient> CreateClientWith(EvaluationResponse evaluationResponse)
     {
-        var provider = new OctopusFeatureProvider(configuration, new FakeOctopusFeatureClient(evaluationResponse));
+        var provider = new OctopusFeatureProvider(configuration, new FakeFeatureFlagApiClient(evaluationResponse));
         await Api.Instance.SetProviderAsync(provider);
         return Api.Instance.GetClient();
     }

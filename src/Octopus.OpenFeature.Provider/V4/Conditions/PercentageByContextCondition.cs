@@ -41,6 +41,6 @@ internal sealed class PercentageByContextCondition : ClientSideCondition
         }
 
         // Shared with v3 so a rollout lands on the same users across versions and provider libraries.
-        return OctopusFeatureContext.GetNormalizedNumber(context.EvaluationKey, targetingKey!) <= percentage;
+        return FeatureFlagEvaluator.GetNormalizedNumber(context.EvaluationKey, targetingKey!) <= percentage;
     }
 }

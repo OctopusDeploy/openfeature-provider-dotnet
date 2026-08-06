@@ -7,20 +7,20 @@ namespace Octopus.OpenFeature.Provider;
 
 public class OctopusFeatureProvider : FeatureProvider
 {
-    readonly OctopusFeatureContextProvider contextProvider;
+    readonly FeatureFlagEvaluatorCache evaluatorCache;
 
     public OctopusFeatureProvider(OctopusFeatureConfiguration configuration)
     {
         var logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureProvider>();
-        var client = new OctopusFeatureClient(configuration, logger);
-        contextProvider = new OctopusFeatureContextProvider(configuration, client, logger);
+        var client = new FeatureFlagApiClient(configuration, logger);
+        evaluatorCache = new FeatureFlagEvaluatorCache(configuration, client, logger);
     }
 
-    // Allows us to pass in a fake IOctopusFeatureClient for testing purposes.
-    internal OctopusFeatureProvider(OctopusFeatureConfiguration configuration, IOctopusFeatureClient client)
+    // Allows us to pass in a fake IFeatureFlagApiClient for testing purposes.
+    internal OctopusFeatureProvider(OctopusFeatureConfiguration configuration, IFeatureFlagApiClient client)
     {
         var logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureProvider>();
-        contextProvider = new OctopusFeatureContextProvider(configuration, client, logger);
+        evaluatorCache = new FeatureFlagEvaluatorCache(configuration, client, logger);
     }
 
     public override Metadata GetMetadata()
@@ -31,13 +31,13 @@ public class OctopusFeatureProvider : FeatureProvider
     public override async Task InitializeAsync(EvaluationContext context, CancellationToken cancellationToken = new())
     {
         await base.InitializeAsync(context, cancellationToken);
-        await contextProvider.Initialize();
+        await evaluatorCache.Initialize();
     }
 
     public override async Task ShutdownAsync(CancellationToken cancellationToken = new())
     {
         await base.ShutdownAsync(cancellationToken);
-        await contextProvider.Shutdown();
+        await evaluatorCache.Shutdown();
     }
 
     public override async Task<ResolutionDetails<bool>> ResolveBooleanValueAsync(string flagKey, bool defaultValue, EvaluationContext? context = null,
@@ -45,7 +45,7 @@ public class OctopusFeatureProvider : FeatureProvider
     {
         await Task.CompletedTask;
 
-        var evaluator = contextProvider.GetEvaluationContext();
+        var evaluator = evaluatorCache.GetEvaluator();
 
         var isFeatureEnabled = evaluator.Evaluate(flagKey, context);
 
@@ -78,9 +78,9 @@ public class OctopusFeatureProvider : FeatureProvider
 
     Exception RejectNonBooleanEvaluation(string flagKey)
     {
-        var evaluator = contextProvider.GetEvaluationContext();
-        var toggle = evaluator.FindEvaluationBySlug(flagKey);
-        if (toggle == null)
+        var evaluator = evaluatorCache.GetEvaluator();
+        var evaluation = evaluator.FindEvaluationBySlug(flagKey);
+        if (evaluation == null)
         {
             return new FlagNotFoundException("The slug provided did not match any of your Octopus Feature Flags. Please double check your slug and try again.");
         }

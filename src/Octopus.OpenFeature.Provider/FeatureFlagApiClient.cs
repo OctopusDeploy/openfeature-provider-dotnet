@@ -38,7 +38,7 @@ internal class FeatureToggleEvaluation(
     public int? ClientRolloutPercentage { get; } = clientRolloutPercentage;
 }
 
-interface IOctopusFeatureClient
+internal interface IFeatureFlagApiClient
 {
     Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken);
     Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken);
@@ -47,7 +47,7 @@ interface IOctopusFeatureClient
 /// <summary>
 /// Responsible for determining if feature flags have been modified and for retrieving their server-side evaluations.
 /// </summary>
-internal class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger logger) : IOctopusFeatureClient
+internal class FeatureFlagApiClient(OctopusFeatureConfiguration configuration, ILogger logger) : IFeatureFlagApiClient
 {
     public async Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
     {
@@ -84,7 +84,7 @@ internal class OctopusFeatureClient(OctopusFeatureConfiguration configuration, I
         return haveFeaturesChanged;
     }
 
-    internal void AddOctopusClientHeader(HttpClient client)
+    public void AddOctopusClientHeader(HttpClient client)
     {
         var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.Name);
 
@@ -94,7 +94,7 @@ internal class OctopusFeatureClient(OctopusFeatureConfiguration configuration, I
         }
 
         clientHeaderValueBuilder.Append(
-            $" openfeature-provider-dotnet/{typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3)}"
+            $" openfeature-provider-dotnet/{typeof(FeatureFlagApiClient).Assembly.GetName().Version?.ToString(3)}"
         );
 
         client.DefaultRequestHeaders.Add("X-Octopus-Client", clientHeaderValueBuilder.ToString());

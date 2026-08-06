@@ -10,18 +10,21 @@ using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider;
 
-internal class OctopusFeatureContext(EvaluationResponse evaluationResponse, ILoggerFactory loggerFactory)
+/// <summary>
+/// Holds one evaluation response and resolves a flag from it, applying any client-side rules the server deferred.
+/// </summary>
+internal class FeatureFlagEvaluator(EvaluationResponse evaluationResponse, ILoggerFactory loggerFactory)
 {
     public byte[] ContentHash => evaluationResponse.ContentHash;
-    readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
+    readonly ILogger logger = loggerFactory.CreateLogger<FeatureFlagEvaluator>();
     readonly ConcurrentDictionary<string, byte> warnedSlugs = new(StringComparer.OrdinalIgnoreCase);
 
-    public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
+    public static FeatureFlagEvaluator Empty(ILoggerFactory loggerFactory)
     {
-        return new OctopusFeatureContext(new EvaluationResponse([], []), loggerFactory);
+        return new FeatureFlagEvaluator(new EvaluationResponse([], []), loggerFactory);
     }
 
-    internal ServerSideEvaluation? FindEvaluationBySlug(string slug)
+    public ServerSideEvaluation? FindEvaluationBySlug(string slug)
     {
         return evaluationResponse.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
     }
