@@ -38,13 +38,15 @@ public class OctopusFeatureContextTests
     }
 
     [Fact]
-    public void Evaluate_WhenTheSlugDiffersOnlyInCase_ReturnsTheFlagValue()
+    public void Evaluate_WhenTheSlugDiffersOnlyInCase_ReturnsTheFlagValueAndTheFlagsOwnSlug()
     {
         var featureContext = ContextWith(Flag("test-feature", true));
 
         var result = featureContext.Evaluate("Test-Feature", context: null);
 
+        using var scope = new AssertionScope();
         result.Value.Should().BeTrue();
+        result.FlagKey.Should().Be("test-feature");
     }
 
     [Fact]

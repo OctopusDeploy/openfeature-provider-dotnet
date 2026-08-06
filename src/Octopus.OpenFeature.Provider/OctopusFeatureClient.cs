@@ -76,7 +76,7 @@ internal class OctopusFeatureClient(OctopusFeatureConfiguration configuration, I
 
         if (hash is null)
         {
-            throw new InvalidOperationException($"Failed to retrieve feature flags for client identifier. Check did not return a valid content hash.");
+            throw new InvalidOperationException("Failed to retrieve feature flags for client identifier. Check did not return a valid content hash.");
         }
 
         var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(contentHash);

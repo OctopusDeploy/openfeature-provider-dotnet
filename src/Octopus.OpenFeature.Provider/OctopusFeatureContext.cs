@@ -21,14 +21,14 @@ internal class OctopusFeatureContext(EvaluationResponse evaluationResponse, ILog
         return new OctopusFeatureContext(new EvaluationResponse([], []), loggerFactory);
     }
 
-    internal ServerSideEvaluation? FindFeatureToggleBySlug(string slug)
+    internal ServerSideEvaluation? FindEvaluationBySlug(string slug)
     {
         return evaluationResponse.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
     }
 
     public ResolutionDetails<bool> Evaluate(string slug, EvaluationContext? context)
     {
-        var serverSideEvaluation = FindFeatureToggleBySlug(slug);
+        var serverSideEvaluation = FindEvaluationBySlug(slug);
 
         if (serverSideEvaluation == null)
         {
