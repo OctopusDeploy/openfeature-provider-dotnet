@@ -9,7 +9,7 @@ namespace Octopus.OpenFeature.Provider;
 internal class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
 {
     // TODO: Remove in BMBB-702
-    
+
     public FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
 
     public byte[] ContentHash { get; } = contentHash;
@@ -30,7 +30,7 @@ internal class FeatureToggleEvaluation(
     int? clientRolloutPercentage)
 {
     // TODO: Remove in BMBB-702
-    
+
     public string Slug { get; } = slug;
     public bool IsEnabled { get; } = isEnabled;
     public string? EvaluationKey { get; } = evaluationKey;

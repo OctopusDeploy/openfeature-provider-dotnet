@@ -41,7 +41,7 @@ internal class OctopusFeatureContext(EvaluationResponse evaluationResponse, ILog
 
             throw new FlagNotFoundException("The slug provided did not match any of your Octopus Feature Flags. Please double check your slug and try again.");
         }
-        
+
         return serverSideEvaluation.Evaluate(context);
     }
 
@@ -65,7 +65,7 @@ internal class OctopusFeatureContext(EvaluationResponse evaluationResponse, ILog
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
     {
         // Remove in BMBB-702
-        
+
         if (!evaluation.IsEnabled)
         {
             return false;
@@ -100,7 +100,7 @@ internal class OctopusFeatureContext(EvaluationResponse evaluationResponse, ILog
     internal static int GetNormalizedNumber(string evaluationKey, string targetingKey)
     {
         // Move to own class in BMBB-702. Perhaps copy+paste of PercentageRollout.cs in OctoToggle?
-        
+
         var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, ":", targetingKey));
 
         using var algorithm = MurmurHash.Create32();

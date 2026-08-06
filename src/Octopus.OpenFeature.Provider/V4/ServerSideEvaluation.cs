@@ -55,7 +55,7 @@ internal sealed class ServerSideEvaluation
             {
                 throw new ParseErrorException("The flag has a value but has no reason.");
             }
-            
+
             if (EvaluationKey is not null || Rules is not null)
             {
                 throw new ParseErrorException("The flag has both a server-resolved value and client-side rules.");
