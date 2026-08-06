@@ -3,6 +3,7 @@ using FluentAssertions.Execution;
 using Octopus.OpenFeature.Provider.V4;
 using Octopus.OpenFeature.Provider.V4.Conditions;
 using OpenFeature.Constant;
+using OpenFeature.Error;
 
 namespace Octopus.OpenFeature.Provider.Tests.V4;
 
@@ -37,14 +38,14 @@ public class ServerSideEvaluationTests
     }
 
     [Fact]
-    public void ServerResolvedFlagWithNoReason_StillResolves()
+    public void ServerResolvedFlagWithNoReason_ThrowsAParseError()
     {
-        var result = ServerResolved(true, reason: null).Evaluate(Contexts.OpenFeature());
+        var evaluate = () => ServerResolved(true, reason: null).Evaluate(Contexts.OpenFeature());
 
         using var scope = new AssertionScope();
-        result.Value.Should().BeTrue();
-        result.Reason.Should().BeNull();
-        result.ErrorType.Should().Be(ErrorType.None);
+        var exception = evaluate.Should().Throw<ParseErrorException>().Which;
+        exception.ErrorType.Should().Be(ErrorType.ParseError);
+        exception.Message.Should().Be("The flag has a value but has no reason.");
     }
 
     [Fact]

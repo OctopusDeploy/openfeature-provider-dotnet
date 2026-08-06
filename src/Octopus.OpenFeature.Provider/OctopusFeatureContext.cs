@@ -3,32 +3,34 @@ using System.Collections.Concurrent;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Murmur;
+using Octopus.OpenFeature.Provider.V4;
 using OpenFeature.Constant;
+using OpenFeature.Error;
 using OpenFeature.Model;
 
 namespace Octopus.OpenFeature.Provider;
 
-partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory loggerFactory)
+internal class OctopusFeatureContext(EvaluationResponse evaluationResponse, ILoggerFactory loggerFactory)
 {
-    public byte[] ContentHash => toggles.ContentHash;
+    public byte[] ContentHash => evaluationResponse.ContentHash;
     readonly ILogger logger = loggerFactory.CreateLogger<OctopusFeatureContext>();
     readonly ConcurrentDictionary<string, byte> warnedSlugs = new(StringComparer.OrdinalIgnoreCase);
 
     public static OctopusFeatureContext Empty(ILoggerFactory loggerFactory)
     {
-        return new OctopusFeatureContext(new FeatureToggles([], []), loggerFactory);
+        return new OctopusFeatureContext(new EvaluationResponse([], []), loggerFactory);
     }
 
-    internal FeatureToggleEvaluation? FindFeatureToggleBySlug(string slug)
+    internal ServerSideEvaluation? FindEvaluationBySlug(string slug)
     {
-        return toggles.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
+        return evaluationResponse.Evaluations.FirstOrDefault(x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
     }
 
-    public ResolutionDetails<bool> Evaluate(string slug, bool defaultValue, EvaluationContext? context)
+    public ResolutionDetails<bool> Evaluate(string slug, EvaluationContext? context)
     {
-        var feature = FindFeatureToggleBySlug(slug);
+        var serverSideEvaluation = FindEvaluationBySlug(slug);
 
-        if (feature == null)
+        if (serverSideEvaluation == null)
         {
             if (warnedSlugs.TryAdd(slug, 0))
             {
@@ -37,17 +39,10 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
                     slug);
             }
 
-            return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.FlagNotFound,
-                "The slug provided did not match any of your Octopus Feature Toggles. Please double check your slug and try again.");
+            throw new FlagNotFoundException("The slug provided did not match any of your Octopus Feature Flags. Please double check your slug and try again.");
         }
 
-        if (MissingRequiredPropertiesForClientSideEvaluation(feature))
-        {
-            return new ResolutionDetails<bool>(slug, defaultValue, ErrorType.ParseError,
-                $"Feature toggle {slug} is missing necessary information for client-side evaluation.");
-        }
-
-        return new ResolutionDetails<bool>(slug, Evaluate(feature, context));
+        return serverSideEvaluation.Evaluate(context);
     }
 
     bool MatchesSegment(EvaluationContext? context, IEnumerable<KeyValuePair<string, string>> segments)
@@ -69,6 +64,8 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
 
     bool Evaluate(FeatureToggleEvaluation evaluation, EvaluationContext? context = null)
     {
+        // Remove in BMBB-702
+
         if (!evaluation.IsEnabled)
         {
             return false;
@@ -102,6 +99,8 @@ partial class OctopusFeatureContext(FeatureToggles toggles, ILoggerFactory logge
     /// </summary>
     internal static int GetNormalizedNumber(string evaluationKey, string targetingKey)
     {
+        // Move to own class in BMBB-702. Perhaps copy+paste of PercentageRollout.cs in OctoToggle?
+
         var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, ":", targetingKey));
 
         using var algorithm = MurmurHash.Create32();

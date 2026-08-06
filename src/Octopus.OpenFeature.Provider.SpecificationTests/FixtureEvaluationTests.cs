@@ -31,16 +31,25 @@ public class FixtureEvaluationTests(Server server) : IClassFixture<Server>
         using var scope = new AssertionScope(testCase.Description);
         result.Value.Should().Be(testCase.Expected.Value);
         result.ErrorType.Should().Be(MapErrorCode(testCase.Expected.ErrorCode));
+
+        // Fixtures only state a reason where the specification pins one down, so an absent reason is
+        // not an assertion that the provider returned none.
+        if (testCase.Expected.Reason is { } expectedReason)
+        {
+            result.Reason.Should().Be(expectedReason);
+        }
     }
 
-    static EvaluationContext BuildContext(Dictionary<string, string>? context)
+    static EvaluationContext BuildContext(Dictionary<string, string?>? context)
     {
         var builder = EvaluationContext.Builder();
 
         context ??= [];
         foreach (var (key, value) in context)
         {
-            builder.Set(key, value);
+            // A null attribute is present in the context but holds no string, which is what a fixture
+            // means by a null value — not an attribute the caller left out.
+            builder.Set(key, value is null ? new Value() : new Value(value));
         }
 
         return builder.Build();

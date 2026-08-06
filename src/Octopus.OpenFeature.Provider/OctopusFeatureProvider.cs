@@ -47,7 +47,7 @@ public class OctopusFeatureProvider : FeatureProvider
 
         var evaluator = contextProvider.GetEvaluationContext();
 
-        var isFeatureEnabled = evaluator.Evaluate(flagKey, defaultValue, context);
+        var isFeatureEnabled = evaluator.Evaluate(flagKey, context);
 
         return isFeatureEnabled;
     }
@@ -79,10 +79,10 @@ public class OctopusFeatureProvider : FeatureProvider
     Exception RejectNonBooleanEvaluation(string flagKey)
     {
         var evaluator = contextProvider.GetEvaluationContext();
-        var toggle = evaluator.FindFeatureToggleBySlug(flagKey);
+        var toggle = evaluator.FindEvaluationBySlug(flagKey);
         if (toggle == null)
         {
-            return new FlagNotFoundException(flagKey);
+            return new FlagNotFoundException("The slug provided did not match any of your Octopus Feature Flags. Please double check your slug and try again.");
         }
         return new TypeMismatchException("Octopus only supports boolean flags.");
     }
