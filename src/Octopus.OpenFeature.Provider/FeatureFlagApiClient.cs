@@ -6,36 +6,11 @@ using Octopus.OpenFeature.Provider.V4;
 
 namespace Octopus.OpenFeature.Provider;
 
-internal class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
-{
-    // TODO: Remove in BMBB-702
-
-    public FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
-
-    public byte[] ContentHash { get; } = contentHash;
-}
-
 internal class EvaluationResponse(ServerSideEvaluation[] evaluations, byte[] contentHash)
 {
     public ServerSideEvaluation[] Evaluations { get; } = evaluations;
 
     public byte[] ContentHash { get; } = contentHash;
-}
-
-internal class FeatureToggleEvaluation(
-    string slug,
-    bool isEnabled,
-    string? evaluationKey,
-    KeyValuePair<string, string>[]? segments,
-    int? clientRolloutPercentage)
-{
-    // TODO: Remove in BMBB-702
-
-    public string Slug { get; } = slug;
-    public bool IsEnabled { get; } = isEnabled;
-    public string? EvaluationKey { get; } = evaluationKey;
-    public KeyValuePair<string, string>[]? Segments { get; } = segments;
-    public int? ClientRolloutPercentage { get; } = clientRolloutPercentage;
 }
 
 internal interface IFeatureFlagApiClient
