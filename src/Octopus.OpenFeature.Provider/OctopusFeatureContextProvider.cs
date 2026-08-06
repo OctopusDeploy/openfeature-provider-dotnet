@@ -5,7 +5,7 @@ namespace Octopus.OpenFeature.Provider;
 /// <summary>
 /// Establishes and maintains a cache of evaluated feature toggles to be used by the feature provider.
 /// </summary>
-class OctopusFeatureContextProvider(
+internal class OctopusFeatureContextProvider(
     OctopusFeatureConfiguration configuration,
     IOctopusFeatureClient client,
     ILogger logger)

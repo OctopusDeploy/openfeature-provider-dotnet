@@ -6,7 +6,7 @@ using Octopus.OpenFeature.Provider.V4;
 
 namespace Octopus.OpenFeature.Provider;
 
-public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
+internal class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
 {
     // TODO: Remove in BMBB-702
     
@@ -22,7 +22,7 @@ internal class EvaluationResponse(ServerSideEvaluation[] evaluations, byte[] con
     public byte[] ContentHash { get; } = contentHash;
 }
 
-public class FeatureToggleEvaluation(
+internal class FeatureToggleEvaluation(
     string slug,
     bool isEnabled,
     string? evaluationKey,
