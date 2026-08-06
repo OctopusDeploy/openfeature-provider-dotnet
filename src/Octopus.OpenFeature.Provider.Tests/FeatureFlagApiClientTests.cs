@@ -7,13 +7,13 @@ using WireMock.Server;
 
 namespace Octopus.OpenFeature.Provider.Tests;
 
-public class OctopusFeatureClientTests
+public class FeatureFlagApiClientTests
 {
     [Fact]
     public void AddOctopusClientHeader_SetsXOctopusClientHeader()
     {
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct"));
-        var client = new OctopusFeatureClient(config, NullLogger.Instance);
+        var client = new FeatureFlagApiClient(config, NullLogger.Instance);
         var httpClient = new HttpClient();
 
         client.AddOctopusClientHeader(httpClient);
@@ -25,9 +25,9 @@ public class OctopusFeatureClientTests
     public void AddOctopusClientHeader_WithNameOnly_HeaderContainsProductNameAndProviderInformation()
     {
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct"));
-        var client = new OctopusFeatureClient(config, NullLogger.Instance);
+        var client = new FeatureFlagApiClient(config, NullLogger.Instance);
         var httpClient = new HttpClient();
-        var expectedVersion = typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3);
+        var expectedVersion = typeof(FeatureFlagApiClient).Assembly.GetName().Version?.ToString(3);
 
         client.AddOctopusClientHeader(httpClient);
 
@@ -39,9 +39,9 @@ public class OctopusFeatureClientTests
     public void AddOctopusClientHeader_WithNameAndVersion_HeaderContainsProductAndProviderInformation()
     {
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct", "2024.1.0"));
-        var client = new OctopusFeatureClient(config, NullLogger.Instance);
+        var client = new FeatureFlagApiClient(config, NullLogger.Instance);
         var httpClient = new HttpClient();
-        var expectedVersion = typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3);
+        var expectedVersion = typeof(FeatureFlagApiClient).Assembly.GetName().Version?.ToString(3);
 
         client.AddOctopusClientHeader(httpClient);
 
@@ -55,9 +55,9 @@ public class OctopusFeatureClientTests
         // Note: More character checking tests are in ProductMetadataTests.cs
 
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("My Product"));
-        var client = new OctopusFeatureClient(config, NullLogger.Instance);
+        var client = new FeatureFlagApiClient(config, NullLogger.Instance);
         var httpClient = new HttpClient();
-        var expectedVersion = typeof(OctopusFeatureClient).Assembly.GetName().Version?.ToString(3);
+        var expectedVersion = typeof(FeatureFlagApiClient).Assembly.GetName().Version?.ToString(3);
 
         client.AddOctopusClientHeader(httpClient);
 
@@ -68,14 +68,14 @@ public class OctopusFeatureClientTests
     const string CheckPath = "/api/feature-flags/check/v4/";
     const string EvaluationsPath = "/api/feature-flags/evaluations/v4/";
 
-    static OctopusFeatureClient ClientFor(WireMockServer server)
+    static FeatureFlagApiClient ClientFor(WireMockServer server)
     {
         var configuration = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct"))
         {
             ServerUri = new Uri(server.Url!)
         };
 
-        return new OctopusFeatureClient(configuration, NullLogger.Instance);
+        return new FeatureFlagApiClient(configuration, NullLogger.Instance);
     }
 
     static IEnumerable<string> RequestedPaths(WireMockServer server)
