@@ -2,12 +2,22 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Octopus.OpenFeature.Provider.V4;
 
 namespace Octopus.OpenFeature.Provider;
 
 public class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
 {
+    // TODO: Remove in BMBB-702
+    
     public FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
+
+    public byte[] ContentHash { get; } = contentHash;
+}
+
+internal class EvaluationResponse(ServerSideEvaluation[] evaluations, byte[] contentHash)
+{
+    public ServerSideEvaluation[] Evaluations { get; } = evaluations;
 
     public byte[] ContentHash { get; } = contentHash;
 }
@@ -19,6 +29,8 @@ public class FeatureToggleEvaluation(
     KeyValuePair<string, string>[]? segments,
     int? clientRolloutPercentage)
 {
+    // TODO: Remove in BMBB-702
+    
     public string Slug { get; } = slug;
     public bool IsEnabled { get; } = isEnabled;
     public string? EvaluationKey { get; } = evaluationKey;
@@ -29,13 +41,13 @@ public class FeatureToggleEvaluation(
 interface IOctopusFeatureClient
 {
     Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken);
-    Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken);
+    Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken);
 }
 
 /// <summary>
-/// Responsible for retrieving feature toggles from OctoToggle and determining if they have changed.
+/// Responsible for determining if feature flags have been modified and for retrieving their server-side evaluations.
 /// </summary>
-class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger logger) : IOctopusFeatureClient
+internal class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger logger) : IOctopusFeatureClient
 {
     public async Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
     {
@@ -64,7 +76,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         if (hash is null)
         {
-            throw new InvalidOperationException($"Failed to retrieve feature toggles for client identifier. Check did not return a valid content hash.");
+            throw new InvalidOperationException($"Failed to retrieve feature flags for client identifier. Check did not return a valid content hash.");
         }
 
         var haveFeaturesChanged = !hash.ContentHash.SequenceEqual(contentHash);
@@ -94,13 +106,13 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
     }
 
     /// <summary>
-    /// Retrieves the evaluated feature set from OctoToggle for a given installation and project.
+    /// Retrieves the server-side evaluated feature flags for a given installation and project.
     /// This method will return null if:
-    /// - Toggles are not found for the installation and id
+    /// - Flags are not found for the installation and id
     /// - We don't receive a ContentHash header
-    /// - We cannot deserialize the content response into a OctoToggleFeatureManifest
+    /// - We cannot deserialize the content response
     /// </summary>
-    public async Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+    public async Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken)
     {
         var client = new HttpClient
         {
@@ -119,20 +131,20 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
-            logger.LogWarning("Failed to retrieve feature toggles for client identifier {ClientIdentifier} from {OctoToggleUrl}", configuration.ClientIdentifier, configuration.ServerUri);
+            logger.LogWarning("Failed to retrieve feature flags for client identifier {ClientIdentifier} from {OctoToggleUrl}", configuration.ClientIdentifier, configuration.ServerUri);
             return null;
         }
 
         if (!response.Headers.TryGetValues("ContentHash", out IEnumerable<string> values))
         {
-            logger.LogWarning("Feature toggle response from {OctoToggleUrl} did not contain expected ContentHash header", configuration.ServerUri);
+            logger.LogWarning("Feature flag response from {OctoToggleUrl} did not contain expected ContentHash header", configuration.ServerUri);
             return null;
         }
 
         var headerValues = values.ToArray();
         if (!headerValues.Any())
         {
-            logger.LogWarning("Feature toggle response from {OctoToggleUrl} returned an empty ContentHash header", configuration.ServerUri);
+            logger.LogWarning("Feature flag response from {OctoToggleUrl} returned an empty ContentHash header", configuration.ServerUri);
             return null;
         }
 
@@ -140,16 +152,16 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         var result = await response.Content.ReadAsStringAsync();
 
-        var evaluations = JsonSerializer.Deserialize<FeatureToggleEvaluation[]>(result, JsonSerializerOptions.Web);
+        var evaluations = JsonSerializer.Deserialize<ServerSideEvaluation[]>(result, JsonSerializerOptions.Web);
 
         if (evaluations is null)
         {
-            logger.LogWarning("Feature toggle response content from {OctoToggleUrl} was empty", configuration.ServerUri);
+            logger.LogWarning("Feature flag response content from {OctoToggleUrl} was empty", configuration.ServerUri);
             return null;
         }
 
-        var toggles = new FeatureToggles(evaluations, Convert.FromBase64String(rawContentHash));
+        var evaluationResponse = new EvaluationResponse(evaluations, Convert.FromBase64String(rawContentHash));
 
-        return toggles;
+        return evaluationResponse;
     }
 }

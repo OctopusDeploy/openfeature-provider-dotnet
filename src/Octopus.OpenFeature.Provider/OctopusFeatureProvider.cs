@@ -47,7 +47,7 @@ public class OctopusFeatureProvider : FeatureProvider
 
         var evaluator = contextProvider.GetEvaluationContext();
 
-        var isFeatureEnabled = evaluator.Evaluate(flagKey, defaultValue, context);
+        var isFeatureEnabled = evaluator.Evaluate(flagKey, context);
 
         return isFeatureEnabled;
     }

@@ -3,33 +3,50 @@ using FluentAssertions.Execution;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Testing;
+using Octopus.OpenFeature.Provider.V4;
 
 namespace Octopus.OpenFeature.Provider.Tests;
 
 public class OctopusFeatureContextProviderTests
 {
+    const string Slug = "test-feature";
+
     readonly OctopusFeatureConfiguration configuration = new("identifier", new ProductMetadata("test-agent"))
     {
         CacheDuration = TimeSpan.FromSeconds(1)
     };
 
-    class MockOctopusFeatureClient(FeatureToggles? featureToggles) : IOctopusFeatureClient
+    /// <summary>
+    /// A response holding one server-resolved flag. These tests turn on the content hash and the value the
+    /// flag resolves to, so the flag needs no rules of its own.
+    /// </summary>
+    static EvaluationResponse Response(bool value, byte[] contentHash)
+        => new([
+            new ServerSideEvaluation(
+                Slug,
+                value,
+                reason: value ? "The flag is enabled for this environment." : "The flag is disabled for this environment.",
+                evaluationKey: null,
+                rules: null)
+        ], contentHash);
+
+    class MockOctopusFeatureClient(EvaluationResponse? evaluationResponse) : IOctopusFeatureClient
     {
-        FeatureToggles? featureToggles = featureToggles;
+        EvaluationResponse? evaluationResponse = evaluationResponse;
 
         public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
         }
 
-        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+        public Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken)
         {
-            return Task.FromResult(featureToggles);
+            return Task.FromResult(evaluationResponse);
         }
 
-        public void ChangeToggles(FeatureToggles? featureToggles = null)
+        public void ChangeEvaluations(EvaluationResponse? newEvaluationResponse = null)
         {
-            this.featureToggles = featureToggles;
+            this.evaluationResponse = newEvaluationResponse;
         }
     }
 
@@ -50,9 +67,7 @@ public class OctopusFeatureContextProviderTests
     {
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
-        var client = new MockOctopusFeatureClient(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
-            contentHash));
+        var client = new MockOctopusFeatureClient(Response(value: true, contentHash));
 
         var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
         await provider.Initialize();
@@ -61,7 +76,7 @@ public class OctopusFeatureContextProviderTests
         using var scope = new AssertionScope();
         context.Should().NotBeNull();
         context.ContentHash.Should().BeEquivalentTo(contentHash);
-        context.Evaluate("test-feature", false, context: null).Value.Should().BeTrue();
+        context.Evaluate(Slug, context: null).Value.Should().BeTrue();
     }
 
     [Fact]
@@ -69,9 +84,7 @@ public class OctopusFeatureContextProviderTests
     {
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
-        var client = new MockOctopusFeatureClient(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
-            contentHash));
+        var client = new MockOctopusFeatureClient(Response(value: true, contentHash));
 
         // Initialize the provider
         var provider = new OctopusFeatureContextProvider(configuration, client, NullLogger.Instance);
@@ -81,20 +94,18 @@ public class OctopusFeatureContextProviderTests
         using var scope = new AssertionScope();
         var context = provider.GetEvaluationContext();
         context.ContentHash.Should().BeEquivalentTo(contentHash);
-        context.Evaluate("test-feature", false, context: null).Value.Should().BeTrue();
+        context.Evaluate(Slug, context: null).Value.Should().BeTrue();
 
-        // Simulate a change in the available feature toggles
-        client.ChangeToggles(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)],
-            [0x01, 0x02, 0x03, 0x05]));
+        // Simulate a change in the available feature flags
+        client.ChangeEvaluations(Response(value: false, [0x01, 0x02, 0x03, 0x05]));
 
         // Wait for the cache to expire
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        // Validate the updated toggles are available
+        // Validate the updated evaluations are available
         context = provider.GetEvaluationContext();
         context.ContentHash.Should().BeEquivalentTo(new byte[] { 0x01, 0x02, 0x03, 0x05 });
-        context.Evaluate("test-feature", false, context: null).Value.Should().BeFalse();
+        context.Evaluate(Slug, context: null).Value.Should().BeFalse();
     }
 
     [Fact]
@@ -104,16 +115,13 @@ public class OctopusFeatureContextProviderTests
 
         byte[] contentHash = [0x01, 0x02, 0x03, 0x04];
 
-        var client = new MockOctopusFeatureClient(new FeatureToggles(
-            [new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)],
-            contentHash
-        ));
+        var client = new MockOctopusFeatureClient(Response(value: true, contentHash));
 
         var provider = new OctopusFeatureContextProvider(configuration, client, logger);
         await provider.Initialize();
 
         // Simulate a failed fetch
-        client.ChangeToggles(null);
+        client.ChangeEvaluations(null);
         // Wait for the cache to expire and refresh loop to run
         await Task.Delay(TimeSpan.FromSeconds(5));
 
@@ -148,8 +156,8 @@ public class OctopusFeatureContextProviderTests
             // Check that the context is empty
             provider.GetEvaluationContext().ContentHash.Length.Should().Be(0);
 
-            // Update client to return valid toggles and wait for refresh
-            client.ChangeToggles(new FeatureToggles([new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)], contentHash));
+            // Update client to return valid evaluations and wait for refresh
+            client.ChangeEvaluations(Response(value: false, contentHash));
             await Task.Delay(TimeSpan.FromSeconds(5));
 
             // Assert that the context is now correctly populated
@@ -169,23 +177,23 @@ public class OctopusFeatureContextProviderTests
         byte[] initialHash = [0x01, 0x02, 0x03, 0x04];
         byte[] updatedHash = [0x01, 0x02, 0x03, 0x05];
 
-        // Initialize with a client that returns valid toggles
-        var client = new MockOctopusFeatureClient(new FeatureToggles([new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)], initialHash));
+        // Initialize with a client that returns valid evaluations
+        var client = new MockOctopusFeatureClient(Response(value: true, initialHash));
         var provider = new OctopusFeatureContextProvider(configuration, client, logger);
         await provider.Initialize();
 
         try
         {
             // Switch to a null client and wait for refresh to fail
-            client.ChangeToggles(null);
+            client.ChangeEvaluations(null);
             await Task.Delay(TimeSpan.FromSeconds(5));
 
             // Assert that failed refresh is logged and old context is retained
             logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
             provider.GetEvaluationContext().ContentHash.Should().BeEquivalentTo(initialHash);
 
-            // Update client to return valid toggles again and wait for refresh
-            client.ChangeToggles(new FeatureToggles([new FeatureToggleEvaluation("test-feature", false, "evaluation-key", [], 100)], updatedHash));
+            // Update client to return valid evaluations again and wait for refresh
+            client.ChangeEvaluations(Response(value: false, updatedHash));
             await Task.Delay(TimeSpan.FromSeconds(5));
 
             // Assert that the context is now correctly populated
@@ -198,7 +206,7 @@ public class OctopusFeatureContextProviderTests
         }
     }
 
-    class ThrowsOnRefreshClient(FeatureToggles initial) : IOctopusFeatureClient
+    class ThrowsOnRefreshClient(EvaluationResponse initial) : IOctopusFeatureClient
     {
         public readonly string ErrorMessage = "Oops! Simulated refresh error";
 
@@ -207,9 +215,9 @@ public class OctopusFeatureContextProviderTests
             throw new Exception(ErrorMessage);
         }
 
-        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+        public Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken)
         {
-            return Task.FromResult<FeatureToggles?>(initial);
+            return Task.FromResult<EvaluationResponse?>(initial);
         }
     }
 
@@ -220,9 +228,7 @@ public class OctopusFeatureContextProviderTests
         var logger = new FakeLogger();
 
         // Initialize with a client that will throw on refresh
-        var client = new ThrowsOnRefreshClient(
-            new FeatureToggles([new FeatureToggleEvaluation("test-feature", true, "evaluation-key", [], 100)], contentHash)
-        );
+        var client = new ThrowsOnRefreshClient(Response(value: true, contentHash));
         var provider = new OctopusFeatureContextProvider(configuration, client, logger);
         await provider.Initialize();
 
@@ -250,7 +256,7 @@ public class OctopusFeatureContextProviderTests
             return Task.FromResult(true);
         }
 
-        public Task<FeatureToggles?> GetFeatureToggleEvaluationManifest(CancellationToken cancellationToken)
+        public Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken)
         {
             throw new Exception("Oops!");
         }

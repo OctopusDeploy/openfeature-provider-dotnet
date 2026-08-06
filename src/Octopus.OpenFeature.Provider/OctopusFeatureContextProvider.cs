@@ -30,10 +30,10 @@ class OctopusFeatureContextProvider(
 
         try
         {
-            var toggles = await client.GetFeatureToggleEvaluationManifest(cancellationTokenSource.Token);
+            var evaluationResponse = await client.GetServerSideEvaluations(cancellationTokenSource.Token);
             currentContext =
-                toggles is not null
-                    ? new OctopusFeatureContext(toggles, configuration.LoggerFactory)
+                evaluationResponse is not null
+                    ? new OctopusFeatureContext(evaluationResponse, configuration.LoggerFactory)
                     : OctopusFeatureContext.Empty(configuration.LoggerFactory);
         }
         catch (Exception e)
@@ -61,7 +61,7 @@ class OctopusFeatureContextProvider(
 
                 if (await client.HaveFeaturesChanged(currentContext.ContentHash, cancellationToken))
                 {
-                    var toggles = await client.GetFeatureToggleEvaluationManifest(cancellationToken);
+                    var toggles = await client.GetServerSideEvaluations(cancellationToken);
                     if (toggles is not null)
                     {
                         currentContext = new OctopusFeatureContext(toggles, configuration.LoggerFactory);
