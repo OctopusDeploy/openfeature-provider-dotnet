@@ -22,7 +22,7 @@ internal sealed class UnknownCondition : ClientSideCondition
         // response that could not have been sent.
         if (Type is null)
         {
-            throw new ParseErrorException("A condition has no type.");
+            throw new ParseErrorException("A condition is missing a type.");
         }
 
         return false;

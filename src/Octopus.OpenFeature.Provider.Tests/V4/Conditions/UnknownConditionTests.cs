@@ -21,6 +21,6 @@ public class UnknownConditionTests
             .Matches(Contexts.ForRules(Contexts.TargetingKey));
 
         matches.Should().Throw<ParseErrorException>()
-            .Which.Message.Should().Be("A condition has no type.");
+            .Which.Message.Should().Be("A condition is missing a type.");
     }
 }

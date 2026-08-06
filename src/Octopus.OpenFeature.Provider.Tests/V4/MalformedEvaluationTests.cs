@@ -51,9 +51,9 @@ public class MalformedEvaluationTests
         "Rule 'Beta ring' has a missing condition.")]
     // Conditions with no usable type. Unlike an unrecognised type, no server version emits these.
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "key": "license", "values": [ "trial" ] } ] } ] }""",
-        "A condition has no type.")]
+        "A condition is missing a type.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": 123, "key": "license", "values": [ "trial" ] } ] } ] }""",
-        "A condition has no type.")]
+        "A condition is missing a type.")]
     // percentage-by-context.
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Partial rollout", "conditions": [ { "type": "percentage-by-context" } ] } ] }""",
         "A condition is missing a percentage value.")]
@@ -99,7 +99,7 @@ public class MalformedEvaluationTests
         var evaluate = () => Flag(json).Evaluate(MatchingContext());
 
         evaluate.Should().Throw<ParseErrorException>()
-            .Which.Message.Should().Be("A condition has no type.");
+            .Which.Message.Should().Be("A condition is missing a type.");
     }
 
     [Fact]
