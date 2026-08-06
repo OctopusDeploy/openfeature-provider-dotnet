@@ -53,7 +53,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
         FeatureCheck? hash = null;
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var result = await client.GetAsync("api/featuretoggles/check/v3/", cancellationToken);
+        var result = await client.GetAsync("api/feature-flags/check/v4/", cancellationToken);
 
         if (result.IsSuccessStatusCode)
         {
@@ -115,7 +115,7 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
-        var response = await client.GetAsync("api/toggles/evaluations/v3/", cancellationToken);
+        var response = await client.GetAsync("api/feature-flags/evaluations/v4/", cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -138,9 +138,6 @@ class OctopusFeatureClient(OctopusFeatureConfiguration configuration, ILogger lo
 
         var rawContentHash = headerValues.First();
 
-        // WARNING: v2 and v3 endpoints have identical response contracts.
-        // If for any reason the v3 endpoint response contract starts to diverge from the v2 contract,
-        // This code will need to update accordingly
         var result = await response.Content.ReadAsStringAsync();
 
         var evaluations = JsonSerializer.Deserialize<FeatureToggleEvaluation[]>(result, JsonSerializerOptions.Web);
