@@ -1,4 +1,4 @@
-namespace Octopus.OpenFeature.Provider.V4;
+namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
 /// <summary>
 /// Discriminator values for the polymorphic v4 client-side conditions. These mirror the values in the
