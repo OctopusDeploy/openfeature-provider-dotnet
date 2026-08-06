@@ -63,13 +63,13 @@ public class MalformedEvaluationTests
         "A condition has a percentage of -1.")]
     // Attribute conditions.
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": "context-attribute-is-one-of", "key": "license" } ] } ] }""",
-        "A condition has no values.")]
+        "A condition is missing values.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": "context-attribute-is-one-of", "key": "license", "values": [] } ] } ] }""",
-        "A condition has no values.")]
+        "A condition is missing values.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": "context-attribute-is-one-of", "key": "license", "values": [ null ] } ] } ] }""",
-        "A condition has a missing value.")]
+        "A condition is missing a value.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Trial licences", "conditions": [ { "type": "context-attribute-is-not-one-of", "values": [ "trial" ] } ] } ] }""",
-        "A condition has no key.")]
+        "A condition is missing a key.")]
     public void AMalformedFlag_ThrowsAParseError(string flagJson, string expectedProblem)
     {
         var evaluate = () => Flag(flagJson).Evaluate(MatchingContext());

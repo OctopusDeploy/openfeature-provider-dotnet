@@ -46,9 +46,9 @@ public class ContextAttributeIsNotOneOfConditionTests
     }
 
     [Theory]
-    [InlineData(null, new[] { "eu" }, "A condition has no key.")]
-    [InlineData("region", null, "A condition has no values.")]
-    [InlineData("region", new string[0], "A condition has no values.")]
+    [InlineData(null, new[] { "eu" }, "A condition is missing a key.")]
+    [InlineData("region", null, "A condition is missing values.")]
+    [InlineData("region", new string[0], "A condition is missing values.")]
     public void AMissingKeyOrValues_ThrowsAParseError(string? key, string[]? values, string expectedMessage)
     {
         var matches = () => new ContextAttributeIsNotOneOfCondition(key!, values!)
@@ -66,6 +66,6 @@ public class ContextAttributeIsNotOneOfConditionTests
             .Matches(Contexts.ForRules(attributes: ("region", "us")));
 
         matches.Should().Throw<ParseErrorException>()
-            .Which.Message.Should().Be("A condition has a missing value.");
+            .Which.Message.Should().Be("A condition is missing a value.");
     }
 }

@@ -66,9 +66,9 @@ public class ContextAttributeIsOneOfConditionTests
     // Key and Values are declared non-nullable, so these shapes only arrive off the wire. A condition
     // with nothing to match on has no defensible answer, so it fails the evaluation.
     [Theory]
-    [InlineData(null, new[] { "pro" }, "A condition has no key.")]
-    [InlineData("plan", null, "A condition has no values.")]
-    [InlineData("plan", new string[0], "A condition has no values.")]
+    [InlineData(null, new[] { "pro" }, "A condition is missing a key.")]
+    [InlineData("plan", null, "A condition is missing values.")]
+    [InlineData("plan", new string[0], "A condition is missing values.")]
     public void AMissingKeyOrValues_ThrowsAParseError(string? key, string[]? values, string expectedProblem)
     {
         var matches = () => new ContextAttributeIsOneOfCondition(key!, values!)
@@ -88,6 +88,6 @@ public class ContextAttributeIsOneOfConditionTests
 
         matches.Should().Throw<ParseErrorException>()
             .Which.Message.Should().Be(
-                "A condition has a missing value.");
+                "A condition is missing a value.");
     }
 }

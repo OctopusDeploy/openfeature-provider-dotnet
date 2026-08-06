@@ -22,17 +22,17 @@ internal static class ContextAttributes
     {
         if (key is null)
         {
-            throw new ParseErrorException("A condition has no key.");
+            throw new ParseErrorException("A condition is missing a key.");
         }
 
         if (values is not { Length: > 0 })
         {
-            throw new ParseErrorException("A condition has no values.");
+            throw new ParseErrorException("A condition is missing values.");
         }
 
         if (values.Any(value => value is null))
         {
-            throw new ParseErrorException("A condition has a missing value.");
+            throw new ParseErrorException("A condition is missing a value.");
         }
 
         return context.OpenFeatureContext is { } openFeatureContext
