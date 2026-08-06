@@ -21,7 +21,7 @@ dotnet add package Octopus.OpenFeature
 ### Usage 
 
 ```c#
-var clientIdentifier = Environment.GetEnvironmentVariable("Octopus__Features__ClientIdentifier");
+var clientIdentifier = Environment.GetEnvironmentVariable("Octopus__FeatureFlags__ClientIdentifier");
 
 var provider = new OctopusFeatureProvider(new OctopusFeatureConfiguration(clientIdentifier, new ProductMetadata("MyProductName")));
 
