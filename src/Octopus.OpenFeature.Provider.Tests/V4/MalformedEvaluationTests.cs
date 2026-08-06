@@ -56,7 +56,7 @@ public class MalformedEvaluationTests
         "A condition has no type.")]
     // percentage-by-context.
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Partial rollout", "conditions": [ { "type": "percentage-by-context" } ] } ] }""",
-        "A condition has no percentage.")]
+        "A condition is missing a percentage value.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Partial rollout", "conditions": [ { "type": "percentage-by-context", "percentage": 101 } ] } ] }""",
         "A condition has a percentage of 101.")]
     [InlineData("""{ "slug": "my-feature", "evaluationKey": "evaluation-key", "rules": [ { "name": "Partial rollout", "conditions": [ { "type": "percentage-by-context", "percentage": -1 } ] } ] }""",

@@ -51,7 +51,7 @@ public class PercentageByContextConditionTests
     }
 
     [Theory]
-    [InlineData(null, "A condition has no percentage.")]
+    [InlineData(null, "A condition is missing a percentage value.")]
     [InlineData(101, "A condition has a percentage of 101.")]
     [InlineData(-1, "A condition has a percentage of -1.")]
     public void AnAbsentOrOutOfRangePercentage_ThrowsAParseError(int? percentage, string expectedProblem)

@@ -22,7 +22,7 @@ internal sealed class PercentageByContextCondition : ClientSideCondition
     {
         if (Percentage is not { } percentage)
         {
-            throw new ParseErrorException("A condition has no percentage.");
+            throw new ParseErrorException("A condition is missing a percentage value.");
         }
 
         // Rejected rather than clamped: reading 101 as "everyone" would turn a flag on off the back of a
