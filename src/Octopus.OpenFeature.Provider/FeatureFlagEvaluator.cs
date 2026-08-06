@@ -1,8 +1,5 @@
-﻿using System.Buffers.Binary;
 using System.Collections.Concurrent;
-using System.Text;
 using Microsoft.Extensions.Logging;
-using Murmur;
 using Octopus.OpenFeature.Provider.V4;
 using OpenFeature.Error;
 using OpenFeature.Model;
@@ -45,21 +42,5 @@ internal class FeatureFlagEvaluator(EvaluationResponse evaluationResponse, ILogg
         }
 
         return serverSideEvaluation.Evaluate(context);
-    }
-
-    /// <summary>
-    /// Computes a deterministic integer bucket in the inclusive range 1–100 for the given evaluation and targeting keys.
-    /// </summary>
-    internal static int GetNormalizedNumber(string evaluationKey, string targetingKey)
-    {
-        // Move to own class in BMBB-702. Perhaps copy+paste of PercentageRollout.cs in OctoToggle?
-
-        var bytes = Encoding.UTF8.GetBytes(string.Concat(evaluationKey, ":", targetingKey));
-
-        using var algorithm = MurmurHash.Create32();
-        var hash = algorithm.ComputeHash(bytes);
-        // Explicitly little-endian to ensure consistent int values across all client libraries.
-        var value = BinaryPrimitives.ReadUInt32LittleEndian(hash);
-        return (int)(value % 100 + 1);
     }
 }

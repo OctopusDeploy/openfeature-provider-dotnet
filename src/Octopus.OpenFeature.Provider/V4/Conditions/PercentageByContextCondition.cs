@@ -40,7 +40,6 @@ internal sealed class PercentageByContextCondition : ClientSideCondition
             return percentage >= 100;
         }
 
-        // Shared with v3 so a rollout lands on the same users across versions and provider libraries.
-        return FeatureFlagEvaluator.GetNormalizedNumber(context.EvaluationKey, targetingKey!) <= percentage;
+        return PercentageRollout.GetNormalizedNumber(context.EvaluationKey, targetingKey!) <= percentage;
     }
 }
