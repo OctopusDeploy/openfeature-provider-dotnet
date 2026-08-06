@@ -23,7 +23,7 @@ public class OctopusFeatureConfiguration
     public string? ReleaseVersionOverride { get; set; }
 
     /// <summary>
-    /// The ClientIdentifier provided by the Octopus variable Octopus.FeatureToggles.ClientIdentifier
+    /// The ClientIdentifier provided by the Octopus variable Octopus.FeatureFlags.ClientIdentifier
     /// </summary>
     public string ClientIdentifier { get; set; }
 
@@ -33,8 +33,8 @@ public class OctopusFeatureConfiguration
     public ProductMetadata ProductMetadata { get; set; }
 
     /// <summary>
-    /// The amount of time between checks to see if new feature toggles are available
-    /// The cache will be refreshed if new feature toggles are available
+    /// The amount of time between checks to see if new feature flag evaluations are available
+    /// The cache will be refreshed if new evaluations are available
     /// </summary>
     public TimeSpan CacheDuration { get; set; } = TimeSpan.FromMinutes(1);
 

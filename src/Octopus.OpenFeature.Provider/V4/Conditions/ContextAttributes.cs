@@ -14,9 +14,9 @@ internal static class ContextAttributes
     /// <paramref name="values"/>.
     /// </summary>
     /// <remarks>
-    /// Mirrors v3 segment matching: keys and values compare case-insensitively and a non-string value
-    /// counts as absent. Every entry whose key matches is checked, not just the first — a context can
-    /// hold several case variants of one key, and AsDictionary's order is unstable across processes.
+    /// Keys and values compare case-insensitively and a non-string value counts as absent. Every entry whose key
+    /// matches is checked, not just the first — a context can hold several case variants of one key, and AsDictionary's
+    /// order is unstable across processes.
     /// </remarks>
     public static bool IsOneOf(ClientSideEvaluationContext context, string? key, string[]? values)
     {

@@ -37,7 +37,7 @@ internal class FeatureFlagEvaluator(EvaluationResponse evaluationResponse, ILogg
             if (warnedSlugs.TryAdd(slug, 0))
             {
                 logger.LogWarning(
-                    "The slug {Slug} did not match any of your Octopus Feature Toggles. Please double check your slug and try again.",
+                    "The slug {Slug} did not match any of your Octopus Feature Flags. Please double check your slug and try again.",
                     slug);
             }
 
