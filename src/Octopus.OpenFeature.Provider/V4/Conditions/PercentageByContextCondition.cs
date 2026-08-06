@@ -40,6 +40,6 @@ internal sealed class PercentageByContextCondition : ClientSideCondition
             return percentage >= 100;
         }
 
-        return PercentageRollout.GetNormalizedNumber(context.EvaluationKey, targetingKey!) <= percentage;
+        return PercentageRollout.Includes(context.EvaluationKey, targetingKey!, percentage);
     }
 }
