@@ -6,38 +6,6 @@ using Octopus.OpenFeature.Provider.V4;
 
 namespace Octopus.OpenFeature.Provider;
 
-internal class FeatureToggles(FeatureToggleEvaluation[] evaluations, byte[] contentHash)
-{
-    // TODO: Remove in BMBB-702
-
-    public FeatureToggleEvaluation[] Evaluations { get; } = evaluations;
-
-    public byte[] ContentHash { get; } = contentHash;
-}
-
-internal class EvaluationResponse(ServerSideEvaluation[] evaluations, byte[] contentHash)
-{
-    public ServerSideEvaluation[] Evaluations { get; } = evaluations;
-
-    public byte[] ContentHash { get; } = contentHash;
-}
-
-internal class FeatureToggleEvaluation(
-    string slug,
-    bool isEnabled,
-    string? evaluationKey,
-    KeyValuePair<string, string>[]? segments,
-    int? clientRolloutPercentage)
-{
-    // TODO: Remove in BMBB-702
-
-    public string Slug { get; } = slug;
-    public bool IsEnabled { get; } = isEnabled;
-    public string? EvaluationKey { get; } = evaluationKey;
-    public KeyValuePair<string, string>[]? Segments { get; } = segments;
-    public int? ClientRolloutPercentage { get; } = clientRolloutPercentage;
-}
-
 internal interface IFeatureFlagApiClient
 {
     Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken);
@@ -131,20 +99,20 @@ internal class FeatureFlagApiClient(OctopusFeatureConfiguration configuration, I
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
-            logger.LogWarning("Failed to retrieve feature flags for client identifier {ClientIdentifier} from {OctoToggleUrl}", configuration.ClientIdentifier, configuration.ServerUri);
+            logger.LogWarning("Failed to retrieve feature flags for client identifier {ClientIdentifier} from {ServerUri}", configuration.ClientIdentifier, configuration.ServerUri);
             return null;
         }
 
         if (!response.Headers.TryGetValues("ContentHash", out IEnumerable<string> values))
         {
-            logger.LogWarning("Feature flag response from {OctoToggleUrl} did not contain expected ContentHash header", configuration.ServerUri);
+            logger.LogWarning("Feature flag response from {ServerUri} did not contain expected ContentHash header", configuration.ServerUri);
             return null;
         }
 
         var headerValues = values.ToArray();
         if (!headerValues.Any())
         {
-            logger.LogWarning("Feature flag response from {OctoToggleUrl} returned an empty ContentHash header", configuration.ServerUri);
+            logger.LogWarning("Feature flag response from {ServerUri} returned an empty ContentHash header", configuration.ServerUri);
             return null;
         }
 
@@ -156,7 +124,7 @@ internal class FeatureFlagApiClient(OctopusFeatureConfiguration configuration, I
 
         if (evaluations is null)
         {
-            logger.LogWarning("Feature flag response content from {OctoToggleUrl} was empty", configuration.ServerUri);
+            logger.LogWarning("Feature flag response content from {ServerUri} was empty", configuration.ServerUri);
             return null;
         }
 

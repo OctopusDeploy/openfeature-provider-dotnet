@@ -48,8 +48,7 @@ public class ContextAttributeIsOneOfConditionTests
     [Fact]
     public void ANonStringValueIsTreatedAsAbsent()
     {
-        // OpenFeature's Value.AsString is null for a non-string, and v3 segment matching skips those
-        // entries too, so a numeric attribute never matches a string value.
+        // OpenFeature's Value.AsString is null for a non-string, so a numeric attribute never matches a string value.
         var context = new ClientSideEvaluationContext(Contexts.EvaluationKey,
             EvaluationContext.Builder().Set("user-id", 1234).Build());
 
