@@ -15,7 +15,7 @@
         <PackageTags>tool</PackageTags>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/OctopusDeploy/openfeature-dotnet/</RepositoryUrl>
-        <Description>The OctopusDeploy dotnet OpenFeature provide</Description>
+        <Description>The OctopusDeploy dotnet OpenFeature provider</Description>
         <Product>Octopus.OpenFeature</Product>
         <ReleasePleaseVersion>4.0.0</ReleasePleaseVersion> <!--x-release-please-version -->
         <VersionPrefix>$(ReleasePleaseVersion)</VersionPrefix>
