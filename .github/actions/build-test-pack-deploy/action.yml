@@ -71,7 +71,7 @@ runs:
 
     - name: Login to Octopus Deploy 🐙
       if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
-      uses: OctopusDeploy/login@e39e03d07630f363bdccd6c7ad4eb28e0ea8a184 # v2
+      uses: OctopusDeploy/login@d156cc2dd8d6f4592c3a0e54e8b51a4ea9198dd5 # v2
       with:
         server: ${{ inputs.octopus-url }}
         service_account_id: 42e00747-07e1-4214-979c-af3381e6d951
