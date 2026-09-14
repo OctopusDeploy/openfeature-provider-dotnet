@@ -25,6 +25,17 @@ internal class FeatureFlagEvaluatorCache(
     /// </summary>
     DateTimeOffset? lastSuccessfulRefresh;
     bool refreshFailing;
+    bool staleReported;
+
+    /// <summary>
+    /// Raised once when refreshes start failing, not on every failed attempt.
+    /// </summary>
+    public event Action? RefreshFailed;
+
+    /// <summary>
+    /// Raised when a refresh succeeds after <see cref="RefreshFailed"/> was raised, so the two always pair.
+    /// </summary>
+    public event Action? RefreshRecovered;
 
     public FeatureFlagEvaluator GetEvaluator()
     {
@@ -129,6 +140,12 @@ internal class FeatureFlagEvaluatorCache(
             }
 
             refreshFailing = false;
+
+            if (staleReported)
+            {
+                staleReported = false;
+                RefreshRecovered?.Invoke();
+            }
         }
 
         lastSuccessfulRefresh = now;
@@ -158,6 +175,14 @@ internal class FeatureFlagEvaluatorCache(
         }
 
         refreshFailing = true;
+
+        // Tracked separately from refreshFailing: a failed initial fetch marks the refresh as failing
+        // without a transition here, and the first failed refresh after it should still report stale.
+        if (!staleReported)
+        {
+            staleReported = true;
+            RefreshFailed?.Invoke();
+        }
     }
 
     public async ValueTask Shutdown()

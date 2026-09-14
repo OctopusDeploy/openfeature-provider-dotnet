@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using OpenFeature;
+using OpenFeature.Constant;
 using OpenFeature.Error;
 using OpenFeature.Model;
 
@@ -10,10 +11,8 @@ public class OctopusFeatureProvider : FeatureProvider
     readonly FeatureFlagEvaluatorCache evaluatorCache;
 
     public OctopusFeatureProvider(OctopusFeatureConfiguration configuration)
+        : this(configuration, new FeatureFlagApiClient(configuration, configuration.LoggerFactory.CreateLogger<OctopusFeatureProvider>()))
     {
-        var logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureProvider>();
-        var client = new FeatureFlagApiClient(configuration, logger);
-        evaluatorCache = new FeatureFlagEvaluatorCache(configuration, client, logger);
     }
 
     // Allows us to pass in a fake IFeatureFlagApiClient for testing purposes.
@@ -21,6 +20,25 @@ public class OctopusFeatureProvider : FeatureProvider
     {
         var logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureProvider>();
         evaluatorCache = new FeatureFlagEvaluatorCache(configuration, client, logger);
+
+        evaluatorCache.RefreshFailed += () => Emit(
+            ProviderEventTypes.ProviderStale,
+            "Failed to refresh the feature manifest. Evaluations are served from the last manifest retrieved, which may be stale.");
+        evaluatorCache.RefreshRecovered += () => Emit(
+            ProviderEventTypes.ProviderReady,
+            "The feature manifest refresh has recovered.");
+    }
+
+    void Emit(ProviderEventTypes type, string message)
+    {
+        // The channel is bounded and only drained once the provider is registered with the SDK.
+        // Drop the event rather than block the refresh loop when nothing is listening.
+        EventChannel.Writer.TryWrite(new ProviderEventPayload
+        {
+            Type = type,
+            ProviderName = GetMetadata().Name,
+            Message = message
+        });
     }
 
     public override Metadata GetMetadata()
