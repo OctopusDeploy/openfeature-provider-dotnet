@@ -73,9 +73,11 @@ internal class FeatureFlagEvaluatorCache(
                     }
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                // OperationCanceledException during delay is ordinary cancellation behaviour. Ignore it and let the loop exit if IsCancellationRequested
+                // Ordinary shutdown. Let the loop exit.
+                // A request that hits RequestTimeout also surfaces as an OperationCanceledException, so the filter
+                // matters: without it a timed-out refresh would be swallowed here instead of being reported below.
             }
             catch (Exception e)
             {
