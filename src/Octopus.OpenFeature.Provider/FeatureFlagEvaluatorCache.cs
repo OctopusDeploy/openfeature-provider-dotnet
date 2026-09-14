@@ -9,13 +9,16 @@ namespace Octopus.OpenFeature.Provider;
 internal class FeatureFlagEvaluatorCache(
     OctopusFeatureConfiguration configuration,
     IFeatureFlagApiClient client,
-    ILogger logger)
+    ILogger logger,
+    Func<DateTimeOffset>? utcNow = null)
 {
     readonly CancellationTokenSource cancellationTokenSource = new();
+    readonly Func<DateTimeOffset> utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
 
     FeatureFlagEvaluator currentEvaluator = FeatureFlagEvaluator.Empty(configuration.LoggerFactory);
     Task? refreshTask;
     bool initialized;
+    DateTimeOffset lastSuccessfulRefresh;
 
     public FeatureFlagEvaluator GetEvaluator()
     {
@@ -28,6 +31,8 @@ internal class FeatureFlagEvaluatorCache(
         {
             return;
         }
+
+        lastSuccessfulRefresh = utcNow();
 
         try
         {
@@ -66,11 +71,16 @@ internal class FeatureFlagEvaluatorCache(
                     if (evaluationResponse is not null)
                     {
                         currentEvaluator = new FeatureFlagEvaluator(evaluationResponse, configuration.LoggerFactory);
+                        lastSuccessfulRefresh = utcNow();
                     }
                     else
                     {
-                        logger.LogError("Failed to retrieve updated feature manifest. Retaining the existing evaluations, which may be stale.");
+                        ReportRefreshFailure(exception: null);
                     }
+                }
+                else
+                {
+                    lastSuccessfulRefresh = utcNow();
                 }
             }
             catch (OperationCanceledException)
@@ -79,9 +89,18 @@ internal class FeatureFlagEvaluatorCache(
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Failed to retrieve updated feature manifest. Retaining the existing evaluations, which may be stale.");
+                ReportRefreshFailure(e);
             }
         }
+    }
+
+    void ReportRefreshFailure(Exception? exception)
+    {
+        logger.Log(
+            LogLevel.Error,
+            exception,
+            "Failed to retrieve updated feature manifest. Retaining the existing evaluations, which may be stale. The last successful refresh was {TimeSinceLastRefresh} ago.",
+            utcNow() - lastSuccessfulRefresh);
     }
 
     public async ValueTask Shutdown()

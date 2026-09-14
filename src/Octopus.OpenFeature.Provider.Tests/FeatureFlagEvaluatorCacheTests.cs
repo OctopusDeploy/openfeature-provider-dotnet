@@ -206,6 +206,31 @@ public class FeatureFlagEvaluatorCacheTests
         }
     }
 
+    [Fact]
+    public async Task WhenARefreshFails_ReportsHowLongSinceTheLastSuccessfulRefresh()
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var logger = new FakeLogger();
+        var client = new ThrowsOnRefreshClient(Response(value: true, [0x01]));
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger, () => now);
+
+        await cache.Initialize();
+
+        try
+        {
+            now += TimeSpan.FromMinutes(4);
+            await Task.Delay(TimeSpan.FromSeconds(5));
+
+            using var scope = new AssertionScope();
+            logger.LatestRecord.Level.Should().Be(LogLevel.Error);
+            logger.LatestRecord.Message.Should().EndWith("The last successful refresh was 00:04:00 ago.");
+        }
+        finally
+        {
+            await cache.Shutdown();
+        }
+    }
+
     class ThrowsOnRefreshClient(EvaluationResponse initial) : IFeatureFlagApiClient
     {
         public readonly string ErrorMessage = "Oops! Simulated refresh error";
