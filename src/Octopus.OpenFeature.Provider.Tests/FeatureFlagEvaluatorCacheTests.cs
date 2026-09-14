@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Extensions.Logging;
@@ -10,6 +11,11 @@ namespace Octopus.OpenFeature.Provider.Tests;
 public class FeatureFlagEvaluatorCacheTests
 {
     const string Slug = "test-feature";
+
+    /// <summary>
+    /// Logging formats message arguments with the invariant culture, so the expected text must too.
+    /// </summary>
+    static string Invariant(DateTimeOffset value) => value.ToString(CultureInfo.InvariantCulture);
 
     readonly OctopusFeatureConfiguration configuration = new("identifier", new ProductMetadata("test-agent"))
     {
@@ -210,6 +216,7 @@ public class FeatureFlagEvaluatorCacheTests
     public async Task WhenARefreshFails_ReportsHowLongSinceTheLastSuccessfulRefresh()
     {
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var start = now;
         var logger = new FakeLogger();
         var client = new ThrowsOnRefreshClient(Response(value: true, [0x01]));
         var cache = new FeatureFlagEvaluatorCache(configuration, client, logger, () => now);
@@ -223,7 +230,7 @@ public class FeatureFlagEvaluatorCacheTests
 
             using var scope = new AssertionScope();
             logger.LatestRecord.Level.Should().Be(LogLevel.Error);
-            logger.LatestRecord.Message.Should().EndWith("The last successful refresh was 00:04:00 ago.");
+            logger.LatestRecord.Message.Should().Be($"Failed to retrieve updated feature manifest. Retaining the existing evaluations, which may be stale. The last successful refresh was 00:04:00 ago, at {Invariant(start)}.");
         }
         finally
         {
@@ -235,6 +242,7 @@ public class FeatureFlagEvaluatorCacheTests
     public async Task WhenARefreshRecovers_ReportsHowLongSinceTheLastSuccessfulRefresh()
     {
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var start = now;
         var logger = new FakeLogger();
         var client = new MockFeatureFlagApiClient(Response(value: true, [0x01]));
         var cache = new FeatureFlagEvaluatorCache(configuration, client, logger, () => now);
@@ -252,7 +260,7 @@ public class FeatureFlagEvaluatorCacheTests
 
             using var scope = new AssertionScope();
             logger.LatestRecord.Level.Should().Be(LogLevel.Information);
-            logger.LatestRecord.Message.Should().EndWith("The previous successful refresh was 00:01:00 ago.");
+            logger.LatestRecord.Message.Should().Be($"Feature manifest refresh recovered. Evaluations may have been stale for 00:01:00, since the last successful refresh at {Invariant(start)}.");
         }
         finally
         {
@@ -273,7 +281,60 @@ public class FeatureFlagEvaluatorCacheTests
         {
             await Task.Delay(TimeSpan.FromSeconds(3));
 
-            logger.Collector.GetSnapshot().Should().NotContain(r => r.Message.Contains("Retrieved an updated feature manifest"));
+            logger.Collector.GetSnapshot().Should().NotContain(r => r.Message.Contains("recovered"));
+        }
+        finally
+        {
+            await cache.Shutdown();
+        }
+    }
+
+    [Fact]
+    public async Task WhenNoRefreshHasEverSucceeded_AFailureReportsTimeSinceTheProviderStarted()
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var start = now;
+        var logger = new FakeLogger();
+        var client = new AlwaysFailsFeatureFlagApiClient();
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger, () => now);
+
+        await cache.Initialize();
+
+        try
+        {
+            now += TimeSpan.FromMinutes(2);
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            using var scope = new AssertionScope();
+            logger.LatestRecord.Level.Should().Be(LogLevel.Error);
+            logger.LatestRecord.Message.Should().Be($"Failed to retrieve updated feature manifest. No refresh has succeeded since the provider started 00:02:00 ago, at {Invariant(start)}. Defaults are being used during evaluation.");
+        }
+        finally
+        {
+            await cache.Shutdown();
+        }
+    }
+
+    [Fact]
+    public async Task WhenTheInitialFetchFailed_TheFirstSuccessfulRefreshIsReportedAsARecovery()
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var start = now;
+        var logger = new FakeLogger();
+        var client = new MockFeatureFlagApiClient(null);
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger, () => now);
+
+        await cache.Initialize();
+
+        try
+        {
+            now += TimeSpan.FromMinutes(3);
+            client.ChangeEvaluations(Response(value: true, [0x01]));
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            using var scope = new AssertionScope();
+            logger.LatestRecord.Level.Should().Be(LogLevel.Information);
+            logger.LatestRecord.Message.Should().Be($"Feature manifest refresh recovered. No refresh had succeeded since the provider started 00:03:00 ago, at {Invariant(start)}.");
         }
         finally
         {
