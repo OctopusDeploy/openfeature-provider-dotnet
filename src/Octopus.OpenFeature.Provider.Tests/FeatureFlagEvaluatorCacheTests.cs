@@ -34,6 +34,10 @@ public class FeatureFlagEvaluatorCacheTests
     {
         EvaluationResponse? evaluationResponse = evaluationResponse;
 
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose() => IsDisposed = true;
+
         public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
@@ -206,6 +210,18 @@ public class FeatureFlagEvaluatorCacheTests
         }
     }
 
+    [Fact]
+    public async Task Shutdown_DisposesTheApiClient()
+    {
+        var client = new MockFeatureFlagApiClient(Response(value: true, [0x01]));
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, NullLogger.Instance);
+
+        await cache.Initialize();
+        await cache.Shutdown();
+
+        client.IsDisposed.Should().BeTrue();
+    }
+
     class ThrowsOnRefreshClient(EvaluationResponse initial) : IFeatureFlagApiClient
     {
         public readonly string ErrorMessage = "Oops! Simulated refresh error";
@@ -219,6 +235,8 @@ public class FeatureFlagEvaluatorCacheTests
         {
             return Task.FromResult<EvaluationResponse?>(initial);
         }
+
+        public void Dispose() { }
     }
 
     [Fact]
@@ -260,6 +278,8 @@ public class FeatureFlagEvaluatorCacheTests
         {
             throw new Exception("Oops!");
         }
+
+        public void Dispose() { }
     }
 
     [Fact]
