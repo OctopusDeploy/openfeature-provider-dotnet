@@ -115,4 +115,54 @@ public class OctopusFeatureProviderTests
 
         result.ErrorType.Should().Be(ErrorType.FlagNotFound);
     }
+
+    class FailsOnDemandClient : IFeatureFlagApiClient
+    {
+        public volatile bool FailRefreshes;
+
+        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
+            => FailRefreshes
+                ? throw new HttpRequestException("Simulated connection failure")
+                : Task.FromResult(false);
+
+        public Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken)
+            => Task.FromResult<EvaluationResponse?>(Response(Flag("my-flag")));
+    }
+
+    static async Task WaitUntil(Func<bool> condition, string because)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (!condition() && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(100);
+        }
+
+        condition().Should().BeTrue(because);
+    }
+
+    [Fact]
+    public async Task TheProviderIsStaleWhileRefreshesFailAndReadyOnceTheyRecover()
+    {
+        var apiClient = new FailsOnDemandClient();
+        var provider = new OctopusFeatureProvider(
+            new OctopusFeatureConfiguration("identifier", new ProductMetadata("test-agent")) { CacheDuration = TimeSpan.FromMilliseconds(200) },
+            apiClient);
+        await Api.Instance.SetProviderAsync(provider);
+        var client = Api.Instance.GetClient();
+
+        try
+        {
+            client.ProviderStatus.Should().Be(ProviderStatus.Ready);
+
+            apiClient.FailRefreshes = true;
+            await WaitUntil(() => client.ProviderStatus == ProviderStatus.Stale, "a failed refresh should mark the provider stale");
+
+            apiClient.FailRefreshes = false;
+            await WaitUntil(() => client.ProviderStatus == ProviderStatus.Ready, "a successful refresh should mark the provider ready again");
+        }
+        finally
+        {
+            await Api.Instance.ShutdownAsync();
+        }
+    }
 }
