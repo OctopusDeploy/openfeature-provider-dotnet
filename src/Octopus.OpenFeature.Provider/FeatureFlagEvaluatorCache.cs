@@ -19,6 +19,7 @@ internal class FeatureFlagEvaluatorCache(
     Task? refreshTask;
     bool initialized;
     DateTimeOffset lastSuccessfulRefresh;
+    bool refreshFailing;
 
     public FeatureFlagEvaluator GetEvaluator()
     {
@@ -71,7 +72,7 @@ internal class FeatureFlagEvaluatorCache(
                     if (evaluationResponse is not null)
                     {
                         currentEvaluator = new FeatureFlagEvaluator(evaluationResponse, configuration.LoggerFactory);
-                        lastSuccessfulRefresh = utcNow();
+                        RecordSuccessfulRefresh();
                     }
                     else
                     {
@@ -80,7 +81,7 @@ internal class FeatureFlagEvaluatorCache(
                 }
                 else
                 {
-                    lastSuccessfulRefresh = utcNow();
+                    RecordSuccessfulRefresh();
                 }
             }
             catch (OperationCanceledException)
@@ -94,6 +95,20 @@ internal class FeatureFlagEvaluatorCache(
         }
     }
 
+    void RecordSuccessfulRefresh()
+    {
+        if (refreshFailing)
+        {
+            logger.LogInformation(
+                "Retrieved an updated feature manifest. The previous successful refresh was {TimeSinceLastRefresh} ago.",
+                utcNow() - lastSuccessfulRefresh);
+
+            refreshFailing = false;
+        }
+
+        lastSuccessfulRefresh = utcNow();
+    }
+
     void ReportRefreshFailure(Exception? exception)
     {
         logger.Log(
@@ -101,6 +116,8 @@ internal class FeatureFlagEvaluatorCache(
             exception,
             "Failed to retrieve updated feature manifest. Retaining the existing evaluations, which may be stale. The last successful refresh was {TimeSinceLastRefresh} ago.",
             utcNow() - lastSuccessfulRefresh);
+
+        refreshFailing = true;
     }
 
     public async ValueTask Shutdown()

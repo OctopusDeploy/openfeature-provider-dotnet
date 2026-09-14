@@ -231,6 +231,56 @@ public class FeatureFlagEvaluatorCacheTests
         }
     }
 
+    [Fact]
+    public async Task WhenARefreshRecovers_ReportsHowLongSinceTheLastSuccessfulRefresh()
+    {
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var logger = new FakeLogger();
+        var client = new MockFeatureFlagApiClient(Response(value: true, [0x01]));
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger, () => now);
+
+        await cache.Initialize();
+
+        try
+        {
+            client.ChangeEvaluations(null);
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            now += TimeSpan.FromMinutes(1);
+
+            client.ChangeEvaluations(Response(value: true, [0x02]));
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            using var scope = new AssertionScope();
+            logger.LatestRecord.Level.Should().Be(LogLevel.Information);
+            logger.LatestRecord.Message.Should().EndWith("The previous successful refresh was 00:01:00 ago.");
+        }
+        finally
+        {
+            await cache.Shutdown();
+        }
+    }
+
+    [Fact]
+    public async Task ASuccessfulRefreshIsNotReportedWhenNothingHadFailed()
+    {
+        var logger = new FakeLogger();
+        var client = new MockFeatureFlagApiClient(Response(value: true, [0x01]));
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger);
+
+        await cache.Initialize();
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            logger.Collector.GetSnapshot().Should().NotContain(r => r.Message.Contains("Retrieved an updated feature manifest"));
+        }
+        finally
+        {
+            await cache.Shutdown();
+        }
+    }
+
     class ThrowsOnRefreshClient(EvaluationResponse initial) : IFeatureFlagApiClient
     {
         public readonly string ErrorMessage = "Oops! Simulated refresh error";
