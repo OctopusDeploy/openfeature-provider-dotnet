@@ -135,4 +135,82 @@ public class FeatureFlagApiClientTests
         evaluationResponse!.ContentHash.Should().Equal([0x01, 0x02]);
         evaluationResponse.Evaluations.Select(evaluation => evaluation.Slug).Should().Equal("test-feature");
     }
+
+    static FeatureFlagApiClient ClientFor(WireMockServer server, Action<OctopusFeatureConfiguration> configure)
+    {
+        var configuration = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct"))
+        {
+            ServerUri = new Uri(server.Url!)
+        };
+        configure(configuration);
+
+        return new FeatureFlagApiClient(configuration, NullLogger.Instance);
+    }
+
+    static WireMockServer ServerRespondingToCheck()
+    {
+        var server = WireMockServer.Start();
+        server
+            .Given(Request.Create().WithPath(CheckPath).UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody($$"""{"contentHash":"{{Convert.ToBase64String([0x01, 0x02])}}"}"""));
+
+        return server;
+    }
+
+    static IEnumerable<string> HeaderValues(WireMockServer server, string name)
+        => server.LogEntries.Select(entry => entry.RequestMessage!.Headers![name].Single());
+
+    [Fact]
+    public async Task TheClientIdentifierIsSentAsABearerToken()
+    {
+        using var server = ServerRespondingToCheck();
+
+        await ClientFor(server).HaveFeaturesChanged([0x03, 0x04], CancellationToken.None);
+
+        HeaderValues(server, "Authorization").Should().Equal("Bearer test-id");
+    }
+
+    [Fact]
+    public async Task TheReleaseVersionOverrideIsSentWhenConfigured()
+    {
+        using var server = ServerRespondingToCheck();
+
+        var client = ClientFor(server, configuration => configuration.ReleaseVersionOverride = "2026.1.0");
+        await client.HaveFeaturesChanged([0x03, 0x04], CancellationToken.None);
+
+        HeaderValues(server, OctopusHttpHeaderNames.ReleaseVersion).Should().Equal("2026.1.0");
+    }
+
+    [Fact]
+    public async Task EveryRequestCarriesTheConfiguredHeaders()
+    {
+        using var server = ServerRespondingToCheck();
+        var client = ClientFor(server);
+
+        await client.HaveFeaturesChanged([0x03, 0x04], CancellationToken.None);
+        await client.HaveFeaturesChanged([0x03, 0x04], CancellationToken.None);
+
+        using var scope = new AssertionScope();
+        HeaderValues(server, "Authorization").Should().Equal("Bearer test-id", "Bearer test-id");
+        HeaderValues(server, "X-Octopus-Client").Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task RequestsUseOneLongLivedHttpClient()
+    {
+        // Disposing the api client disposes the underlying HttpClient, so a later request fails.
+        // A client constructed per request would carry on working.
+        using var server = ServerRespondingToCheck();
+        var client = ClientFor(server);
+
+        await client.HaveFeaturesChanged([0x03, 0x04], CancellationToken.None);
+        client.Dispose();
+
+        var refresh = () => client.HaveFeaturesChanged([0x03, 0x04], CancellationToken.None);
+
+        await refresh.Should().ThrowAsync<ObjectDisposedException>();
+    }
 }

@@ -34,6 +34,10 @@ public class FeatureFlagEvaluatorCacheTests
     {
         EvaluationResponse? evaluationResponse = evaluationResponse;
 
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose() => IsDisposed = true;
+
         public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
@@ -206,6 +210,58 @@ public class FeatureFlagEvaluatorCacheTests
         }
     }
 
+    class TimesOutOnRefreshClient(EvaluationResponse initial) : IFeatureFlagApiClient
+    {
+        public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
+        {
+            // HttpClient reports a request that exceeded its Timeout as a TaskCanceledException.
+            throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout elapsing.");
+        }
+
+        public Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<EvaluationResponse?>(initial);
+        }
+
+        public void Dispose() { }
+    }
+
+    [Fact]
+    public async Task WhenARefreshTimesOut_TheFailureIsLogged()
+    {
+        var logger = new FakeLogger();
+        var client = new TimesOutOnRefreshClient(Response(value: true, [0x01]));
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, logger);
+
+        await cache.Initialize();
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            using var scope = new AssertionScope();
+            logger.LatestRecord.Level.Should().Be(LogLevel.Error);
+            logger.LatestRecord.Message.Should().StartWith("Failed to retrieve updated feature manifest");
+            logger.LatestRecord.Exception.Should().BeOfType<TaskCanceledException>();
+        }
+        finally
+        {
+            await cache.Shutdown();
+        }
+    }
+
+    [Fact]
+    public async Task Shutdown_DisposesTheApiClient()
+    {
+        var client = new MockFeatureFlagApiClient(Response(value: true, [0x01]));
+        var cache = new FeatureFlagEvaluatorCache(configuration, client, NullLogger.Instance);
+
+        await cache.Initialize();
+        await cache.Shutdown();
+
+        client.IsDisposed.Should().BeTrue();
+    }
+
     class ThrowsOnRefreshClient(EvaluationResponse initial) : IFeatureFlagApiClient
     {
         public readonly string ErrorMessage = "Oops! Simulated refresh error";
@@ -219,6 +275,8 @@ public class FeatureFlagEvaluatorCacheTests
         {
             return Task.FromResult<EvaluationResponse?>(initial);
         }
+
+        public void Dispose() { }
     }
 
     [Fact]
@@ -260,6 +318,8 @@ public class FeatureFlagEvaluatorCacheTests
         {
             throw new Exception("Oops!");
         }
+
+        public void Dispose() { }
     }
 
     [Fact]
