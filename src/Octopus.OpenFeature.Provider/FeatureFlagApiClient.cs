@@ -7,7 +7,7 @@ using Octopus.OpenFeature.Provider.V4;
 
 namespace Octopus.OpenFeature.Provider;
 
-internal interface IFeatureFlagApiClient : IDisposable
+internal interface IFeatureFlagApiClient
 {
     Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken);
     Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken);
@@ -16,7 +16,7 @@ internal interface IFeatureFlagApiClient : IDisposable
 /// <summary>
 /// Responsible for determining if feature flags have been modified and for retrieving their server-side evaluations.
 /// </summary>
-internal class FeatureFlagApiClient : IFeatureFlagApiClient
+internal class FeatureFlagApiClient : IFeatureFlagApiClient, IDisposable
 {
     readonly OctopusFeatureConfiguration configuration;
     readonly ILogger logger;

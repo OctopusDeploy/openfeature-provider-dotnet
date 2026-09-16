@@ -222,8 +222,6 @@ public class FeatureFlagEvaluatorCacheTests
         {
             return Task.FromResult<EvaluationResponse?>(initial);
         }
-
-        public void Dispose() { }
     }
 
     [Fact]
@@ -251,7 +249,7 @@ public class FeatureFlagEvaluatorCacheTests
     }
 
     [Fact]
-    public async Task Shutdown_DisposesTheApiClient()
+    public async Task Shutdown_DoesNotDisposeAnApiClientItDoesNotOwn()
     {
         var client = new MockFeatureFlagApiClient(Response(value: true, [0x01]));
         var cache = new FeatureFlagEvaluatorCache(configuration, client, NullLogger.Instance);
@@ -259,7 +257,7 @@ public class FeatureFlagEvaluatorCacheTests
         await cache.Initialize();
         await cache.Shutdown();
 
-        client.IsDisposed.Should().BeTrue();
+        client.IsDisposed.Should().BeFalse();
     }
 
     class ThrowsOnRefreshClient(EvaluationResponse initial) : IFeatureFlagApiClient
@@ -275,8 +273,6 @@ public class FeatureFlagEvaluatorCacheTests
         {
             return Task.FromResult<EvaluationResponse?>(initial);
         }
-
-        public void Dispose() { }
     }
 
     [Fact]
@@ -318,8 +314,6 @@ public class FeatureFlagEvaluatorCacheTests
         {
             throw new Exception("Oops!");
         }
-
-        public void Dispose() { }
     }
 
     [Fact]

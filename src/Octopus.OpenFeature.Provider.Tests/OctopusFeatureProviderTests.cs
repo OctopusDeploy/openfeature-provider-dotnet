@@ -14,7 +14,6 @@ public class OctopusFeatureProviderTests
     {
         public Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken) => Task.FromResult(evaluationResponse);
-        public void Dispose() { }
     }
 
     static ServerSideEvaluation Flag(string slug)

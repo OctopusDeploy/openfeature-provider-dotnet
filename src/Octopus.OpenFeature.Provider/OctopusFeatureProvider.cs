@@ -9,11 +9,14 @@ public class OctopusFeatureProvider : FeatureProvider
 {
     readonly FeatureFlagEvaluatorCache evaluatorCache;
 
+    // Null when the caller supplied the client and therefore keeps ownership of it.
+    readonly FeatureFlagApiClient? ownedClient;
+
     public OctopusFeatureProvider(OctopusFeatureConfiguration configuration)
     {
         var logger = configuration.LoggerFactory.CreateLogger<OctopusFeatureProvider>();
-        var client = new FeatureFlagApiClient(configuration, logger);
-        evaluatorCache = new FeatureFlagEvaluatorCache(configuration, client, logger);
+        ownedClient = new FeatureFlagApiClient(configuration, logger);
+        evaluatorCache = new FeatureFlagEvaluatorCache(configuration, ownedClient, logger);
     }
 
     // Allows us to pass in a fake IFeatureFlagApiClient for testing purposes.
@@ -37,7 +40,12 @@ public class OctopusFeatureProvider : FeatureProvider
     public override async Task ShutdownAsync(CancellationToken cancellationToken = new())
     {
         await base.ShutdownAsync(cancellationToken);
+
+        // Shut the cache down first. Disposing the client while a refresh is still in flight
+        // would fail that request on the way out.
         await evaluatorCache.Shutdown();
+
+        ownedClient?.Dispose();
     }
 
     public override async Task<ResolutionDetails<bool>> ResolveBooleanValueAsync(string flagKey, bool defaultValue, EvaluationContext? context = null,
