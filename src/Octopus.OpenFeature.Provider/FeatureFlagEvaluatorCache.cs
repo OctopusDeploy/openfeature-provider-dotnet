@@ -96,6 +96,5 @@ internal class FeatureFlagEvaluatorCache(
         }
 
         cancellationTokenSource.Dispose();
-        client.Dispose();
     }
 }
