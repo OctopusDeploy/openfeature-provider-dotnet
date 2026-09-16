@@ -13,10 +13,9 @@ public class FeatureFlagApiClientTests
     public void AddOctopusClientHeader_SetsXOctopusClientHeader()
     {
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct"));
-        var client = new FeatureFlagApiClient(config, NullLogger.Instance);
-        var httpClient = new HttpClient();
+        using var httpClient = new HttpClient();
 
-        client.AddOctopusClientHeader(httpClient);
+        FeatureFlagApiClient.AddOctopusClientHeader(httpClient, config);
 
         httpClient.DefaultRequestHeaders.Should().ContainKey("X-Octopus-Client");
     }
@@ -25,11 +24,10 @@ public class FeatureFlagApiClientTests
     public void AddOctopusClientHeader_WithNameOnly_HeaderContainsProductNameAndProviderInformation()
     {
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct"));
-        var client = new FeatureFlagApiClient(config, NullLogger.Instance);
-        var httpClient = new HttpClient();
+        using var httpClient = new HttpClient();
         var expectedVersion = typeof(FeatureFlagApiClient).Assembly.GetName().Version?.ToString(3);
 
-        client.AddOctopusClientHeader(httpClient);
+        FeatureFlagApiClient.AddOctopusClientHeader(httpClient, config);
 
         var headerValue = httpClient.DefaultRequestHeaders.GetValues("X-Octopus-Client").Single();
         headerValue.Should().Be($"MyProduct openfeature-provider-dotnet/{expectedVersion}");
@@ -39,11 +37,10 @@ public class FeatureFlagApiClientTests
     public void AddOctopusClientHeader_WithNameAndVersion_HeaderContainsProductAndProviderInformation()
     {
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("MyProduct", "2024.1.0"));
-        var client = new FeatureFlagApiClient(config, NullLogger.Instance);
-        var httpClient = new HttpClient();
+        using var httpClient = new HttpClient();
         var expectedVersion = typeof(FeatureFlagApiClient).Assembly.GetName().Version?.ToString(3);
 
-        client.AddOctopusClientHeader(httpClient);
+        FeatureFlagApiClient.AddOctopusClientHeader(httpClient, config);
 
         var headerValue = httpClient.DefaultRequestHeaders.GetValues("X-Octopus-Client").Single();
         headerValue.Should().Be($"MyProduct/2024.1.0 openfeature-provider-dotnet/{expectedVersion}");
@@ -55,11 +52,10 @@ public class FeatureFlagApiClientTests
         // Note: More character checking tests are in ProductMetadataTests.cs
 
         var config = new OctopusFeatureConfiguration("test-id", new ProductMetadata("My Product"));
-        var client = new FeatureFlagApiClient(config, NullLogger.Instance);
-        var httpClient = new HttpClient();
+        using var httpClient = new HttpClient();
         var expectedVersion = typeof(FeatureFlagApiClient).Assembly.GetName().Version?.ToString(3);
 
-        client.AddOctopusClientHeader(httpClient);
+        FeatureFlagApiClient.AddOctopusClientHeader(httpClient, config);
 
         var headerValue = httpClient.DefaultRequestHeaders.GetValues("X-Octopus-Client").Single();
         headerValue.Should().Be($"MyProduct openfeature-provider-dotnet/{expectedVersion}");

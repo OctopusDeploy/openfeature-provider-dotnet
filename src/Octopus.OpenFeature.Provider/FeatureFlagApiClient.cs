@@ -78,10 +78,7 @@ internal class FeatureFlagApiClient : IFeatureFlagApiClient, IDisposable
         return haveFeaturesChanged;
     }
 
-    public void AddOctopusClientHeader(HttpClient client)
-        => AddOctopusClientHeader(client, configuration);
-
-    static void AddOctopusClientHeader(HttpClient client, OctopusFeatureConfiguration configuration)
+    internal static void AddOctopusClientHeader(HttpClient client, OctopusFeatureConfiguration configuration)
     {
         var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.Name);
 
