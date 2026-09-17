@@ -59,6 +59,24 @@ module.exports = {
       semanticCommitType: 'feat',
     },
     {
+      // Test and build tooling. Does not affect the shipped package. A green build gives us the
+      // confidence we need. The label is what renovate-automerge.yml acts on.
+      //
+      // Only list packages that version independently of production code. Renovate evaluates these
+      // rules per dependency and unions the labels onto the grouped PR, so a package that ships as
+      // part of a monorepo (Microsoft.Extensions.Diagnostics.Testing, for one, which Renovate groups
+      // with the dotnet monorepo alongside System.Text.Json) would label the whole group and
+      // automerge the production upgrades riding along with it.
+      matchPackageNames: [
+        'coverlet.*',
+        'xunit*',
+        'Microsoft.NET.Test.Sdk',
+        'WireMock.Net*',
+        'GitHubActionsTestLogger',
+      ],
+      addLabels: ['automerge'],
+    },
+    {
       // GitHub Actions: pin third-party actions to commit SHA for security.
       matchManagers: ['github-actions'],
       matchPackageNames: [
