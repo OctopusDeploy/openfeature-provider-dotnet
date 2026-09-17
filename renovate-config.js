@@ -77,6 +77,25 @@ module.exports = {
       addLabels: ['automerge'],
     },
     {
+      // renovatebot/github-action only runs in renovate.yml on a schedule, so CI never exercises
+      // it and a green build proves nothing about the upgrade. Automerged anyway because the blast
+      // radius is Renovate itself: if it breaks, dependency PRs stop appearing and nothing ships
+      // wrong. Version updates only — `digest` is a separate update type, so the pure SHA
+      // repoints below still get reviewed by hand.
+      matchManagers: ['github-actions'],
+      matchPackageNames: ['renovatebot/github-action'],
+      matchUpdateTypes: ['minor', 'patch'],
+      addLabels: ['automerge'],
+    },
+    {
+      // The Octopus actions are skipped on renovate/ branches in build-test-pack-deploy, so CI
+      // can't vouch for them and they stay on manual review. Group them instead, so a batch of
+      // digest repoints is one PR to check rather than three.
+      matchManagers: ['github-actions'],
+      matchPackageNames: ['OctopusDeploy/**'],
+      groupName: 'Octopus Deploy actions',
+    },
+    {
       // GitHub Actions: pin third-party actions to commit SHA for security.
       matchManagers: ['github-actions'],
       matchPackageNames: [
