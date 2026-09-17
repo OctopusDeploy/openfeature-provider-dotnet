@@ -59,6 +59,43 @@ module.exports = {
       semanticCommitType: 'feat',
     },
     {
+      // Test and build tooling. Does not affect the shipped package. A green build gives us the
+      // confidence we need. The label is what renovate-automerge.yml acts on.
+      //
+      // Only list packages that version independently of production code. Renovate evaluates these
+      // rules per dependency and unions the labels onto the grouped PR, so a package that ships as
+      // part of a monorepo (Microsoft.Extensions.Diagnostics.Testing, for one, which Renovate groups
+      // with the dotnet monorepo alongside System.Text.Json) would label the whole group and
+      // automerge the production upgrades riding along with it.
+      matchPackageNames: [
+        'coverlet.*',
+        'xunit*',
+        'Microsoft.NET.Test.Sdk',
+        'WireMock.Net*',
+        'GitHubActionsTestLogger',
+      ],
+      addLabels: ['automerge'],
+    },
+    {
+      // renovatebot/github-action only runs in renovate.yml on a schedule, so CI never exercises
+      // it and a green build proves nothing about the upgrade. Automerged anyway because the blast
+      // radius is Renovate itself: if it breaks, dependency PRs stop appearing and nothing ships
+      // wrong. Version updates only — `digest` is a separate update type, so the pure SHA
+      // repoints below still get reviewed by hand.
+      matchManagers: ['github-actions'],
+      matchPackageNames: ['renovatebot/github-action'],
+      matchUpdateTypes: ['minor', 'patch'],
+      addLabels: ['automerge'],
+    },
+    {
+      // The Octopus actions are skipped on renovate/ branches in build-test-pack-deploy, so CI
+      // can't vouch for them and they stay on manual review. Group them instead, so a batch of
+      // digest repoints is one PR to check rather than three.
+      matchManagers: ['github-actions'],
+      matchPackageNames: ['OctopusDeploy/**'],
+      groupName: 'Octopus Deploy actions',
+    },
+    {
       // GitHub Actions: pin third-party actions to commit SHA for security.
       matchManagers: ['github-actions'],
       matchPackageNames: [
