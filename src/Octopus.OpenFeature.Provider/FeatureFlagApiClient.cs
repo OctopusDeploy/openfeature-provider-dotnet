@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -15,8 +16,40 @@ internal interface IFeatureFlagApiClient
 /// <summary>
 /// Responsible for determining if feature flags have been modified and for retrieving their server-side evaluations.
 /// </summary>
-internal class FeatureFlagApiClient(OctopusFeatureConfiguration configuration, ILogger logger) : IFeatureFlagApiClient
+internal class FeatureFlagApiClient : IFeatureFlagApiClient, IDisposable
 {
+    readonly OctopusFeatureConfiguration configuration;
+    readonly ILogger logger;
+    readonly HttpClient client;
+
+    public FeatureFlagApiClient(OctopusFeatureConfiguration configuration, ILogger logger)
+    {
+        this.configuration = configuration;
+        this.logger = logger;
+        client = CreateHttpClient(configuration);
+    }
+
+    static HttpClient CreateHttpClient(OctopusFeatureConfiguration configuration)
+    {
+        var client = new HttpClient
+        {
+            BaseAddress = configuration.ServerUri,
+            Timeout = configuration.RequestTimeout
+        };
+
+        AddOctopusClientHeader(client, configuration);
+
+        // A typed value skips the header parsing that Add performs on a raw string.
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration.ClientIdentifier);
+
+        if (configuration.ReleaseVersionOverride is not null)
+        {
+            client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.ReleaseVersion, configuration.ReleaseVersionOverride);
+        }
+
+        return client;
+    }
+
     public async Task<bool> HaveFeaturesChanged(byte[] contentHash, CancellationToken cancellationToken)
     {
         if (contentHash.Length == 0)
@@ -24,14 +57,7 @@ internal class FeatureFlagApiClient(OctopusFeatureConfiguration configuration, I
             return true;
         }
 
-        var client = new HttpClient
-        {
-            BaseAddress = configuration.ServerUri
-        };
-        AddOctopusClientHeader(client);
-
         FeatureCheck? hash = null;
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
 
         var result = await client.GetAsync("api/feature-flags/check/v4/", cancellationToken);
 
@@ -52,7 +78,7 @@ internal class FeatureFlagApiClient(OctopusFeatureConfiguration configuration, I
         return haveFeaturesChanged;
     }
 
-    public void AddOctopusClientHeader(HttpClient client)
+    internal static void AddOctopusClientHeader(HttpClient client, OctopusFeatureConfiguration configuration)
     {
         var clientHeaderValueBuilder = new StringBuilder(configuration.ProductMetadata.Name);
 
@@ -82,19 +108,6 @@ internal class FeatureFlagApiClient(OctopusFeatureConfiguration configuration, I
     /// </summary>
     public async Task<EvaluationResponse?> GetServerSideEvaluations(CancellationToken cancellationToken)
     {
-        var client = new HttpClient
-        {
-            BaseAddress = configuration.ServerUri
-        };
-        AddOctopusClientHeader(client);
-
-        if (configuration.ReleaseVersionOverride is not null)
-        {
-            client.DefaultRequestHeaders.Add(OctopusHttpHeaderNames.ReleaseVersion, configuration.ReleaseVersionOverride);
-        }
-
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {configuration.ClientIdentifier}");
-
         var response = await client.GetAsync("api/feature-flags/evaluations/v4/", cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -131,5 +144,10 @@ internal class FeatureFlagApiClient(OctopusFeatureConfiguration configuration, I
         var evaluationResponse = new EvaluationResponse(evaluations, Convert.FromBase64String(rawContentHash));
 
         return evaluationResponse;
+    }
+
+    public void Dispose()
+    {
+        client.Dispose();
     }
 }
