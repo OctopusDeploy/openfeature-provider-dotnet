@@ -1,0 +1,34 @@
+name: Auto-approve and auto-merge Renovate pull requests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  # This Allows the GITHUB_TOKEN to approve pull requests
+  pull-requests: write
+  # This Allows the GITHUB_TOKEN to merge pull requests
+  contents: write
+
+env:
+  PR_URL: ${{ github.event.pull_request.html_url }}
+  # By default, the GitHub Actions workflow will get a GITHUB_TOKEN with read-only permissions.
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  approve-pr-renovate:
+    runs-on: ubuntu-latest
+    if: ${{ (github.actor == 'team-github-bot') && startsWith(github.head_ref, 'renovate/') && contains(github.event.pull_request.labels.*.name, 'automerge') }}
+    steps:
+      # Renovate can't approve its own PR, so main's required review would never be satisfied.
+      - name: ✅ Approve renovate PR
+        run: gh pr review --approve "$PR_URL"
+
+        # Merge with our own token instead of the automated GITHUB_TOKEN. GitHub deliberately refuses to trigger
+        # workflows in response to actions performed by its own GITHUB_TOKEN (an aggressive anti-infinite-loop measure)
+        # so merging with it would not fire the workflows that should run in response to the merge.
+      - name: 🔀 Auto-merge renovate PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.RENOVATE_GITHUB_TOKEN }}
+        run: gh pr merge --squash --auto "$PR_URL"
