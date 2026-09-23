@@ -9,13 +9,22 @@ namespace Octopus.OpenFeature.Provider;
 internal class FeatureFlagEvaluatorCache(
     OctopusFeatureConfiguration configuration,
     IFeatureFlagApiClient client,
-    ILogger logger)
+    ILogger logger,
+    Func<DateTimeOffset>? utcNow = null)
 {
     readonly CancellationTokenSource cancellationTokenSource = new();
+    readonly Func<DateTimeOffset> utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
 
     FeatureFlagEvaluator currentEvaluator = FeatureFlagEvaluator.Empty(configuration.LoggerFactory);
     Task? refreshTask;
     bool initialized;
+    DateTimeOffset startedAt;
+
+    /// <summary>
+    /// When a manifest was last retrieved, or confirmed unchanged. Null until the first manifest arrives.
+    /// </summary>
+    DateTimeOffset? lastSuccessfulRefresh;
+    bool refreshFailing;
 
     public FeatureFlagEvaluator GetEvaluator()
     {
@@ -29,18 +38,27 @@ internal class FeatureFlagEvaluatorCache(
             return;
         }
 
+        startedAt = utcNow();
+
         try
         {
             var evaluationResponse = await client.GetServerSideEvaluations(cancellationTokenSource.Token);
-            currentEvaluator =
-                evaluationResponse is not null
-                    ? new FeatureFlagEvaluator(evaluationResponse, configuration.LoggerFactory)
-                    : FeatureFlagEvaluator.Empty(configuration.LoggerFactory);
+            if (evaluationResponse is not null)
+            {
+                currentEvaluator = new FeatureFlagEvaluator(evaluationResponse, configuration.LoggerFactory);
+                lastSuccessfulRefresh = utcNow();
+            }
+            else
+            {
+                currentEvaluator = FeatureFlagEvaluator.Empty(configuration.LoggerFactory);
+                refreshFailing = true;
+            }
         }
         catch (Exception e)
         {
             logger.LogError(e, "Failed to retrieve feature manifest during initialization. Falling back to no evaluations, defaults will be used during evaluation.");
             currentEvaluator = FeatureFlagEvaluator.Empty(configuration.LoggerFactory);
+            refreshFailing = true;
         }
 
         refreshTask = RefreshEvaluator(cancellationTokenSource.Token);
@@ -66,11 +84,16 @@ internal class FeatureFlagEvaluatorCache(
                     if (evaluationResponse is not null)
                     {
                         currentEvaluator = new FeatureFlagEvaluator(evaluationResponse, configuration.LoggerFactory);
+                        RecordSuccessfulRefresh();
                     }
                     else
                     {
-                        logger.LogError("Failed to retrieve updated feature manifest. Retaining the existing evaluations, which may be stale.");
+                        ReportRefreshFailure(exception: null);
                     }
+                }
+                else
+                {
+                    RecordSuccessfulRefresh();
                 }
             }
             catch (OperationCanceledException)
@@ -79,9 +102,62 @@ internal class FeatureFlagEvaluatorCache(
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Failed to retrieve updated feature manifest. Retaining the existing evaluations, which may be stale.");
+                ReportRefreshFailure(e);
             }
         }
+    }
+
+    void RecordSuccessfulRefresh()
+    {
+        var now = utcNow();
+
+        if (refreshFailing)
+        {
+            if (lastSuccessfulRefresh is { } previous)
+            {
+                logger.LogInformation(
+                    "Feature manifest refresh recovered. Evaluations may have been stale for {TimeSinceLastRefresh}, since the last successful refresh at {LastSuccessfulRefresh}.",
+                    now - previous,
+                    previous);
+            }
+            else
+            {
+                logger.LogInformation(
+                    "Feature manifest refresh recovered. No refresh had succeeded since the provider started {TimeSinceStart} ago, at {StartedAt}.",
+                    now - startedAt,
+                    startedAt);
+            }
+
+            refreshFailing = false;
+        }
+
+        lastSuccessfulRefresh = now;
+    }
+
+    void ReportRefreshFailure(Exception? exception)
+    {
+        var now = utcNow();
+
+        if (lastSuccessfulRefresh is { } previous)
+        {
+            logger.Log(
+                LogLevel.Error,
+                exception,
+                "Failed to retrieve updated feature manifest. Retaining the existing evaluations, which may be stale. The last successful refresh was {TimeSinceLastRefresh} ago, at {LastSuccessfulRefresh}.",
+                now - previous,
+                previous);
+        }
+        else
+        {
+            logger.Log(
+                LogLevel.Error,
+                exception,
+                "Failed to retrieve updated feature manifest. No refresh has succeeded since the provider started {TimeSinceStart} ago, at {StartedAt}. Defaults are being used during evaluation.",
+                now - startedAt,
+                startedAt);
+        }
+
+        refreshFailing = true;
     }
 
     public async ValueTask Shutdown()
