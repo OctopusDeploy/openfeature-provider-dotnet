@@ -361,7 +361,7 @@ public class FeatureFlagEvaluatorCacheTests
 
             using var scope = new AssertionScope();
             logger.LatestRecord.Level.Should().Be(LogLevel.Error);
-            logger.LatestRecord.Message.Should().Be($"Failed to retrieve updated feature manifest. No refresh has succeeded since the provider started 00:02:00 ago, at {Invariant(start)}. Defaults are being used during evaluation.");
+            logger.LatestRecord.Message.Should().Be($"Failed to retrieve updated feature manifest. No feature manifest has been retrieved since the provider started 00:02:00 ago, at {Invariant(start)}. Defaults are being used during evaluation.");
         }
         finally
         {
@@ -388,7 +388,7 @@ public class FeatureFlagEvaluatorCacheTests
 
             using var scope = new AssertionScope();
             logger.LatestRecord.Level.Should().Be(LogLevel.Information);
-            logger.LatestRecord.Message.Should().Be($"Feature manifest refresh recovered. No refresh had succeeded since the provider started 00:03:00 ago, at {Invariant(start)}.");
+            logger.LatestRecord.Message.Should().Be($"Feature manifest refresh recovered. No feature manifest had been retrieved since the provider started 00:03:00 ago, at {Invariant(start)}.");
         }
         finally
         {

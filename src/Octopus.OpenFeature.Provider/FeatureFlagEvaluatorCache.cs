@@ -125,7 +125,7 @@ internal class FeatureFlagEvaluatorCache(
             else
             {
                 logger.LogInformation(
-                    "Feature manifest refresh recovered. No refresh had succeeded since the provider started {TimeSinceStart} ago, at {StartedAt}.",
+                    "Feature manifest refresh recovered. No feature manifest had been retrieved since the provider started {TimeSinceStart} ago, at {StartedAt}.",
                     now - startedAt,
                     startedAt);
             }
@@ -154,7 +154,7 @@ internal class FeatureFlagEvaluatorCache(
             logger.Log(
                 LogLevel.Error,
                 exception,
-                "Failed to retrieve updated feature manifest. No refresh has succeeded since the provider started {TimeSinceStart} ago, at {StartedAt}. Defaults are being used during evaluation.",
+                "Failed to retrieve updated feature manifest. No feature manifest has been retrieved since the provider started {TimeSinceStart} ago, at {StartedAt}. Defaults are being used during evaluation.",
                 now - startedAt,
                 startedAt);
         }
