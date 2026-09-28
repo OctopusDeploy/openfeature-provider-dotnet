@@ -38,5 +38,12 @@ public class OctopusFeatureConfiguration
     /// </summary>
     public TimeSpan CacheDuration { get; set; } = TimeSpan.FromMinutes(1);
 
+    /// <summary>
+    /// How long a request to the Feature Flags service may take before it is abandoned.
+    /// Covers the whole request, the TCP connect included, and should be kept well under
+    /// <see cref="CacheDuration" /> so a stalled request cannot hold up the next refresh.
+    /// </summary>
+    public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
     public ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
 }
