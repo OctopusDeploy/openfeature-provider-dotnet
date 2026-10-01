@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.1.0](https://github.com/OctopusDeploy/openfeature-provider-dotnet/compare/v4.0.0...v4.1.0) (2026-10-01)
+
+
+### Features
+
+* **deps:** update dependency openfeature to 2.14.1 ([#104](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/104)) ([bac42f4](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/bac42f4b19a1e4467b18c287d587cea60da690ec))
+
+
+### Bug Fixes
+
+* reuse a single HttpClient for feature manifest requests ([#117](https://github.com/OctopusDeploy/openfeature-provider-dotnet/issues/117)) ([bb6e3ba](https://github.com/OctopusDeploy/openfeature-provider-dotnet/commit/bb6e3ba421c586de6de5565af4be62cc1f0e0a72))
+
 ## [4.0.0](https://github.com/OctopusDeploy/openfeature-provider-dotnet/compare/v3.0.0...v4.0.0) (2026-08-10)
 
 
