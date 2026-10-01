@@ -32,4 +32,9 @@
         </None>
     </ItemGroup>
 
+    <!-- Copying never deletes, so a fixture removed or renamed in the specification would otherwise keep running. -->
+    <Target Name="RemoveStaleFixtures" BeforeTargets="PrepareForBuild">
+        <RemoveDir Directories="$(OutDir)Fixtures" />
+    </Target>
+
 </Project>
