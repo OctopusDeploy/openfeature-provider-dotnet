@@ -71,13 +71,13 @@ runs:
 
     - name: Login to Octopus Deploy 🐙
       if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
-      uses: OctopusDeploy/login@d156cc2dd8d6f4592c3a0e54e8b51a4ea9198dd5 # v2
+      uses: OctopusDeploy/login@5e2331a069ebc144b20ded22766dfce025dd9e73 # v2
       with:
         server: ${{ inputs.octopus-url }}
         service_account_id: 42e00747-07e1-4214-979c-af3381e6d951
 
     - name: Push to Octopus 🐙
-      uses: OctopusDeploy/push-package-action@e2b339863f2aba04d1aead9675136af1bd2bceaa # v4
+      uses: OctopusDeploy/push-package-action@88c472a064af6485c4d0cc07d587213895a74a2e # v4
       if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
       with:
         packages: |
