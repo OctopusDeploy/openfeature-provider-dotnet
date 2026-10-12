@@ -72,10 +72,9 @@ dotnet format --verify-no-changes
 ## Making a pull request
 
 1. Fork the repository and create a branch from `main`.
-2. Make your change, with tests. New behavior needs new tests, and bug fixes need a test that fails without the fix.
-3. Make sure the build, tests, and formatting checks pass locally.
-4. Update `README.md` if you've changed public API or configuration.
-5. Open a pull request against `main`.
+1. Make your change, with tests. New behavior needs new tests, and bug fixes need a test that fails without the fix.
+1. Make sure the build, tests, and formatting checks pass locally.
+1. Open a pull request against `main`.
 
 ### Pull request titles
 
