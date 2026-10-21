@@ -13,13 +13,5 @@ module.exports = {
       matchUpdateTypes: ['minor', 'patch'],
       semanticCommitType: 'feat',
     },
-    {
-      // The Octopus actions are skipped on renovate/ branches in build-test-pack-deploy, so CI
-      // can't vouch for them and they stay on manual review. Group them instead, so a batch of
-      // digest repoints is one PR to check rather than three.
-      matchManagers: ['github-actions'],
-      matchPackageNames: ['OctopusDeploy/**'],
-      groupName: 'Octopus Deploy actions',
-    },
   ],
 };
