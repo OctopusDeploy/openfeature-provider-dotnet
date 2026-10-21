@@ -77,14 +77,14 @@ runs:
         service_account_id: 42e00747-07e1-4214-979c-af3381e6d951
 
     - name: Push to Octopus 🐙
-      uses: OctopusDeploy/push-package-action@88c472a064af6485c4d0cc07d587213895a74a2e # v4
+      uses: OctopusDeploy/push-package-action@ea60aac3adb75cdb8c9707958177049fc72ea608 # v4
       if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
       with:
         packages: |
           src/${{ steps.package.outputs.name }}
 
     - name: Create Release in Octopus 🐙
-      uses: OctopusDeploy/create-release-action@4eaeba13bef87ec399ecac936e9f513758784694 # v4
+      uses: OctopusDeploy/create-release-action@d01f523c3b9121a68f212f2f589fb00cb5709671 # v4
       if: github.event.pull_request.head.repo.fork != true && !startsWith(github.head_ref, 'dependabot/') && !startsWith(github.head_ref, 'renovate/')
       with:
         project: "OpenFeature Dotnet Provider"
