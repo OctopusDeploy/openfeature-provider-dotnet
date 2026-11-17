@@ -1,0 +1,38 @@
+name: Native AOT smoke test
+
+# Publishes a small app that uses the provider with Native AOT, then runs it against a recorded Octopus response.
+# The publish fails on any trim or AOT warning, and the app exits non-zero when a flag does not evaluate as recorded.
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  aot-smoke-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: 🧰 Install the Native AOT toolchain
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: 🏗️ Publish with Native AOT
+        working-directory: ./src
+        run: dotnet publish Octopus.OpenFeature.Provider.AotSmokeTest --configuration Release --runtime linux-x64 --output ../aot-smoke-test
+
+      - name: 🧪 Run the published app
+        run: ./aot-smoke-test/Octopus.OpenFeature.Provider.AotSmokeTest
