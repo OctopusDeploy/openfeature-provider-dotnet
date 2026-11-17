@@ -65,7 +65,7 @@ internal class FeatureFlagApiClient : IFeatureFlagApiClient, IDisposable
         {
             var rawResult = await result.Content.ReadAsStringAsync();
 
-            hash = JsonSerializer.Deserialize<FeatureCheck>(rawResult, JsonSerializerOptions.Web);
+            hash = JsonSerializer.Deserialize(rawResult, ProviderJsonContext.Default.FeatureCheck);
         }
 
         if (hash is null)
@@ -94,7 +94,7 @@ internal class FeatureFlagApiClient : IFeatureFlagApiClient, IDisposable
         client.DefaultRequestHeaders.Add("X-Octopus-Client", clientHeaderValueBuilder.ToString());
     }
 
-    class FeatureCheck(byte[] contentHash)
+    internal sealed class FeatureCheck(byte[] contentHash)
     {
         public byte[] ContentHash { get; } = contentHash;
     }
@@ -116,7 +116,7 @@ internal class FeatureFlagApiClient : IFeatureFlagApiClient, IDisposable
             return null;
         }
 
-        if (!response.Headers.TryGetValues("ContentHash", out IEnumerable<string> values))
+        if (!response.Headers.TryGetValues("ContentHash", out var values))
         {
             logger.LogWarning("Feature flag response from {ServerUri} did not contain expected ContentHash header", configuration.ServerUri);
             return null;
@@ -133,7 +133,7 @@ internal class FeatureFlagApiClient : IFeatureFlagApiClient, IDisposable
 
         var result = await response.Content.ReadAsStringAsync();
 
-        var evaluations = JsonSerializer.Deserialize<ServerSideEvaluation[]>(result, JsonSerializerOptions.Web);
+        var evaluations = JsonSerializer.Deserialize(result, ProviderJsonContext.Default.ServerSideEvaluationArray);
 
         if (evaluations is null)
         {
