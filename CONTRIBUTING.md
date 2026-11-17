@@ -53,6 +53,20 @@ dotnet test Octopus.OpenFeature.sln
 
 The specification fixtures run as part of the `Octopus.OpenFeature.Provider.SpecificationTests` project.
 
+### Native AOT smoke test
+
+The provider must keep working in trimmed and Native AOT apps. Read every Octopus response through the source-generated `ProviderJsonContext`, never through reflection-based `JsonSerializer` overloads; the library's `net8.0` build runs the trim and AOT analyzers and reports any reflection use as an `IL2xxx`/`IL3xxx` warning.
+
+CI also publishes `Octopus.OpenFeature.Provider.AotSmokeTest` with Native AOT and runs it against a recorded Octopus response. To run it locally (Linux needs `clang` and `zlib1g-dev`):
+
+```bash
+cd src
+dotnet publish Octopus.OpenFeature.Provider.AotSmokeTest --configuration Release --runtime linux-x64 --output ../aot-smoke-test
+../aot-smoke-test/Octopus.OpenFeature.Provider.AotSmokeTest
+```
+
+The publish fails on any trim or AOT warning, and the app exits non-zero if any flag falls back to its default.
+
 ### Formatting
 
 Formatting follows [`.editorconfig`](.editorconfig) and is checked on every pull request. To fix formatting before you push:
