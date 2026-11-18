@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      Publishes a small app with Native AOT and evaluates flags against a recorded Octopus response.
+      dotnet publish -c Release -r linux-x64 then run the output; a non-zero exit code is a failure.
+      Pass -p:OctopusOpenFeatureVersion=4.0.0 to run the same check against a released package instead of this repository.
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <PublishAot>true</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <!-- Every trim or AOT warning, including those from referenced assemblies, fails the publish. -->
+        <TrimmerSingleWarn>false</TrimmerSingleWarn>
+        <WarningsAsErrors>$(WarningsAsErrors);IL2026;IL2104;IL3050;IL3053</WarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(OctopusOpenFeatureVersion)' == ''">
+        <ProjectReference Include="..\Octopus.OpenFeature.Provider\Octopus.OpenFeature.Provider.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(OctopusOpenFeatureVersion)' != ''">
+        <PackageReference Include="Octopus.OpenFeature" Version="$(OctopusOpenFeatureVersion)" />
+    </ItemGroup>
+
+</Project>

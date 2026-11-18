@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Octopus.OpenFeature.Provider.V4.Conditions;
 
@@ -26,12 +27,17 @@ internal sealed class ClientSideConditionJsonConverter : JsonConverter<ClientSid
         // the base type only) is not re-entered.
         return type switch
         {
-            ConditionTypeNames.PercentageByContext => element.Deserialize<PercentageByContextCondition>(options)!,
-            ConditionTypeNames.ContextAttributeIsOneOf => element.Deserialize<ContextAttributeIsOneOfCondition>(options)!,
-            ConditionTypeNames.ContextAttributeIsNotOneOf => element.Deserialize<ContextAttributeIsNotOneOfCondition>(options)!,
+            ConditionTypeNames.PercentageByContext => Deserialize<PercentageByContextCondition>(element, options),
+            ConditionTypeNames.ContextAttributeIsOneOf => Deserialize<ContextAttributeIsOneOfCondition>(element, options),
+            ConditionTypeNames.ContextAttributeIsNotOneOf => Deserialize<ContextAttributeIsNotOneOfCondition>(element, options),
             _ => new UnknownCondition(type)
         };
     }
+
+    // The type information comes from the options' resolver (the provider's source-generated context), not from
+    // reflection, so this works when reflection-based serialization is disabled.
+    static T Deserialize<T>(JsonElement element, JsonSerializerOptions options) where T : ClientSideCondition
+        => element.Deserialize((JsonTypeInfo<T>)options.GetTypeInfo(typeof(T)))!;
 
     public override void Write(Utf8JsonWriter writer, ClientSideCondition value, JsonSerializerOptions options)
         => throw new NotImplementedException("The provider does not serialise client-side conditions.");

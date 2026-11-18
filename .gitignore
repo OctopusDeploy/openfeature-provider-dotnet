@@ -401,3 +401,4 @@ src/.idea
 .idea
 .DS_Store
 *.DotSettings
+aot-smoke-test/
